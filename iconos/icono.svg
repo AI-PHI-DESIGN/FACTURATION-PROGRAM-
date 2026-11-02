@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1f4e79"/>
+  <g transform="translate(256 256) scale(0.96) translate(-256 -262)">
+    <path d="M166 92h138l78 78v240a20 20 0 0 1-20 20H166a20 20 0 0 1-20-20V112a20 20 0 0 1 20-20z" fill="#fff"/>
+    <path d="M304 92v58a20 20 0 0 0 20 20h58z" fill="#bcd0e4"/>
+    <rect x="182" y="196" width="112" height="18" rx="9" fill="#1f4e79" opacity=".3"/>
+    <rect x="182" y="234" width="164" height="18" rx="9" fill="#1f4e79" opacity=".3"/>
+    <text x="264" y="396" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="138" text-anchor="middle" fill="#1f4e79">€</text>
+  </g>
+</svg>

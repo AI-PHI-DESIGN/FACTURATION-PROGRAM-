@@ -2,8 +2,18 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Facturación</title>
+<meta name="description" content="Facturas, clientes y cobros de tus empresas, en el móvil y sin internet.">
+<meta name="theme-color" content="#1f4e79">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+<link rel="icon" href="iconos/icono-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Facturación">
 <style>
 :root{
   --fondo:#f3f4f6; --panel:#fff; --borde:#dde1e6; --texto:#1c2430; --suave:#5f6b7a;
@@ -14,17 +24,22 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--fondo);color:var(--texto);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+body{background:var(--fondo);color:var(--texto);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
 
-/* ---------- Barra superior ---------- */
-.barra{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:24px;padding:0 24px;min-height:58px;background:var(--primario);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+/* ---------- Barra superior / menú ---------- */
+.barra{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:24px;padding:env(safe-area-inset-top) 24px 0;min-height:58px;background:var(--primario);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 .marca{font-weight:700;font-size:18px;letter-spacing:.02em;white-space:nowrap}
 .barra nav{display:flex;gap:4px;overflow-x:auto;padding:8px 0}
-.barra nav button{background:transparent;border:0;color:#d6e2ee;font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.barra nav button{display:inline-flex;align-items:center;gap:7px;background:transparent;border:0;color:#d6e2ee;font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.barra nav button svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .barra nav button:hover{background:rgba(255,255,255,.12);color:#fff}
 .barra nav button.activa{background:#fff;color:var(--primario)}
-.aviso-copia{background:var(--pend-fondo);color:var(--pend);border-bottom:1px solid #f1d29f;padding:10px 24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-weight:600}
+.corto{display:none}
+.aviso-copia,.aviso-instalar{padding:10px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:600}
+.aviso-copia{background:var(--pend-fondo);color:var(--pend);border-bottom:1px solid #f1d29f}
+.aviso-instalar{background:var(--primario-claro);color:var(--primario);border-bottom:1px solid #c9d8e8}
+.aviso-copia span,.aviso-instalar span{flex:1 1 220px}
 
 main{max-width:1440px;margin:0 auto;padding:20px 24px 60px}
 .vista{display:none}
@@ -43,22 +58,21 @@ legend{float:left;width:100%;font-weight:700;font-size:12.5px;text-transform:upp
 legend + *{clear:both}
 label{display:block;font-size:13px;font-weight:600;color:var(--suave);margin-bottom:10px}
 label > input:not([type=checkbox]), label > select, label > textarea{display:block;width:100%;margin-top:4px}
-input,select,textarea{font:inherit;color:var(--texto);background:#fff;border:1px solid #c5ccd4;border-radius:8px;padding:8px 10px;min-height:38px}
+input,select,textarea{font:inherit;color:var(--texto);background:#fff;border:1px solid #c5ccd4;border-radius:8px;padding:8px 10px;min-height:40px}
 textarea{resize:vertical}
 input:focus,select:focus,textarea:focus{outline:2px solid #9dbcdb;outline-offset:0;border-color:var(--primario)}
-input[type=checkbox]{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--primario);flex:none}
-input[type=color]{padding:2px 4px;width:70px;height:38px;cursor:pointer}
+input[type=checkbox]{width:20px;height:20px;min-height:0;margin:0;accent-color:var(--primario);flex:none}
+input[type=color]{padding:2px 4px;width:70px;height:40px;cursor:pointer}
 input[type=file]{display:none}
 label.check{display:flex;align-items:center;gap:8px;color:var(--texto);font-size:14px;cursor:pointer}
 .fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 12px}
 .fila.dos-uno{grid-template-columns:2fr 1fr}
-.fila.uno-dos{grid-template-columns:1fr 2fr}
 .ayuda{display:block;font-weight:400;color:var(--suave);margin-top:4px;font-size:12px}
 .campo-numero{display:flex;align-items:stretch;margin-top:4px}
-.campo-numero .prefijo{display:flex;align-items:center;padding:0 10px;background:var(--primario-claro);border:1px solid #c5ccd4;border-right:0;border-radius:8px 0 0 8px;color:var(--primario);font-weight:700}
+.campo-numero .prefijo{display:flex;align-items:center;padding:0 10px;background:var(--primario-claro);border:1px solid #c5ccd4;border-right:0;border-radius:8px 0 0 8px;color:var(--primario);font-weight:700;white-space:nowrap}
 .campo-numero .prefijo:empty{display:none}
 .campo-numero .prefijo:not(:empty) + input{border-radius:0 8px 8px 0}
-.campo-numero input{width:100%}
+.campo-numero input{width:100%;min-width:0}
 .resumen-importes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 10px}
 .resumen-importes div{background:#f6f8fa;border:1px solid var(--borde);border-radius:8px;padding:8px 10px}
 .resumen-importes span{display:block;font-size:12px;color:var(--suave);font-weight:600}
@@ -68,13 +82,14 @@ label.check{display:flex;align-items:center;gap:8px;color:var(--texto);font-size
 
 /* ---------- Botones ---------- */
 button{font:inherit;cursor:pointer}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c5ccd4;background:#fff;color:var(--texto);border-radius:8px;padding:8px 14px;font-weight:600;min-height:38px;font-size:14px;text-decoration:none;margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c5ccd4;background:#fff;color:var(--texto);border-radius:8px;padding:8px 14px;font-weight:600;min-height:40px;font-size:14px;text-decoration:none;margin:0}
 .btn:hover{background:#f3f5f7}
+.btn:disabled{opacity:.5;cursor:default}
 .btn.primario{background:var(--primario);border-color:var(--primario);color:#fff}
 .btn.primario:hover{background:var(--primario-osc)}
 .btn.peligro{color:var(--peligro);border-color:#efc2bd}
 .btn.peligro:hover{background:var(--peligro-fondo)}
-.btn.peq{padding:4px 10px;min-height:30px;font-size:13px}
+.btn.peq{padding:4px 10px;min-height:32px;font-size:13px}
 .acciones{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
 .acciones.fin{justify-content:flex-end}
 .enlace{background:none;border:0;padding:0;color:var(--primario);font-weight:700;text-decoration:underline;text-underline-offset:2px}
@@ -100,13 +115,15 @@ button{font:inherit;cursor:pointer}
 .tabla small{color:var(--suave)}
 .tabla .vacia{text-align:center;color:var(--suave);padding:30px 10px}
 .tabla tr.seleccionada td{background:var(--primario-claro)}
+.td-meta{display:none}
 .acciones-fila{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
 .acciones-fila .btn{white-space:nowrap}
-.estado{border:0;border-radius:99px;padding:5px 12px;font-weight:700;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.estado{border:0;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
 .estado.cobrada{background:var(--ok-fondo);color:var(--ok)}
 .estado.pendiente{background:var(--pend-fondo);color:var(--pend)}
 .estado:hover{filter:brightness(.95)}
 .estado small{font-weight:600;color:inherit;opacity:.8}
+.codigo-cliente{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--primario-claro);color:var(--primario);border-radius:4px;padding:0 5px;margin-right:4px}
 
 /* ---------- Contabilidad ---------- */
 .filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px;margin-bottom:6px}
@@ -130,7 +147,7 @@ button{font:inherit;cursor:pointer}
 .tarjeta-empresa div{min-width:0}
 .tarjeta-empresa strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tarjeta-empresa small{color:var(--suave)}
-.imagen-campo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 12px}
+.imagen-campo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
 .imagen-campo .caja-img{width:150px;height:72px;border:1px dashed #b8c1cc;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fafbfc;color:var(--suave);font-size:12px;overflow:hidden}
 .imagen-campo .caja-img img{max-width:100%;max-height:100%;object-fit:contain}
 .etiqueta-campo{font-size:13px;font-weight:600;color:var(--suave)}
@@ -138,38 +155,86 @@ button{font:inherit;cursor:pointer}
 .estrecho{max-width:760px}
 .vacio-inicio{max-width:640px;margin:40px auto;text-align:center}
 .vacio-inicio ol{text-align:left;display:inline-block;margin:8px 0 18px}
+.pasos{margin:0 0 12px;padding-left:20px}
+.pasos li{margin-bottom:6px}
 
-/* ---------- Diálogo de firma ---------- */
+/* ---------- Diálogos ---------- */
 dialog{border:0;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(720px,94vw)}
 dialog::backdrop{background:rgba(15,23,42,.45)}
+#dlg-pdf{width:min(460px,94vw)}
 #firma-lienzo{width:100%;aspect-ratio:3/1;border:1px dashed #9aa6b2;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;display:block}
 
 /* ---------- Aviso flotante ---------- */
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1c2430;color:#fff;padding:10px 18px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1c2430;color:#fff;padding:10px 18px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw;text-align:center}
 .toast.visible{opacity:1;transform:translate(-50%,0)}
 .toast.error{background:var(--peligro)}
+
+/* Zona fuera de pantalla donde se pinta la factura para hacer el PDF */
+#zona-pdf{position:absolute;left:-12000px;top:0;width:210mm;pointer-events:none}
 
 @media (max-width:1050px){
   .editor,.dos-col{grid-template-columns:minmax(0,1fr)}
   .columna-previa{position:static}
   .marco-previa{max-height:none}
 }
-@media (max-width:640px){
-  main{padding:14px 12px 50px}
-  .barra{padding:0 12px;gap:10px}
-  .marca{display:none}
+
+/* ---------- Móvil: menú abajo, tarjetas, letra de 16 px (evita el zoom en iPhone) ---------- */
+@media (max-width:760px){
+  .barra{min-height:50px;padding:env(safe-area-inset-top) 16px 0;justify-content:center}
+  .marca{font-size:17px}
+  .barra nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--borde);box-shadow:0 -2px 10px rgba(16,24,40,.08);padding:0 0 env(safe-area-inset-bottom);gap:0;overflow:visible}
+  .barra nav button{flex:1 1 0;min-width:0;flex-direction:column;gap:3px;padding:8px 2px 7px;border-radius:0;font-size:11px;color:var(--suave)}
+  .barra nav button svg{width:24px;height:24px}
+  .barra nav button:hover{background:transparent;color:var(--suave)}
+  .barra nav button.activa{background:transparent;color:var(--primario)}
+  .barra nav button.activa svg{stroke-width:2.5}
+  .largo{display:none}
+  .corto{display:inline}
+  .aviso-copia,.aviso-instalar{padding:10px 14px;font-size:14px}
+  main{padding:14px 12px calc(86px + env(safe-area-inset-bottom))}
+  input,select,textarea{font-size:16px}
   .panel{padding:14px}
-  .resumen-importes{grid-template-columns:1fr}
+  .resumen-importes{grid-template-columns:1fr 1fr}
+  .resumen-importes .total{grid-column:1/-1}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+  .solo-escritorio{display:none !important}
+  .ocultar-movil{display:none}
+  .acciones .btn{flex:1 1 auto}
+  .marco-previa{padding:8px}
+
+  /* Contabilidad en tarjetas */
+  #vista-contabilidad > .panel{background:transparent;border:0;box-shadow:none;padding:0}
+  .filtros{grid-template-columns:1fr 1fr}
+  .filtros label:last-child{grid-column:1/-1}
+  .tarjetas{grid-template-columns:1fr 1fr;gap:8px}
+  .tarjeta{padding:10px 12px}
+  .tarjeta strong{font-size:17px}
+  .tabla-facturas thead{display:none}
+  .tabla-facturas,.tabla-facturas tbody{display:block}
+  .tabla-facturas tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"num total" "cli cli" "meta meta" "estado estado" "acc acc";gap:4px 10px;align-items:center;padding:12px 14px;border:1px solid var(--borde);border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:var(--sombra)}
+  .tabla-facturas tr:hover td{background:transparent}
+  .tabla-facturas td{border:0;padding:0}
+  .tabla-facturas .td-num{grid-area:num;font-size:16px}
+  .tabla-facturas .td-total{grid-area:total;font-size:17px}
+  .tabla-facturas .td-cli{grid-area:cli;font-weight:600}
+  .tabla-facturas .td-meta{grid-area:meta;display:block;font-size:13px;color:var(--suave)}
+  .tabla-facturas .td-estado{grid-area:estado;margin-top:6px}
+  .tabla-facturas .td-acc{grid-area:acc;margin-top:4px}
+  .tabla-facturas .td-fecha,.tabla-facturas .td-emp,.tabla-facturas .td-base,.tabla-facturas .td-iva{display:none}
+  .tabla-facturas .acciones-fila{justify-content:flex-start}
+  .tabla-facturas .acciones-fila .btn{flex:1 1 auto}
+  .tabla-facturas td.vacia{grid-column:1/-1}
+  .tabla-facturas .estado{width:100%;justify-content:center;padding:9px 12px;font-size:14px}
 }
 
 /* =========================================================
-   HOJA DE FACTURA (A4) — se usa en la vista previa y al imprimir
+   HOJA DE FACTURA (A4) — vista previa, impresión y PDF
    ========================================================= */
-.hoja{--c:#1f4e79;width:210mm;min-height:297mm;padding:15mm 16mm 12mm;background:#fff;color:#222;font:9.5pt/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hoja{--c:#1f4e79;--c-claro:#eef3f8;width:210mm;min-height:297mm;padding:15mm 16mm 12mm;background:#fff;color:#222;font:9.5pt/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .hoja *{box-sizing:border-box}
 .hoja .h-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10mm;padding-bottom:5mm;border-bottom:2.2pt solid var(--c)}
 .hoja .h-emisor{max-width:110mm}
-.hoja .h-logo{display:block;max-width:62mm;max-height:26mm;object-fit:contain;margin-bottom:3mm}
+.hoja .h-logo{display:block;max-width:62mm;max-height:26mm;margin-bottom:3mm}
 .hoja .h-emisor-nombre{font-size:13pt;font-weight:700;color:var(--c);margin-bottom:1mm}
 .hoja .h-emisor div{color:#444}
 .hoja .h-doc{text-align:right;flex:none}
@@ -179,26 +244,24 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 .hoja .h-doc td:first-child{color:#666;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}
 .hoja .h-doc td:last-child{font-weight:700;font-size:10.5pt}
 .hoja .h-cliente{margin:6mm 0;display:flex;gap:6mm}
-.hoja .h-caja{flex:1;padding:3.5mm 4.5mm;background:color-mix(in srgb,var(--c) 7%,#fff);border-left:2.5pt solid var(--c);border-radius:0 2mm 2mm 0}
+.hoja .h-caja{flex:1;padding:3.5mm 4.5mm;background:var(--c-claro);border-left:2.5pt solid var(--c);border-radius:0 2mm 2mm 0}
 .hoja .h-etq{display:block;font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--c);margin-bottom:1.2mm}
 .hoja .h-cliente-nombre{font-size:11.5pt;font-weight:700}
-.hoja .h-tabla{width:100%;border-collapse:collapse}
-.hoja .h-tabla th{background:var(--c);color:#fff;text-align:left;padding:2.2mm 3.5mm;font-size:8pt;text-transform:uppercase;letter-spacing:.1em}
-.hoja .h-tabla th.n,.hoja .h-tabla td.n{text-align:right;width:36mm}
-.hoja .h-tabla td{padding:4mm 3.5mm;vertical-align:top;border-bottom:.6pt solid #ccc}
-.hoja .h-concepto{white-space:pre-wrap;word-wrap:break-word;min-height:72mm;font-size:10pt}
-.hoja .h-tabla td.n{font-size:10pt;font-variant-numeric:tabular-nums}
+.hoja .h-lineas-cab{display:flex;justify-content:space-between;background:var(--c);color:#fff;padding:2.2mm 3.5mm;font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+.hoja .h-linea{display:flex;align-items:flex-start;gap:6mm;padding:4mm 3.5mm;border-bottom:.6pt solid #ccc}
+.hoja .h-concepto{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word;min-height:72mm;font-size:10pt}
+.hoja .h-linea .n{flex:none;text-align:right;white-space:nowrap;font-size:10pt}
 .hoja .h-bajo{display:flex;justify-content:space-between;align-items:flex-start;gap:8mm;margin-top:5mm}
 .hoja .h-pago{flex:1;font-size:9pt}
 .hoja .h-pago p{margin:0 0 1.5mm}
-.hoja .h-totales{width:84mm;border-collapse:collapse;flex:none}
-.hoja .h-totales td{padding:1.8mm 3.5mm;font-variant-numeric:tabular-nums}
-.hoja .h-totales td:last-child{text-align:right;white-space:nowrap}
-.hoja .h-totales tr+tr td{border-top:.6pt solid #ddd}
-.hoja .h-totales .h-total td{background:var(--c);color:#fff;font-weight:800;font-size:12.5pt;border:0}
+.hoja .h-col-totales{width:84mm;flex:none}
+.hoja .h-fila{display:flex;justify-content:space-between;gap:4mm;padding:1.8mm 3.5mm}
+.hoja .h-fila + .h-fila{border-top:.6pt solid #ddd}
+.hoja .h-fila span:last-child{white-space:nowrap;text-align:right}
+.hoja .h-fila.h-total{background:var(--c);color:#fff;font-weight:800;font-size:12.5pt;border-top:0}
 .hoja .h-exencion{margin-top:2mm;font-size:8.5pt;color:#444;font-style:italic;text-align:right}
 .hoja .h-firma{margin-top:8mm;margin-left:auto;width:78mm;text-align:center}
-.hoja .h-firma-img{display:block;max-width:60mm;max-height:24mm;margin:2mm auto 0;object-fit:contain}
+.hoja .h-firma-img{display:block;max-width:60mm;max-height:24mm;margin:2mm auto 0}
 .hoja .h-firma-hueco{height:20mm}
 .hoja .h-firma-linea{border-top:.7pt solid #555;margin-top:1mm;padding-top:1.2mm;font-size:8.5pt;color:#444}
 .hoja .h-pie{margin-top:auto;padding-top:6mm}
@@ -221,13 +284,33 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 <header class="barra">
   <div class="marca">Facturación</div>
   <nav aria-label="Secciones">
-    <button type="button" data-vista="factura">Nueva factura</button>
-    <button type="button" data-vista="contabilidad">Contabilidad</button>
-    <button type="button" data-vista="clientes">Clientes</button>
-    <button type="button" data-vista="empresas">Empresas</button>
-    <button type="button" data-vista="copias">Copia de seguridad</button>
+    <button type="button" data-vista="factura">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></svg>
+      <span class="largo">Nueva factura</span><span class="corto">Nueva</span>
+    </button>
+    <button type="button" data-vista="contabilidad">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18"/><path d="M6 16v-5"/><path d="M11 16V6"/><path d="M16 16v-8"/><path d="M21 16v-3"/></svg>
+      <span class="largo">Contabilidad</span><span class="corto">Contabilidad</span>
+    </button>
+    <button type="button" data-vista="clientes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.8 3.1 2.5 3.5 5.2"/></svg>
+      <span class="largo">Clientes</span><span class="corto">Clientes</span>
+    </button>
+    <button type="button" data-vista="empresas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M2 21h20"/><path d="M8 7h4M8 11h4M8 15h4"/></svg>
+      <span class="largo">Empresas</span><span class="corto">Empresas</span>
+    </button>
+    <button type="button" data-vista="copias">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span class="largo">Copia de seguridad</span><span class="corto">Copias</span>
+    </button>
   </nav>
 </header>
+<div class="aviso-instalar" id="aviso-instalar" hidden>
+  <span id="aviso-instalar-texto"></span>
+  <button type="button" class="btn peq primario" id="btn-instalar" hidden>Instalar</button>
+  <button type="button" class="btn peq" id="btn-instalar-cerrar">Ahora no</button>
+</div>
 <div class="aviso-copia" id="aviso-copia" hidden>
   <span id="aviso-copia-texto">Hace tiempo que no descargas una copia de seguridad de tus facturas.</span>
   <button type="button" class="btn peq" id="aviso-copia-btn">Descargar copia ahora</button>
@@ -241,8 +324,8 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
     <p>Para empezar a facturar:</p>
     <ol>
       <li>Da de alta tu empresa: datos, logo, firma y número de cuenta.</li>
-      <li>Indica por qué número de factura vas (por ejemplo, la 4).</li>
-      <li>Vuelve aquí y haz la factura.</li>
+      <li>Haz la factura: elige el cliente y su número sale solo.</li>
+      <li>Envíala en PDF por WhatsApp o correo.</li>
     </ol>
     <div><button type="button" class="btn primario" id="btn-ir-empresas">Dar de alta mi empresa</button></div>
   </div>
@@ -251,7 +334,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
     <form class="panel" id="form-factura" autocomplete="off" novalidate>
       <div class="cab-editor">
         <h2 id="titulo-editor">Nueva factura</h2>
-        <button type="button" class="btn peq" id="btn-nueva-factura">+ Nueva en blanco</button>
+        <button type="button" class="btn peq" id="btn-nueva-factura">+ Nueva</button>
       </div>
 
       <fieldset class="primero">
@@ -262,10 +345,33 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
       </fieldset>
 
       <fieldset>
+        <legend>Cliente</legend>
+        <label>Elegir cliente guardado
+          <select id="f-cliente"></select>
+        </label>
+        <label>Nombre o razón social
+          <input id="f-cli-nombre" placeholder="Nombre del cliente">
+        </label>
+        <div class="fila">
+          <label>CIF / NIF <input id="f-cli-cif" autocapitalize="characters"></label>
+          <label id="lbl-codigo">Código del cliente
+            <input id="f-cli-codigo" autocapitalize="characters" maxlength="8">
+            <span class="ayuda">Va delante del nº de sus facturas</span>
+          </label>
+        </div>
+        <label>Dirección <input id="f-cli-dir"></label>
+        <div class="fila">
+          <label>Código postal <input id="f-cli-cp" inputmode="numeric"></label>
+          <label>Población <input id="f-cli-pob"></label>
+          <label>Provincia <input id="f-cli-prov"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Número y fecha</legend>
         <div class="fila">
           <label>Nº de factura
-            <span class="campo-numero"><span class="prefijo" id="f-serie"></span><input id="f-numero" type="number" min="1" step="1"></span>
+            <span class="campo-numero"><span class="prefijo" id="f-serie"></span><input id="f-numero" type="number" inputmode="numeric" min="1" step="1"></span>
             <span class="ayuda" id="f-numero-ayuda"></span>
           </label>
           <label>Fecha de la factura
@@ -275,28 +381,9 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
       </fieldset>
 
       <fieldset>
-        <legend>Cliente</legend>
-        <label>Elegir cliente guardado
-          <select id="f-cliente"></select>
-        </label>
-        <label>Nombre o razón social
-          <input id="f-cli-nombre" placeholder="Nombre del cliente">
-        </label>
-        <div class="fila uno-dos">
-          <label>CIF / NIF <input id="f-cli-cif"></label>
-          <label>Dirección <input id="f-cli-dir"></label>
-        </div>
-        <div class="fila">
-          <label>Código postal <input id="f-cli-cp" inputmode="numeric"></label>
-          <label>Población <input id="f-cli-pob"></label>
-          <label>Provincia <input id="f-cli-prov"></label>
-        </div>
-      </fieldset>
-
-      <fieldset>
         <legend>Concepto</legend>
         <label>Concepto de la factura
-          <textarea id="f-concepto" rows="9" placeholder="Describe el trabajo o servicio facturado…"></textarea>
+          <textarea id="f-concepto" rows="8" placeholder="Describe el trabajo o servicio facturado…"></textarea>
         </label>
       </fieldset>
 
@@ -307,7 +394,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
             <input id="f-base" inputmode="decimal" placeholder="0,00">
           </label>
           <label id="lbl-iva">% de IVA
-            <input id="f-iva" type="number" min="0" max="100" step="0.01" list="tipos-iva">
+            <input id="f-iva" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-iva">
           </label>
         </div>
         <label class="check"><input type="checkbox" id="f-aplica-iva"> Aplicar IVA (IVA repercutido)</label>
@@ -341,7 +428,8 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 
       <div class="acciones">
         <button type="submit" class="btn primario">Guardar factura</button>
-        <button type="button" class="btn" id="btn-imprimir">Guardar e imprimir / PDF</button>
+        <button type="button" class="btn" id="btn-pdf">Enviar / descargar PDF</button>
+        <button type="button" class="btn solo-escritorio" id="btn-imprimir">Imprimir</button>
         <button type="button" class="btn peligro" id="btn-borrar-factura" hidden>Borrar</button>
       </div>
     </form>
@@ -359,7 +447,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
     <div class="cab-panel">
       <h2>Contabilidad</h2>
       <div class="acciones" style="margin:0">
-        <button type="button" class="btn" id="c-csv">Exportar a Excel (CSV)</button>
+        <button type="button" class="btn solo-escritorio" id="c-csv">Exportar a Excel (CSV)</button>
         <button type="button" class="btn primario" id="c-nueva">+ Nueva factura</button>
       </div>
     </div>
@@ -376,17 +464,17 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
       <label>Trimestre
         <select id="c-tri">
           <option value="">Todo el año</option>
-          <option value="1">1.er trimestre (ene-mar)</option>
-          <option value="2">2.º trimestre (abr-jun)</option>
-          <option value="3">3.er trimestre (jul-sep)</option>
-          <option value="4">4.º trimestre (oct-dic)</option>
+          <option value="1">1.er trimestre</option>
+          <option value="2">2.º trimestre</option>
+          <option value="3">3.er trimestre</option>
+          <option value="4">4.º trimestre</option>
         </select>
       </label>
       <label>Buscar <input id="c-buscar" type="search" placeholder="Cliente, nº, concepto…"></label>
     </div>
     <div class="tarjetas" id="c-tarjetas"></div>
     <div class="tabla-scroll">
-      <table class="tabla">
+      <table class="tabla tabla-facturas">
         <thead>
           <tr>
             <th>Nº factura</th><th>Fecha</th><th>Empresa</th><th>Cliente</th>
@@ -411,7 +499,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
       </div>
       <div class="tabla-scroll">
         <table class="tabla">
-          <thead><tr><th>Cliente</th><th>Población</th><th class="num">Facturas</th><th class="num">Facturado</th><th class="num">Pendiente</th></tr></thead>
+          <thead><tr><th>Cliente</th><th class="ocultar-movil">Población</th><th class="num ocultar-movil">Facturas</th><th class="num">Facturado</th><th class="num">Pendiente</th></tr></thead>
           <tbody id="cl-lista"></tbody>
         </table>
       </div>
@@ -419,7 +507,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
     <form class="panel" id="form-cliente" autocomplete="off" novalidate>
       <h2 id="cl-titulo">Nuevo cliente</h2>
       <label>Nombre o razón social <input id="cl-nombre"></label>
-      <label>CIF / NIF <input id="cl-cif"></label>
+      <label>CIF / NIF <input id="cl-cif" autocapitalize="characters"></label>
       <label>Dirección <input id="cl-dir"></label>
       <div class="fila">
         <label>Código postal <input id="cl-cp" inputmode="numeric"></label>
@@ -427,9 +515,17 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
       </div>
       <label>Provincia <input id="cl-prov"></label>
       <div class="fila">
-        <label>Teléfono <input id="cl-tel"></label>
+        <label>Teléfono <input id="cl-tel" type="tel"></label>
         <label>Email <input id="cl-email" type="email"></label>
       </div>
+      <fieldset>
+        <legend>Numeración de sus facturas</legend>
+        <div class="fila">
+          <label>Código del cliente <input id="cl-codigo" autocapitalize="characters" maxlength="8"></label>
+          <label>Empezar su numeración en <input id="cl-inicio" type="number" inputmode="numeric" min="1" step="1" value="1"></label>
+        </div>
+        <span class="ayuda" id="cl-numeracion-ayuda" style="margin:-4px 0 10px"></span>
+      </fieldset>
       <div class="acciones">
         <button type="submit" class="btn primario">Guardar cliente</button>
         <button type="button" class="btn" id="cl-facturar" hidden>Hacerle una factura</button>
@@ -446,7 +542,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
     <div>
       <div class="panel">
         <h2>Empresas</h2>
-        <p class="suave">Cada empresa tiene su plantilla (logo, datos, color y firma) y su propia numeración de facturas.</p>
+        <p class="suave">Cada empresa tiene su plantilla (logo, datos, color y firma) y su numeración de facturas.</p>
         <div class="lista-empresas" id="emp-lista"></div>
         <button type="button" class="btn" id="emp-nueva">+ Añadir empresa</button>
       </div>
@@ -457,8 +553,8 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
           <legend>Datos de la empresa</legend>
           <label>Nombre o razón social <input id="e-nombre"></label>
           <div class="fila">
-            <label>CIF / NIF <input id="e-cif"></label>
-            <label>Teléfono <input id="e-tel"></label>
+            <label>CIF / NIF <input id="e-cif" autocapitalize="characters"></label>
+            <label>Teléfono <input id="e-tel" type="tel"></label>
           </div>
           <label>Dirección <input id="e-dir"></label>
           <div class="fila">
@@ -500,12 +596,18 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 
         <fieldset>
           <legend>Numeración de facturas</legend>
+          <label>Cómo se numeran las facturas
+            <select id="e-modo">
+              <option value="cliente">Cada cliente lleva su propia numeración</option>
+              <option value="empresa">Una sola numeración para toda la empresa</option>
+            </select>
+          </label>
           <div class="fila">
             <label>Serie / prefijo (opcional)
-              <input id="e-serie" placeholder="Ej.: A-  o  2026/">
+              <input id="e-serie" placeholder="Ej.: A-">
             </label>
-            <label>Número de la próxima factura
-              <input id="e-inicio" type="number" min="1" step="1" value="1">
+            <label id="lbl-inicio">Número de la próxima factura
+              <input id="e-inicio" type="number" inputmode="numeric" min="1" step="1" value="1">
             </label>
             <label>Cifras
               <select id="e-digitos">
@@ -522,7 +624,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
         <fieldset>
           <legend>Valores por defecto de las facturas</legend>
           <div class="fila">
-            <label>% de IVA <input id="e-iva" type="number" min="0" max="100" step="0.01" list="tipos-iva" value="21"></label>
+            <label>% de IVA <input id="e-iva" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-iva" value="21"></label>
             <label>Forma de pago <input id="e-pago" list="formas-pago" value="Transferencia bancaria"></label>
           </div>
           <label>Nº de cuenta (IBAN) <input id="e-iban" placeholder="ES00 0000 0000 0000 0000 0000"></label>
@@ -546,15 +648,25 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 <section class="vista" id="vista-copias">
   <div class="panel estrecho">
     <h2>Copia de seguridad</h2>
-    <p>Los datos (empresas, clientes y facturas) se guardan <strong>en este ordenador, dentro del navegador</strong>.
-      Si se borran los datos del navegador o se cambia de ordenador, solo se recuperan con una copia.</p>
-    <p><strong>Recomendación:</strong> descarga una copia cada semana y guárdala en un pendrive, en el correo o en la nube.</p>
+    <p>Los datos (empresas, clientes y facturas) se guardan <strong>en este dispositivo</strong>.
+      Si se borra la app o los datos del navegador, o se cambia de móvil, solo se recuperan con una copia.</p>
+    <p><strong>Recomendación:</strong> descarga una copia cada semana y guárdala fuera del móvil (correo, Google Drive, iCloud…).</p>
     <p id="cp-estado" class="suave"></p>
     <div class="acciones">
       <button type="button" class="btn primario" id="cp-descargar">Descargar copia de seguridad</button>
       <label class="btn" for="cp-archivo">Restaurar una copia…</label>
       <input type="file" id="cp-archivo" accept=".json,application/json">
     </div>
+  </div>
+  <div class="panel estrecho" id="panel-instalar">
+    <h3>Instalar la app</h3>
+    <p id="instalar-estado" class="suave"></p>
+    <ul class="pasos">
+      <li><strong>Android (Chrome):</strong> menú <strong>⋮</strong> → <strong>«Instalar aplicación»</strong> o <strong>«Añadir a pantalla de inicio»</strong>.</li>
+      <li><strong>iPhone (Safari):</strong> botón <strong>Compartir</strong> (cuadrado con flecha) → <strong>«Añadir a pantalla de inicio»</strong>.</li>
+      <li><strong>Ordenador (Chrome o Edge):</strong> icono de instalar en la barra de direcciones.</li>
+    </ul>
+    <button type="button" class="btn primario" id="btn-instalar-2" hidden>Instalar ahora</button>
   </div>
   <div class="panel estrecho">
     <h3>Para el gestor</h3>
@@ -564,13 +676,25 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 </section>
 </main>
 
-<!-- Zona que solo se ve al imprimir -->
+<!-- Zonas auxiliares: impresión y PDF -->
 <div id="zona-impresion"></div>
+<div id="zona-pdf" aria-hidden="true"></div>
+
+<!-- Diálogo: PDF listo para enviar -->
+<dialog id="dlg-pdf">
+  <h3 id="pdf-titulo">Factura</h3>
+  <p class="suave" id="pdf-texto">Preparando el PDF…</p>
+  <div class="acciones fin">
+    <button type="button" class="btn" id="pdf-cerrar">Cerrar</button>
+    <button type="button" class="btn" id="pdf-descargar" disabled>Descargar</button>
+    <button type="button" class="btn primario" id="pdf-enviar" disabled hidden>Enviar (WhatsApp, correo…)</button>
+  </div>
+</dialog>
 
 <!-- Diálogo para dibujar la firma -->
 <dialog id="dlg-firma">
   <h3>Dibuja la firma</h3>
-  <p class="suave" style="font-size:14px">Firma con el ratón o con el dedo dentro del recuadro.</p>
+  <p class="suave" style="font-size:14px">Firma con el dedo o con el ratón dentro del recuadro.</p>
   <canvas id="firma-lienzo" width="900" height="300"></canvas>
   <div class="acciones fin">
     <button type="button" class="btn" id="firma-borrar">Borrar</button>
@@ -613,6 +737,8 @@ const fmtEuros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: '
 const fmtDec = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
 const euros = (cent) => fmtEuros.format((cent || 0) / 100);
 const porcentaje = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(n) + ' %';
+const leerLS = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const escribirLS = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } };
 
 function hoyISO() {
   const d = new Date();
@@ -641,37 +767,51 @@ function aCentimos(txt) {
 /** Redondeo comercial (mitad hacia fuera del cero). */
 const redondear = (x) => Math.sign(x) * Math.round(Math.abs(x));
 const leerPct = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+/** Color de la empresa mezclado con blanco (para el fondo del recuadro del cliente). */
+function aclarar(hex, t) {
+  const n = parseInt(hex.slice(1), 16);
+  const m = (c) => Math.round(c * t + 255 * (1 - t));
+  return `rgb(${m((n >> 16) & 255)},${m((n >> 8) & 255)},${m(n & 255)})`;
+}
 
 function aviso(msg, tipo) {
   const t = id('toast');
   t.textContent = msg;
   t.className = 'toast visible' + (tipo === 'error' ? ' error' : '');
   clearTimeout(t._temp);
-  t._temp = setTimeout(() => { t.className = 'toast'; }, 2800);
+  t._temp = setTimeout(() => { t.className = 'toast'; }, 3000);
 }
-function descargar(nombre, contenido, tipo) {
-  const blob = new Blob([contenido], { type: tipo });
+function descargarBlob(nombre, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nombre;
   document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+const descargar = (nombre, contenido, tipo) => descargarBlob(nombre, new Blob([contenido], { type: tipo }));
+const nombreArchivo = (s) => String(s).replace(/[\\/:*?"<>|\n\r]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90);
 
 /* =========================================================
-   Datos (se guardan en el navegador: localStorage)
+   Datos (se guardan en el dispositivo: localStorage)
    ========================================================= */
 function datosVacios() {
-  return { version: 1, empresas: [], clientes: [], facturas: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
+  return { version: 2, empresas: [], clientes: [], facturas: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
 }
 function normalizarDatos(d) {
   const v = datosVacios();
   if (!d || typeof d !== 'object') return v;
+  const facturas = Array.isArray(d.facturas)
+    ? d.facturas.map((f) => Object.assign({}, f, { cliente: f.cliente || {}, emisor: f.emisor || {} }))
+    : [];
+  // Empresas de la versión 1 (sin modo de numeración): si ya tienen facturas, siguen con numeración única.
+  const empresas = (Array.isArray(d.empresas) ? d.empresas : []).map((e) => Object.assign({}, e, {
+    numeracion: e.numeracion || (facturas.some((f) => f.empresaId === e.id) ? 'empresa' : 'cliente'),
+  }));
   return {
-    version: 1,
-    empresas: Array.isArray(d.empresas) ? d.empresas : [],
+    version: 2,
+    empresas,
     clientes: Array.isArray(d.clientes) ? d.clientes : [],
-    facturas: Array.isArray(d.facturas) ? d.facturas.map((f) => Object.assign({}, f, { cliente: f.cliente || {}, emisor: f.emisor || {} })) : [],
+    facturas,
     ajustes: Object.assign(v.ajustes, d.ajustes || {}),
   };
 }
@@ -689,7 +829,7 @@ function guardarDatos() {
     return true;
   } catch (e) {
     console.error(e);
-    alert('¡Atención! No se han podido guardar los datos (el almacenamiento del navegador está lleno o bloqueado).\n\nDescarga una copia de seguridad y prueba con un logo o una firma más pequeños.');
+    alert('¡Atención! No se han podido guardar los datos (el almacenamiento está lleno o bloqueado).\n\nDescarga una copia de seguridad y prueba con un logo o una firma más pequeños.');
     db = cargarDatos();
     return false;
   }
@@ -701,16 +841,42 @@ const clientePorId = (x) => db.clientes.find((c) => c.id === x) || null;
 const facturaPorId = (x) => db.facturas.find((f) => f.id === x) || null;
 const ordenarPorNombre = (a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
 
-/* ---------- Numeración: cada empresa lleva la suya ---------- */
+/* ---------- Numeración ----------
+   · Modo «cliente» (por defecto): cada cliente lleva su propia numeración dentro de cada empresa.
+     El nº de factura lleva delante el código del cliente: CPCS-004.
+   · Modo «empresa»: una sola numeración para toda la empresa (con serie opcional): A-0004.
+   Cada factura guarda su «serieClave», que identifica la serie a la que pertenece. */
+const porCliente = (emp) => !!emp && emp.numeracion !== 'empresa';
 function codigoFactura(serie, numero, digitos) {
   return (serie || '') + String(numero || 0).padStart(Number(digitos) || 1, '0');
 }
-function facturasDeSerie(empresaId, serie, excluirId) {
-  return db.facturas.filter((f) => f.empresaId === empresaId && (f.serie || '') === (serie || '') && f.id !== excluirId);
+function prefijoFactura(emp, codigoCliente) {
+  return (emp.serie || '') + (porCliente(emp) && codigoCliente ? codigoCliente + '-' : '');
 }
-function siguienteNumero(emp) {
-  const max = facturasDeSerie(emp.id, emp.serie).reduce((m, f) => Math.max(m, f.numero || 0), 0);
-  return Math.max(max + 1, parseInt(emp.numeroInicial, 10) || 1);
+function claveSerie(empresaId, modoCliente, clienteId, serie) {
+  return modoCliente ? `${empresaId}|cliente|${clienteId || 'nuevo'}` : `${empresaId}|serie|${serie || ''}`;
+}
+const claveDeFactura = (f) => f.serieClave || claveSerie(f.empresaId, false, null, f.serie);
+const facturasDeSerie = (clave, excluirId) => db.facturas.filter((f) => claveDeFactura(f) === clave && f.id !== excluirId);
+/** Siguiente número libre: el mayor usado + 1, o el número inicial si es mayor. */
+function siguienteNumero(emp, cli) {
+  const modo = porCliente(emp);
+  const cliId = cli && cli.id;
+  const usadas = modo && !cliId ? [] : facturasDeSerie(claveSerie(emp.id, modo, cliId, emp.serie));
+  const max = usadas.reduce((m, f) => Math.max(m, f.numero || 0), 0);
+  const inicio = modo ? parseInt(cli && cli.numeroInicial, 10) || 1 : parseInt(emp.numeroInicial, 10) || 1;
+  return Math.max(max + 1, inicio);
+}
+const limpiarCodigo = (s) => normaliza(s).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+const PALABRAS_VACIAS = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en', 'sl', 'sa', 'slu', 'sll', 'scp', 'cb', 's', 'l', 'u', 'a', 'c', 'b', 'p']);
+/** Propone un código corto para el cliente a partir de su nombre (no repetido). */
+function codigoSugerido(nombre, excluirId) {
+  const palabras = normaliza(nombre).replace(/[^a-z0-9]+/g, ' ').split(' ').filter((w) => w && !PALABRAS_VACIAS.has(w));
+  let base = palabras.length >= 2 ? palabras.slice(0, 4).map((w) => w[0]).join('') : (palabras[0] || 'cli').slice(0, 3);
+  base = limpiarCodigo(base) || 'CLI';
+  let codigo = base;
+  for (let n = 2; db.clientes.some((c) => c.id !== excluirId && c.codigo === codigo); n++) codigo = base + n;
+  return codigo;
 }
 
 /* =========================================================
@@ -728,9 +894,11 @@ function htmlFactura(f, opciones) {
     return esc(pob + (o.provincia ? (pob ? ` (${o.provincia})` : o.provincia) : ''));
   };
   const contacto = [e.telefono && `Tel. ${e.telefono}`, e.email].filter(Boolean).map(esc).join(' · ');
+  // En la hoja, espacio normal antes de «€» (el espacio duro sale demasiado ancho en el PDF); las cifras no se parten por CSS.
+  const eur = (cent) => euros(cent).replace(/[\u00a0\u202f]/g, ' ');
   const filaIva = f.aplicaIva
-    ? `<tr><td>IVA (${porcentaje(f.ivaPct)})</td><td>${euros(f.cuotaCent)}</td></tr>`
-    : `<tr><td>IVA</td><td>${euros(0)}</td></tr>`;
+    ? `<div class="h-fila"><span>IVA (${porcentaje(f.ivaPct)})</span><span>${eur(f.cuotaCent)}</span></div>`
+    : `<div class="h-fila"><span>IVA</span><span>${eur(0)}</span></div>`;
   const exencion = !f.aplicaIva && f.motivoExencion ? `<div class="h-exencion">${esc(f.motivoExencion)}</div>` : '';
   const pago = [
     f.formaPago ? `<p><strong>Forma de pago:</strong> ${esc(f.formaPago)}</p>` : '',
@@ -743,7 +911,7 @@ function htmlFactura(f, opciones) {
   const lugar = e.poblacion ? `En ${esc(e.poblacion)}, a ` : 'A ';
 
   return `
-<div class="hoja" style="--c:${color}">
+<div class="hoja" style="--c:${color};--c-claro:${aclarar(color, 0.08)}">
   <div class="h-cab">
     <div class="h-emisor">
       ${emp.logo ? `<img class="h-logo" src="${esc(emp.logo)}" alt="">` : ''}
@@ -773,22 +941,22 @@ function htmlFactura(f, opciones) {
     </div>
   </div>
 
-  <table class="h-tabla">
-    <thead><tr><th>Concepto</th><th class="n">Importe</th></tr></thead>
-    <tbody><tr>
-      <td><div class="h-concepto">${hueco(f.concepto, 'Concepto de la factura…')}</div></td>
-      <td class="n">${euros(f.baseCent)}</td>
-    </tr></tbody>
-  </table>
+  <div class="h-lineas">
+    <div class="h-lineas-cab"><span>Concepto</span><span>Importe</span></div>
+    <div class="h-linea">
+      <div class="h-concepto">${hueco(f.concepto, 'Concepto de la factura…')}</div>
+      <div class="n">${eur(f.baseCent)}</div>
+    </div>
+  </div>
 
   <div class="h-bajo">
     <div class="h-pago">${pago}</div>
-    <div>
-      <table class="h-totales">
-        <tr><td>Base imponible</td><td>${euros(f.baseCent)}</td></tr>
+    <div class="h-col-totales">
+      <div class="h-totales">
+        <div class="h-fila"><span>Base imponible</span><span>${eur(f.baseCent)}</span></div>
         ${filaIva}
-        <tr class="h-total"><td>TOTAL</td><td>${euros(f.totalCent)}</td></tr>
-      </table>
+        <div class="h-fila h-total"><span>TOTAL</span><span>${eur(f.totalCent)}</span></div>
+      </div>
       ${exencion}
     </div>
   </div>
@@ -827,16 +995,118 @@ if (window.ResizeObserver) {
 }
 window.addEventListener('resize', ajustarTodasPrevias);
 
-/* ---------- Imprimir / PDF ---------- */
+function esperarImagenes(el) {
+  return Promise.all($$('img', el).map((img) => (img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }))));
+}
+
+/* ---------- Imprimir ---------- */
 async function imprimir(f) {
   const zona = id('zona-impresion');
   zona.innerHTML = htmlFactura(f);
-  await Promise.all($$('img', zona).map((img) => (img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }))));
+  await esperarImagenes(zona);
   const tituloAntes = document.title;
-  document.title = `Factura ${f.codigo} - ${(f.cliente && f.cliente.nombre) || ''}`.replace(/[\\/:*?"<>|]/g, '-');
+  document.title = nombreArchivo(`Factura ${f.codigo} - ${(f.cliente && f.cliente.nombre) || ''}`);
   window.print();
   setTimeout(() => { document.title = tituloAntes; }, 500);
 }
+
+/* ---------- PDF (para enviar por WhatsApp, correo…) ---------- */
+let promesaLibrerias = null;
+function cargarScript(src) {
+  return new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = ok;
+    s.onerror = () => mal(new Error('no se pudo cargar ' + src));
+    document.head.appendChild(s);
+  });
+}
+function cargarLibreriasPDF() {
+  if (!promesaLibrerias) {
+    promesaLibrerias = Promise.all([
+      window.html2canvas ? null : cargarScript('vendor/html2canvas.min.js'),
+      window.jspdf ? null : cargarScript('vendor/jspdf.umd.min.js'),
+    ]).catch((e) => { promesaLibrerias = null; throw e; });
+  }
+  return promesaLibrerias;
+}
+/** Pinta la factura en un lienzo y la mete en un PDF A4 (varias páginas si el concepto es muy largo). */
+async function crearPDF(f) {
+  await cargarLibreriasPDF();
+  const zona = id('zona-pdf');
+  zona.innerHTML = htmlFactura(f);
+  await esperarImagenes(zona);
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  const hoja = $('.hoja', zona);
+  let lienzo;
+  try {
+    lienzo = await window.html2canvas(hoja, { scale: 2.5, backgroundColor: '#ffffff', logging: false });
+  } finally {
+    zona.innerHTML = '';
+  }
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+  const pxPorMm = lienzo.width / 210;
+  const altoPagina = Math.floor(297 * pxPorMm);
+  const paginas = Math.max(1, Math.ceil((lienzo.height - 6) / altoPagina));
+  for (let p = 0; p < paginas; p++) {
+    const alto = Math.min(altoPagina, lienzo.height - p * altoPagina);
+    const trozo = document.createElement('canvas');
+    trozo.width = lienzo.width;
+    trozo.height = alto;
+    const ctx = trozo.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, trozo.width, trozo.height);
+    ctx.drawImage(lienzo, 0, p * altoPagina, lienzo.width, alto, 0, 0, lienzo.width, alto);
+    if (p > 0) pdf.addPage();
+    pdf.addImage(trozo.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, alto / pxPorMm);
+  }
+  pdf.setProperties({ title: `Factura ${f.codigo}`, author: (f.emisor && f.emisor.nombre) || '', creator: 'Facturación' });
+  return pdf.output('blob');
+}
+const dlgPdf = id('dlg-pdf');
+let pdfListo = null;
+async function prepararPDF(f) {
+  pdfListo = null;
+  id('pdf-titulo').textContent = `Factura ${f.codigo}`;
+  id('pdf-texto').textContent = 'Preparando el PDF…';
+  id('pdf-enviar').disabled = true;
+  id('pdf-descargar').disabled = true;
+  if (!dlgPdf.open) dlgPdf.showModal();
+  try {
+    const blob = await crearPDF(f);
+    const nombre = nombreArchivo(`Factura ${f.codigo} - ${f.cliente.nombre}`) + '.pdf';
+    const archivo = new File([blob], nombre, { type: 'application/pdf' });
+    const puedeEnviar = !!(navigator.canShare && navigator.canShare({ files: [archivo] }));
+    pdfListo = { blob, nombre, archivo, f };
+    id('pdf-texto').innerHTML = `${esc(f.cliente.nombre)} · <strong>${euros(f.totalCent)}</strong><br>PDF listo.`
+      + (puedeEnviar ? ' Pulsa «Enviar» para mandarlo por WhatsApp, correo…' : ' Pulsa «Descargar» para guardarlo.');
+    id('pdf-enviar').hidden = !puedeEnviar;
+    id('pdf-enviar').disabled = false;
+    id('pdf-descargar').disabled = false;
+  } catch (e) {
+    console.error(e);
+    id('pdf-texto').textContent = 'No se ha podido crear el PDF: ' + ((e && e.message) || e);
+  }
+}
+id('pdf-enviar').addEventListener('click', async () => {
+  if (!pdfListo) return;
+  const { f } = pdfListo;
+  try {
+    await navigator.share({ files: [pdfListo.archivo], title: `Factura ${f.codigo}`, text: `Factura ${f.codigo} · ${f.emisor.nombre} · Total ${euros(f.totalCent)}` });
+    dlgPdf.close();
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    descargarBlob(pdfListo.nombre, pdfListo.blob);
+  }
+});
+id('pdf-descargar').addEventListener('click', () => {
+  if (!pdfListo) return;
+  descargarBlob(pdfListo.nombre, pdfListo.blob);
+  dlgPdf.close();
+  aviso('PDF descargado');
+});
+id('pdf-cerrar').addEventListener('click', () => dlgPdf.close());
 
 /* =========================================================
    Navegación entre pestañas
@@ -864,6 +1134,7 @@ $$('.barra nav button').forEach((b) => b.addEventListener('click', () => {
    ========================================================= */
 let edicion = null;        // factura guardada que se está editando (null = nueva)
 let numeroManual = false;  // el usuario ha escrito el número a mano
+let codigoManual = false;  // el usuario ha escrito el código del cliente a mano
 let cambiosSinGuardar = false;
 const formF = id('form-factura');
 
@@ -904,6 +1175,9 @@ function ponerCliente(c) {
   id('f-cli-cp').value = c ? c.cp || '' : '';
   id('f-cli-pob').value = c ? c.poblacion || '' : '';
   id('f-cli-prov').value = c ? c.provincia || '' : '';
+  const guardado = c && clientePorId(c.id);
+  id('f-cli-codigo').value = guardado ? guardado.codigo || codigoSugerido(guardado.nombre, guardado.id) : c && c.nombre ? codigoSugerido(c.nombre) : '';
+  codigoManual = false;
 }
 
 /** Prepara el formulario para una factura nueva (opcionalmente copiando otra). */
@@ -923,9 +1197,11 @@ function nuevaFactura(copiaDe, clienteId) {
   id('f-pago').value = emp.formaPago || '';
   id('f-iban').value = emp.iban || '';
   id('f-incluir-firma').checked = true;
+  ponerCliente(null);
   if (copiaDe) {
-    id('f-cliente').value = clientePorId(copiaDe.clienteId) ? copiaDe.clienteId : '';
-    ponerCliente(copiaDe.cliente);
+    const cli = clientePorId(copiaDe.clienteId);
+    id('f-cliente').value = cli ? cli.id : '';
+    ponerCliente(cli || copiaDe.cliente);
     id('f-concepto').value = copiaDe.concepto || '';
     id('f-base').value = fmtDec.format((copiaDe.baseCent || 0) / 100);
     id('f-aplica-iva').checked = !!copiaDe.aplicaIva;
@@ -952,10 +1228,12 @@ function abrirFactura(f) {
   rellenarSelectEmpresas();
   rellenarSelectClientes();
   id('f-empresa').value = f.empresaId;
+  const cli = clientePorId(f.clienteId);
+  id('f-cliente').value = cli ? cli.id : '';
+  ponerCliente(f.cliente);
+  if (cli) id('f-cli-codigo').value = cli.codigo || '';
   id('f-numero').value = f.numero;
   id('f-fecha').value = f.fecha;
-  id('f-cliente').value = clientePorId(f.clienteId) ? f.clienteId : '';
-  ponerCliente(f.cliente);
   id('f-concepto').value = f.concepto || '';
   id('f-base').value = fmtDec.format((f.baseCent || 0) / 100);
   id('f-aplica-iva').checked = !!f.aplicaIva;
@@ -984,22 +1262,44 @@ function pedirNuevaFactura() {
 id('btn-nueva-factura').addEventListener('click', () => {
   if (cambiosSinGuardar && !confirm('Hay cambios sin guardar. ¿Empezar una factura nueva en blanco?')) return;
   nuevaFactura();
+  window.scrollTo(0, 0);
 });
 
+/** Datos del cliente tal y como están en el formulario (para la numeración). */
+function clienteDelFormulario() {
+  const guardado = clientePorId(id('f-cliente').value);
+  return {
+    id: guardado ? guardado.id : null,
+    numeroInicial: guardado ? guardado.numeroInicial : 1,
+    codigo: limpiarCodigo(id('f-cli-codigo').value),
+  };
+}
+/** ¿La factura que se edita conserva su serie y su número? (misma empresa y, si va por cliente, mismo cliente) */
+function mantieneSerieDeEdicion() {
+  if (!edicion) return false;
+  const emp = empresaSeleccionada();
+  if (!emp || emp.id !== edicion.empresaId) return false;
+  if (claveDeFactura(edicion).includes('|cliente|')) return (id('f-cliente').value || null) === edicion.clienteId;
+  return true;
+}
 function serieEnUso() {
   const emp = empresaSeleccionada();
   if (!emp) return '';
-  return edicion && edicion.empresaId === emp.id ? edicion.serie || '' : emp.serie || '';
+  if (mantieneSerieDeEdicion()) return edicion.serie || '';
+  return prefijoFactura(emp, clienteDelFormulario().codigo);
 }
 function calcularNumero() {
   const emp = empresaSeleccionada();
   if (!emp) return;
+  id('lbl-codigo').hidden = !porCliente(emp);
   if (!numeroManual) {
-    id('f-numero').value = edicion && edicion.empresaId === emp.id ? edicion.numero : siguienteNumero(emp);
+    id('f-numero').value = mantieneSerieDeEdicion() ? edicion.numero : siguienteNumero(emp, clienteDelFormulario());
   }
   id('f-serie').textContent = serieEnUso();
   const n = parseInt(id('f-numero').value, 10);
-  id('f-numero-ayuda').textContent = n > 0 ? `Saldrá como: ${codigoFactura(serieEnUso(), n, emp.digitos)}` : '';
+  let ayuda = n > 0 ? `Saldrá como: ${codigoFactura(serieEnUso(), n, emp.digitos)}` : '';
+  if (porCliente(emp) && !id('f-cliente').value && n > 0) ayuda += ' · Si a este cliente ya le habías hecho facturas, pon aquí el número que toca.';
+  id('f-numero-ayuda').textContent = ayuda;
 }
 
 /** Lee el formulario y devuelve la factura con los importes calculados. */
@@ -1022,6 +1322,7 @@ function facturaDelFormulario() {
       nombre: id('f-cli-nombre').value.trim(), cif: id('f-cli-cif').value.trim().toUpperCase(),
       direccion: id('f-cli-dir').value.trim(), cp: id('f-cli-cp').value.trim(),
       poblacion: id('f-cli-pob').value.trim(), provincia: id('f-cli-prov').value.trim(),
+      codigo: limpiarCodigo(id('f-cli-codigo').value),
     },
     serie, numero,
     codigo: numero ? codigoFactura(serie, numero, emp.digitos) : '',
@@ -1067,8 +1368,17 @@ function actualizarPrevia() {
 
 formF.addEventListener('input', (ev) => {
   cambiosSinGuardar = true;
-  if (ev.target.id === 'f-numero') numeroManual = true;
-  if (ev.target.id === 'f-numero') calcularNumero();
+  const t = ev.target.id;
+  if (t === 'f-numero') numeroManual = true;
+  if (t === 'f-cli-codigo') {
+    codigoManual = true;
+    const limpio = limpiarCodigo(ev.target.value);
+    if (limpio !== ev.target.value) ev.target.value = limpio;
+  }
+  if (t === 'f-cli-nombre' && !id('f-cliente').value && !codigoManual) {
+    id('f-cli-codigo').value = ev.target.value.trim() ? codigoSugerido(ev.target.value) : '';
+  }
+  if (t === 'f-numero' || t === 'f-cli-codigo' || t === 'f-cli-nombre') calcularNumero();
   actualizarPrevia();
 });
 formF.addEventListener('change', (ev) => {
@@ -1084,7 +1394,23 @@ formF.addEventListener('change', (ev) => {
     numeroManual = false;
     calcularNumero();
   }
-  if (t === 'f-cliente') ponerCliente(clientePorId(id('f-cliente').value));
+  if (t === 'f-cliente') {
+    ponerCliente(clientePorId(id('f-cliente').value));
+    numeroManual = false;
+    calcularNumero();
+  }
+  if (t === 'f-cli-cif' && !id('f-cliente').value) {
+    // Si el CIF es de un cliente ya guardado, se elige ese cliente (y su numeración).
+    const cif = limpiaCif(ev.target.value);
+    const existente = cif && db.clientes.find((c) => limpiaCif(c.cif) === cif);
+    if (existente) {
+      id('f-cliente').value = existente.id;
+      ponerCliente(existente);
+      numeroManual = false;
+      calcularNumero();
+      aviso(`Ese CIF es de ${existente.nombre}: se ha elegido ese cliente.`);
+    }
+  }
   if (t === 'f-cobrada' && id('f-cobrada').checked && !id('f-fecha-cobro').value) id('f-fecha-cobro').value = hoyISO();
   if (t === 'f-base') {
     const c = aCentimos(id('f-base').value);
@@ -1093,39 +1419,73 @@ formF.addEventListener('change', (ev) => {
   refrescarEditor();
 });
 
-/** Guarda (o actualiza) el cliente a partir de los datos escritos en la factura. */
-function guardarClienteDeFactura(clienteId, datos) {
-  const limpiaCif = (x) => normaliza(x).replace(/[\s.-]/g, '');
+const limpiaCif = (x) => normaliza(x).replace(/[^a-z0-9]/g, '');
+/** Busca el cliente guardado que corresponde a los datos escritos (por el elegido o por su CIF / nombre). */
+function buscarCliente(clienteId, datos) {
   const cif = limpiaCif(datos.cif);
   let cli = clientePorId(clienteId);
   // Si se ha elegido un cliente pero se ha escrito otro CIF, es otro cliente: no se sobrescribe.
   if (cli && limpiaCif(cli.cif) && cif && limpiaCif(cli.cif) !== cif) cli = null;
   if (!cli) {
-    cli = db.clientes.find((c) => (cif && limpiaCif(c.cif) === cif) || (!cif && !limpiaCif(c.cif) && normaliza(c.nombre) === normaliza(datos.nombre))) || null;
+    cli = db.clientes.find((c) => (cif && limpiaCif(c.cif) === cif)
+      || (!cif && !limpiaCif(c.cif) && normaliza(c.nombre) === normaliza(datos.nombre))) || null;
   }
+  return cli;
+}
+function guardarClienteDeFactura(cli, datos) {
   if (!cli) {
-    cli = { id: uid(), telefono: '', email: '' };
+    cli = { id: uid(), telefono: '', email: '', numeroInicial: 1 };
     db.clientes.push(cli);
   }
-  Object.assign(cli, datos);
+  ['nombre', 'cif', 'direccion', 'cp', 'poblacion', 'provincia'].forEach((k) => { cli[k] = datos[k] || ''; });
+  if (datos.codigo) cli.codigo = datos.codigo;
+  if (!cli.codigo) cli.codigo = codigoSugerido(cli.nombre, cli.id);
   return cli.id;
 }
 
 function guardarFactura() {
-  const f = facturaDelFormulario();
   const emp = empresaSeleccionada();
   const fallo = (msg, campo) => { aviso(msg, 'error'); if (campo) id(campo).focus(); return null; };
   if (!emp) return fallo('Elige la empresa que hace la factura.', 'f-empresa');
+  const f = facturaDelFormulario();
+  if (!f.cliente.nombre) return fallo('Escribe el nombre del cliente.', 'f-cli-nombre');
   if (!(f.numero >= 1)) return fallo('El número de factura no es válido.', 'f-numero');
   if (!f.fecha) return fallo('Pon la fecha de la factura.', 'f-fecha');
-  if (!f.cliente.nombre) return fallo('Escribe el nombre del cliente.', 'f-cli-nombre');
   if (!f.concepto.trim()) return fallo('Escribe el concepto de la factura.', 'f-concepto');
   if (!f._baseValida) return fallo('Escribe la base imponible (por ejemplo: 1.250,00).', 'f-base');
   if (f.aplicaIva && (f.ivaPct < 0 || f.ivaPct > 100)) return fallo('El % de IVA no es válido.', 'f-iva');
 
-  const mismaSerie = facturasDeSerie(emp.id, f.serie, f.id);
-  const repetida = mismaSerie.find((x) => x.numero === f.numero);
-  if (repetida) return fallo(`Ya existe la factura ${repetida.codigo} de ${emp.nombre}. Cambia el número.`, 'f-numero');
+  const modoCliente = porCliente(emp);
+  const elegido = clientePorId(f.clienteId);
+  const cli = buscarCliente(f.clienteId, f.cliente);
+  let mantiene = mantieneSerieDeEdicion();
+  if (mantiene && claveDeFactura(edicion).includes('|cliente|') && (!cli || cli.id !== edicion.clienteId)) mantiene = false;
+
+  let clave;
+  if (mantiene) {
+    clave = claveDeFactura(edicion);
+    f.serie = edicion.serie || '';
+  } else if (modoCliente) {
+    let codigo = f.cliente.codigo;
+    if (!cli && elegido && codigo === elegido.codigo) codigo = '';   // es otro cliente: no usar el código del elegido
+    if (!codigo) codigo = (cli && cli.codigo) || codigoSugerido(f.cliente.nombre, cli && cli.id);
+    const otro = db.clientes.find((c) => c.codigo === codigo && (!cli || c.id !== cli.id));
+    if (otro) return fallo(`El código «${codigo}» ya es del cliente ${otro.nombre}. Pon otro código a este cliente.`, 'f-cli-codigo');
+    f.cliente.codigo = codigo;
+    f.serie = prefijoFactura(emp, codigo);
+    if (!numeroManual) f.numero = siguienteNumero(emp, cli || { id: null, numeroInicial: 1 });
+    clave = claveSerie(emp.id, true, cli && cli.id);
+  } else {
+    f.serie = emp.serie || '';
+    if (!numeroManual) f.numero = siguienteNumero(emp);
+    clave = claveSerie(emp.id, false, null, f.serie);
+  }
+  f.codigo = codigoFactura(f.serie, f.numero, emp.digitos);
+
+  const mismaSerie = facturasDeSerie(clave, f.id);
+  const repetida = mismaSerie.find((x) => x.numero === f.numero)
+    || db.facturas.find((x) => x.id !== f.id && x.empresaId === emp.id && x.codigo === f.codigo);
+  if (repetida) return fallo(`Ya existe la factura ${repetida.codigo} de ${emp.nombre} (cliente: ${repetida.cliente.nombre}). Cambia el número.`, 'f-numero');
 
   const avisos = [];
   if (!f.cliente.cif) avisos.push('• La factura no lleva el CIF/NIF del cliente (es obligatorio en una factura completa).');
@@ -1133,8 +1493,8 @@ function guardarFactura() {
   const posteriorAnterior = mismaSerie.find((x) => x.numero > f.numero && x.fecha < f.fecha);
   if (anteriorPosterior) avisos.push(`• La factura ${anteriorPosterior.codigo} tiene un número menor pero una fecha posterior (${fechaCorta(anteriorPosterior.fecha)}). Las facturas deben ir en orden.`);
   if (posteriorAnterior) avisos.push(`• La factura ${posteriorAnterior.codigo} tiene un número mayor pero una fecha anterior (${fechaCorta(posteriorAnterior.fecha)}). Las facturas deben ir en orden.`);
-  if (!edicion || edicion.empresaId !== emp.id) {
-    const toca = siguienteNumero(emp);
+  if (!mantiene && mismaSerie.length) {
+    const toca = modoCliente ? siguienteNumero(emp, cli) : siguienteNumero(emp);
     if (f.numero > toca) avisos.push(`• El número que toca es el ${codigoFactura(f.serie, toca, emp.digitos)} y vas a usar el ${f.codigo}: quedará un hueco en la numeración.`);
   }
   if (avisos.length && !confirm('Revisa esto antes de guardar:\n\n' + avisos.join('\n') + '\n\n¿Guardar igualmente?')) return null;
@@ -1144,7 +1504,8 @@ function guardarFactura() {
   f.id = f.id || uid();
   f.creada = f.creada || ahora;
   f.modificada = ahora;
-  f.clienteId = guardarClienteDeFactura(f.clienteId, f.cliente);
+  f.clienteId = guardarClienteDeFactura(cli, f.cliente);
+  f.serieClave = mantiene ? clave : claveSerie(emp.id, modoCliente, f.clienteId, f.serie);
   const i = db.facturas.findIndex((x) => x.id === f.id);
   if (i >= 0) db.facturas[i] = f; else db.facturas.push(f);
   db.ajustes.ultimaEmpresa = f.empresaId;
@@ -1155,6 +1516,8 @@ function guardarFactura() {
   cambiosSinGuardar = false;
   rellenarSelectClientes();
   id('f-cliente').value = f.clienteId;
+  id('f-cli-codigo').value = (clientePorId(f.clienteId) || {}).codigo || '';
+  codigoManual = false;
   calcularNumero();
   refrescarEditor();
   revisarAvisoCopia();
@@ -1165,6 +1528,10 @@ formF.addEventListener('submit', (ev) => { ev.preventDefault(); guardarFactura()
 id('btn-imprimir').addEventListener('click', () => {
   const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
   if (f) imprimir(f);
+});
+id('btn-pdf').addEventListener('click', () => {
+  const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
+  if (f) prepararPDF(f);
 });
 id('btn-borrar-factura').addEventListener('click', () => {
   if (edicion && borrarFactura(edicion)) nuevaFactura();
@@ -1218,7 +1585,7 @@ function facturasFiltradas() {
     (!anio || (f.fecha || '').slice(0, 4) === anio) &&
     (!tri || Math.ceil(Number((f.fecha || '').slice(5, 7)) / 3) === Number(tri)) &&
     (!q || normaliza([f.codigo, f.cliente.nombre, f.cliente.cif, f.concepto, f.emisor.nombre].join(' ')).includes(q))
-  ).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.numero - a.numero));
+  ).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.modificada || '').localeCompare(a.modificada || ''));
 }
 function renderContabilidad() {
   rellenarFiltrosContabilidad();
@@ -1227,31 +1594,32 @@ function renderContabilidad() {
   const cobradas = lista.filter((f) => f.cobrada);
   const pendientes = lista.filter((f) => !f.cobrada);
   id('c-tarjetas').innerHTML = `
-    <div class="tarjeta"><span>Facturas</span><strong>${lista.length}</strong><small>en la selección</small></div>
-    <div class="tarjeta"><span>Base imponible</span><strong>${euros(suma(lista, 'baseCent'))}</strong></div>
-    <div class="tarjeta"><span>IVA repercutido</span><strong>${euros(suma(lista, 'cuotaCent'))}</strong></div>
-    <div class="tarjeta"><span>Total facturado</span><strong>${euros(suma(lista, 'totalCent'))}</strong></div>
     <div class="tarjeta ok"><span>Cobrado</span><strong>${euros(suma(cobradas, 'totalCent'))}</strong><small>${cobradas.length} factura(s)</small></div>
-    <div class="tarjeta pend"><span>Pendiente de cobro</span><strong>${euros(suma(pendientes, 'totalCent'))}</strong><small>${pendientes.length} factura(s)</small></div>`;
+    <div class="tarjeta pend"><span>Pendiente de cobro</span><strong>${euros(suma(pendientes, 'totalCent'))}</strong><small>${pendientes.length} factura(s)</small></div>
+    <div class="tarjeta"><span>Total facturado</span><strong>${euros(suma(lista, 'totalCent'))}</strong><small>${lista.length} factura(s)</small></div>
+    <div class="tarjeta"><span>IVA repercutido</span><strong>${euros(suma(lista, 'cuotaCent'))}</strong></div>
+    <div class="tarjeta ocultar-movil"><span>Base imponible</span><strong>${euros(suma(lista, 'baseCent'))}</strong></div>`;
   id('c-lista').innerHTML = lista.length ? lista.map((f) => `
     <tr>
-      <td><button type="button" class="enlace" data-abrir="${esc(f.id)}">${esc(f.codigo)}</button></td>
-      <td>${fechaCorta(f.fecha)}</td>
-      <td>${esc(f.emisor.nombre)}</td>
-      <td>${esc(f.cliente.nombre)}${f.cliente.cif ? `<br><small>${esc(f.cliente.cif)}</small>` : ''}</td>
-      <td class="num">${euros(f.baseCent)}</td>
-      <td class="num">${euros(f.cuotaCent)}</td>
-      <td class="num"><strong>${euros(f.totalCent)}</strong></td>
-      <td>${f.cobrada
+      <td class="td-num"><button type="button" class="enlace" data-abrir="${esc(f.id)}">${esc(f.codigo)}</button></td>
+      <td class="td-fecha">${fechaCorta(f.fecha)}</td>
+      <td class="td-emp">${esc(f.emisor.nombre)}</td>
+      <td class="td-cli">${esc(f.cliente.nombre)}${f.cliente.cif ? `<br><small>${esc(f.cliente.cif)}</small>` : ''}</td>
+      <td class="td-meta">${fechaCorta(f.fecha)} · ${esc(f.emisor.nombre)}</td>
+      <td class="num td-base">${euros(f.baseCent)}</td>
+      <td class="num td-iva">${euros(f.cuotaCent)}</td>
+      <td class="num td-total"><strong>${euros(f.totalCent)}</strong></td>
+      <td class="td-estado">${f.cobrada
         ? `<button type="button" class="estado cobrada" data-estado="${esc(f.id)}" title="Pulsa para marcar como no cobrada">✓ Cobrada <small>${fechaCorta(f.fechaCobro)}</small></button>`
         : `<button type="button" class="estado pendiente" data-estado="${esc(f.id)}" title="Pulsa para marcar como cobrada">● No cobrada</button>`}</td>
-      <td><div class="acciones-fila">
-        <button type="button" class="btn peq" data-imprimir="${esc(f.id)}">Imprimir / PDF</button>
+      <td class="td-acc"><div class="acciones-fila">
+        <button type="button" class="btn peq" data-pdf="${esc(f.id)}">PDF</button>
+        <button type="button" class="btn peq solo-escritorio" data-imprimir="${esc(f.id)}">Imprimir</button>
         <button type="button" class="btn peq" data-duplicar="${esc(f.id)}">Duplicar</button>
         <button type="button" class="btn peq peligro" data-borrar="${esc(f.id)}">Borrar</button>
       </div></td>
     </tr>`).join('')
-    : `<tr><td colspan="9" class="vacia">${db.facturas.length ? 'No hay facturas con estos filtros.' : 'Todavía no hay facturas. Pulsa «+ Nueva factura» para hacer la primera.'}</td></tr>`;
+    : `<tr><td colspan="10" class="vacia">${db.facturas.length ? 'No hay facturas con estos filtros.' : 'Todavía no hay facturas. Pulsa «+ Nueva factura» para hacer la primera.'}</td></tr>`;
 }
 ['c-empresa', 'c-estado', 'c-anio', 'c-tri'].forEach((x) => id(x).addEventListener('change', renderContabilidad));
 id('c-buscar').addEventListener('input', renderContabilidad);
@@ -1260,12 +1628,13 @@ id('c-csv').addEventListener('click', () => exportarCSV(facturasFiltradas(), 'fa
 id('c-lista').addEventListener('click', (ev) => {
   const b = ev.target.closest('button');
   if (!b) return;
-  const f = facturaPorId(b.dataset.abrir || b.dataset.estado || b.dataset.imprimir || b.dataset.duplicar || b.dataset.borrar);
+  const d = b.dataset;
+  const f = facturaPorId(d.abrir || d.estado || d.pdf || d.imprimir || d.duplicar || d.borrar);
   if (!f) return;
-  if (b.dataset.abrir) {
+  if (d.abrir) {
     if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
     abrirFactura(f);
-  } else if (b.dataset.estado) {
+  } else if (d.estado) {
     if (f.cobrada) {
       if (!confirm(`¿Marcar la factura ${f.codigo} como NO cobrada?`)) return;
       f.cobrada = false; f.fechaCobro = '';
@@ -1282,15 +1651,17 @@ id('c-lista').addEventListener('click', (ev) => {
     }
     renderContabilidad();
     aviso(f.cobrada ? `Factura ${f.codigo} marcada como cobrada` : `Factura ${f.codigo} marcada como no cobrada`);
-  } else if (b.dataset.imprimir) {
+  } else if (d.pdf) {
+    prepararPDF(f);
+  } else if (d.imprimir) {
     imprimir(f);
-  } else if (b.dataset.duplicar) {
+  } else if (d.duplicar) {
     if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
     nuevaFactura(f);
     cambiosSinGuardar = true;
     irA('factura');
     aviso('Copia preparada: revisa la fecha y el concepto y guárdala.');
-  } else if (b.dataset.borrar) {
+  } else if (d.borrar) {
     if (borrarFactura(f)) {
       if (edicion && edicion.id === f.id) nuevaFactura();
       renderContabilidad();
@@ -1322,51 +1693,85 @@ let clienteEditando = null;
 const formC = id('form-cliente');
 function renderClientes() {
   const q = normaliza(id('cl-buscar').value);
-  const lista = db.clientes.filter((c) => !q || normaliza([c.nombre, c.cif, c.poblacion].join(' ')).includes(q)).sort(ordenarPorNombre);
+  const lista = db.clientes.filter((c) => !q || normaliza([c.nombre, c.cif, c.poblacion, c.codigo].join(' ')).includes(q)).sort(ordenarPorNombre);
   id('cl-lista').innerHTML = lista.length ? lista.map((c) => {
     const fs = db.facturas.filter((f) => f.clienteId === c.id);
     const total = fs.reduce((s, f) => s + f.totalCent, 0);
     const pend = fs.filter((f) => !f.cobrada).reduce((s, f) => s + f.totalCent, 0);
     return `<tr data-cliente="${esc(c.id)}" style="cursor:pointer" class="${clienteEditando === c.id ? 'seleccionada' : ''}">
-      <td><strong>${esc(c.nombre)}</strong>${c.cif ? `<br><small>${esc(c.cif)}</small>` : ''}</td>
-      <td>${esc(c.poblacion || '')}</td>
-      <td class="num">${fs.length}</td>
+      <td><strong>${esc(c.nombre)}</strong><br><small>${c.codigo ? `<span class="codigo-cliente">${esc(c.codigo)}</span>` : ''}${esc(c.cif || '')}</small></td>
+      <td class="ocultar-movil">${esc(c.poblacion || '')}</td>
+      <td class="num ocultar-movil">${fs.length}</td>
       <td class="num">${euros(total)}</td>
       <td class="num">${pend ? `<strong style="color:var(--pend)">${euros(pend)}</strong>` : euros(0)}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="5" class="vacia">${db.clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Aún no hay clientes. Se guardan solos al hacer una factura, o puedes añadirlos aquí.'}</td></tr>`;
 }
+function actualizarAyudaCliente() {
+  const emp = empresaPorId(db.ajustes.ultimaEmpresa) || db.empresas[0];
+  const c = clientePorId(clienteEditando);
+  const codigo = limpiarCodigo(id('cl-codigo').value);
+  if (!emp || !porCliente(emp)) {
+    id('cl-numeracion-ayuda').textContent = emp ? `La empresa «${emp.nombre}» usa una sola numeración para todos los clientes.` : '';
+    return;
+  }
+  const n = siguienteNumero(emp, { id: c && c.id, numeroInicial: parseInt(id('cl-inicio').value, 10) || 1 });
+  id('cl-numeracion-ayuda').textContent = `Su próxima factura de «${emp.nombre}» será la ${codigoFactura(prefijoFactura(emp, codigo), n, emp.digitos)}.`;
+}
 function editarCliente(c) {
   clienteEditando = c ? c.id : null;
   formC.reset();
+  delete formC.dataset.codigoManual;
   if (c) {
     id('cl-nombre').value = c.nombre || ''; id('cl-cif').value = c.cif || ''; id('cl-dir').value = c.direccion || '';
     id('cl-cp').value = c.cp || ''; id('cl-pob').value = c.poblacion || ''; id('cl-prov').value = c.provincia || '';
     id('cl-tel').value = c.telefono || ''; id('cl-email').value = c.email || '';
+    id('cl-codigo').value = c.codigo || codigoSugerido(c.nombre, c.id);
+    id('cl-inicio').value = parseInt(c.numeroInicial, 10) || 1;
   }
   id('cl-titulo').textContent = c ? c.nombre : 'Nuevo cliente';
   id('cl-borrar').hidden = !c;
   id('cl-facturar').hidden = !c;
+  actualizarAyudaCliente();
   renderClientes();
 }
 id('cl-buscar').addEventListener('input', renderClientes);
 id('cl-lista').addEventListener('click', (ev) => {
   const tr = ev.target.closest('tr[data-cliente]');
-  if (tr) editarCliente(clientePorId(tr.dataset.cliente));
+  if (tr) {
+    editarCliente(clientePorId(tr.dataset.cliente));
+    if (window.matchMedia('(max-width:1050px)').matches) formC.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 });
 id('cl-nuevo').addEventListener('click', () => { editarCliente(null); id('cl-nombre').focus(); });
+formC.addEventListener('input', (ev) => {
+  if (ev.target.id === 'cl-nombre' && !clienteEditando && !formC.dataset.codigoManual) {
+    id('cl-codigo').value = ev.target.value.trim() ? codigoSugerido(ev.target.value) : '';
+  }
+  if (ev.target.id === 'cl-codigo') {
+    formC.dataset.codigoManual = '1';
+    const limpio = limpiarCodigo(ev.target.value);
+    if (limpio !== ev.target.value) ev.target.value = limpio;
+  }
+  actualizarAyudaCliente();
+});
 formC.addEventListener('submit', (ev) => {
   ev.preventDefault();
   const datos = {
     nombre: id('cl-nombre').value.trim(), cif: id('cl-cif').value.trim().toUpperCase(), direccion: id('cl-dir').value.trim(),
     cp: id('cl-cp').value.trim(), poblacion: id('cl-pob').value.trim(), provincia: id('cl-prov').value.trim(),
     telefono: id('cl-tel').value.trim(), email: id('cl-email').value.trim(),
+    codigo: limpiarCodigo(id('cl-codigo').value), numeroInicial: parseInt(id('cl-inicio').value, 10) || 1,
   };
   if (!datos.nombre) { aviso('Escribe el nombre del cliente.', 'error'); id('cl-nombre').focus(); return; }
+  if (!datos.codigo) datos.codigo = codigoSugerido(datos.nombre, clienteEditando);
+  const otro = db.clientes.find((c) => c.codigo === datos.codigo && c.id !== clienteEditando);
+  if (otro) { aviso(`El código «${datos.codigo}» ya es del cliente ${otro.nombre}.`, 'error'); id('cl-codigo').focus(); return; }
   let c = clientePorId(clienteEditando);
   if (!c) { c = { id: uid() }; db.clientes.push(c); }
   Object.assign(c, datos);
   if (!guardarDatos()) return;
+  delete formC.dataset.codigoManual;
   editarCliente(c);
   rellenarSelectClientes();
   aviso('Cliente guardado');
@@ -1400,9 +1805,10 @@ function renderEmpresas() {
   id('emp-lista').innerHTML = lista.length ? lista.map((e) => {
     const n = db.facturas.filter((f) => f.empresaId === e.id).length;
     const visual = e.logo ? `<img class="mini-logo" src="${esc(e.logo)}" alt="">` : `<span class="mini-color" style="background:${esc(e.color || '#1f4e79')}"></span>`;
+    const numeracion = porCliente(e) ? 'numeración por cliente' : `próxima: ${esc(codigoFactura(e.serie, siguienteNumero(e), e.digitos))}`;
     return `<button type="button" class="tarjeta-empresa ${empresaEditando === e.id ? 'seleccionada' : ''}" data-empresa="${esc(e.id)}">
       ${visual}
-      <div><strong>${esc(e.nombre)}</strong><small>${esc(e.cif || '')} · ${n} factura(s) · próxima: ${esc(codigoFactura(e.serie, siguienteNumero(e), e.digitos))}</small></div>
+      <div><strong>${esc(e.nombre)}</strong><small>${esc(e.cif || '')} · ${n} factura(s) · ${numeracion}</small></div>
     </button>`;
   }).join('') : '<p class="suave">Todavía no hay ninguna empresa. Rellena los datos de abajo.</p>';
   if (!formE.dataset.cargado) {
@@ -1425,8 +1831,9 @@ function editarEmpresa(e) {
   id('e-dir').value = v('direccion', ''); id('e-cp').value = v('cp', ''); id('e-pob').value = v('poblacion', '');
   id('e-prov').value = v('provincia', ''); id('e-email').value = v('email', ''); id('e-web').value = v('web', '');
   id('e-firmante').value = v('firmante', ''); id('e-color').value = v('color', '#1f4e79'); id('e-pie').value = v('pie', '');
+  id('e-modo').value = v('numeracion', 'cliente');
   id('e-serie').value = v('serie', ''); id('e-digitos').value = String(v('digitos', 3));
-  id('e-inicio').value = e ? siguienteNumero(e) : 1;
+  id('e-inicio').value = e && !porCliente(e) ? siguienteNumero(e) : v('numeroInicial', 1);
   id('e-iva').value = v('iva', 21); id('e-pago').value = v('formaPago', 'Transferencia bancaria'); id('e-iban').value = v('iban', '');
   id('emp-titulo').textContent = e ? e.nombre : 'Nueva empresa';
   id('emp-borrar').hidden = !e;
@@ -1446,6 +1853,7 @@ function empresaDelFormulario() {
     direccion: id('e-dir').value.trim(), cp: id('e-cp').value.trim(), poblacion: id('e-pob').value.trim(),
     provincia: id('e-prov').value.trim(), email: id('e-email').value.trim(), web: id('e-web').value.trim(),
     firmante: id('e-firmante').value.trim(), color: id('e-color').value, pie: id('e-pie').value.trim(),
+    numeracion: id('e-modo').value === 'empresa' ? 'empresa' : 'cliente',
     serie: id('e-serie').value.replace(/^\s+|\s+$/g, ''), digitos: parseInt(id('e-digitos').value, 10) || 3,
     numeroInicial: parseInt(id('e-inicio').value, 10) || 1,
     iva: leerPct(id('e-iva').value), formaPago: id('e-pago').value.trim(), iban: id('e-iban').value.trim(),
@@ -1454,10 +1862,13 @@ function empresaDelFormulario() {
 }
 function actualizarPreviaEmpresa() {
   const d = empresaDelFormulario();
+  const modoCliente = d.numeracion === 'cliente';
+  id('lbl-inicio').hidden = modoCliente;
+  const numeroEjemplo = modoCliente ? 4 : d.numeroInicial;
   const f = {
     empresaId: null, emisor: datosEmisor(d),
-    cliente: { nombre: 'Cliente de ejemplo, S.L.', cif: 'B12345678', direccion: 'Calle Mayor, 1', cp: '28001', poblacion: 'Madrid', provincia: 'Madrid' },
-    codigo: codigoFactura(d.serie, d.numeroInicial, d.digitos), fecha: hoyISO(),
+    cliente: { nombre: 'Comunidad de Propietarios Calle Sol 8', cif: 'H28123456', direccion: 'Calle Sol, 8', cp: '28004', poblacion: 'Madrid', provincia: 'Madrid' },
+    codigo: codigoFactura(prefijoFactura(d, 'CPCS'), numeroEjemplo, d.digitos), fecha: hoyISO(),
     concepto: 'Ejemplo de concepto de la factura.\nAquí se describe el trabajo realizado.',
     baseCent: 100000, aplicaIva: d.iva > 0, ivaPct: d.iva, cuotaCent: redondear(100000 * d.iva / 100), totalCent: 100000 + redondear(100000 * d.iva / 100),
     motivoExencion: '', formaPago: d.formaPago, iban: d.iban, observaciones: '', incluirFirma: true,
@@ -1465,18 +1876,29 @@ function actualizarPreviaEmpresa() {
   const cont = id('previa-empresa');
   cont.innerHTML = htmlFactura(f, { vistaPrevia: true, empresa: d });
   ajustarPrevia(cont);
-  // Ayuda de numeración
-  const e = empresaPorId(empresaEditando);
-  const usadas = e ? facturasDeSerie(e.id, d.serie).length : 0;
-  id('e-numeracion-ayuda').textContent = `La próxima factura será la ${codigoFactura(d.serie, d.numeroInicial, d.digitos)}.`
-    + (usadas ? ` (Ya hay ${usadas} factura(s) con esta serie: el número no puede ser menor que el siguiente libre.)` : ' Si ya llevabas facturas hechas, pon aquí el número que toca (por ejemplo, 4).');
+  if (modoCliente) {
+    id('e-numeracion-ayuda').textContent = `Cada cliente tiene un código y su propia numeración. Ejemplo: la 4.ª factura a «Comunidad Calle Sol 8» sería la ${f.codigo}. `
+      + 'El número por el que empieza cada cliente se pone en su ficha o al hacerle la primera factura.';
+  } else {
+    const e = empresaPorId(empresaEditando);
+    const usadas = e ? facturasDeSerie(claveSerie(e.id, false, null, d.serie)).length : 0;
+    id('e-numeracion-ayuda').textContent = `La próxima factura será la ${f.codigo}.`
+      + (usadas ? ` (Ya hay ${usadas} factura(s) con esta serie: el número no puede ser menor que el siguiente libre.)` : ' Si ya llevabas facturas hechas, pon aquí el número que toca (por ejemplo, 4).');
+  }
 }
 id('emp-lista').addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-empresa]');
-  if (b) editarEmpresa(empresaPorId(b.dataset.empresa));
+  if (b) {
+    editarEmpresa(empresaPorId(b.dataset.empresa));
+    if (window.matchMedia('(max-width:1050px)').matches) formE.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 });
-id('emp-nueva').addEventListener('click', nuevaEmpresa);
+id('emp-nueva').addEventListener('click', () => {
+  nuevaEmpresa();
+  if (window.matchMedia('(max-width:1050px)').matches) formE.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 formE.addEventListener('input', actualizarPreviaEmpresa);
+formE.addEventListener('change', actualizarPreviaEmpresa);
 formE.addEventListener('submit', (ev) => {
   ev.preventDefault();
   const d = empresaDelFormulario();
@@ -1484,8 +1906,8 @@ formE.addEventListener('submit', (ev) => {
   if (!d.cif) { aviso('Escribe el CIF/NIF de la empresa (es obligatorio en las facturas).', 'error'); id('e-cif').focus(); return; }
   let e = empresaPorId(empresaEditando);
   let ajuste = '';
-  if (e) {
-    const libre = Math.max(...facturasDeSerie(e.id, d.serie).map((f) => f.numero), 0) + 1;
+  if (e && d.numeracion === 'empresa') {
+    const libre = Math.max(0, ...facturasDeSerie(claveSerie(e.id, false, null, d.serie)).map((f) => f.numero)) + 1;
     if (d.numeroInicial < libre) {
       ajuste = `Empresa guardada. Con esta serie ya hay facturas hasta la ${codigoFactura(d.serie, libre - 1, d.digitos)}, así que la próxima será la ${codigoFactura(d.serie, libre, d.digitos)}.`;
       d.numeroInicial = libre;
@@ -1525,7 +1947,7 @@ function leerArchivo(file) {
 function cargarImagen(src) {
   return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 }
-/** Reduce la imagen para que no ocupe demasiado en el navegador. */
+/** Reduce la imagen para que no ocupe demasiado. */
 async function prepararImagen(file, maxAncho, maxAlto) {
   if (!file || !/^image\//.test(file.type)) throw new Error('El archivo no es una imagen.');
   const img = await cargarImagen(await leerArchivo(file));
@@ -1535,7 +1957,7 @@ async function prepararImagen(file, maxAncho, maxAlto) {
   c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
   c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   const png = c.toDataURL('image/png');
-  if (file.type === 'image/jpeg') {
+  if (file.type === 'image/jpeg' || file.type === 'image/heic') {
     const jpg = c.toDataURL('image/jpeg', 0.9);
     return jpg.length < png.length ? jpg : png;
   }
@@ -1629,6 +2051,7 @@ function textoUltimaCopia() {
 function renderCopias() {
   const tam = new Blob([JSON.stringify(db)]).size;
   id('cp-estado').innerHTML = `${esc(textoUltimaCopia())}<br>Ahora mismo hay ${db.empresas.length} empresa(s), ${db.clientes.length} cliente(s) y ${db.facturas.length} factura(s) (${(tam / 1024).toFixed(0)} KB).`;
+  actualizarInstalar();
 }
 function revisarAvisoCopia() {
   const u = db.ajustes.ultimaCopia;
@@ -1672,6 +2095,55 @@ id('cp-archivo').addEventListener('change', async (ev) => {
   }
 });
 
+/* =========================================================
+   App instalable (PWA): service worker y aviso de instalación
+   ========================================================= */
+const enInternet = /^https?:$/.test(location.protocol);
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const esInstalada = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let peticionInstalar = null;
+if ('serviceWorker' in navigator && enInternet) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('Service worker:', e));
+  });
+}
+window.addEventListener('beforeinstallprompt', (ev) => {
+  ev.preventDefault();
+  peticionInstalar = ev;
+  actualizarInstalar();
+});
+window.addEventListener('appinstalled', () => {
+  peticionInstalar = null;
+  actualizarInstalar();
+  aviso('App instalada ✔');
+});
+function actualizarInstalar() {
+  const instalada = esInstalada();
+  const puede = !!peticionInstalar || (esIOS && enInternet);
+  id('aviso-instalar').hidden = instalada || !puede || leerLS('facturacion.instalar.cerrado') === '1';
+  id('btn-instalar').hidden = !peticionInstalar;
+  id('aviso-instalar-texto').textContent = peticionInstalar
+    ? 'Instala la app para tenerla en la pantalla de inicio y usarla sin internet.'
+    : 'Para instalar la app: pulsa Compartir (cuadrado con flecha) y luego «Añadir a pantalla de inicio».';
+  id('btn-instalar-2').hidden = !peticionInstalar;
+  id('instalar-estado').textContent = instalada
+    ? 'Ya estás usando la app instalada ✔'
+    : enInternet ? 'Instálala para tenerla con su icono en la pantalla de inicio y usarla sin internet:' : 'Para instalarla, abre la app desde su enlace de internet:';
+}
+async function instalar() {
+  if (!peticionInstalar) return;
+  peticionInstalar.prompt();
+  try { await peticionInstalar.userChoice; } catch (e) { /* nada */ }
+  peticionInstalar = null;
+  actualizarInstalar();
+}
+id('btn-instalar').addEventListener('click', instalar);
+id('btn-instalar-2').addEventListener('click', instalar);
+id('btn-instalar-cerrar').addEventListener('click', () => {
+  escribirLS('facturacion.instalar.cerrado', '1');
+  actualizarInstalar();
+});
+
 /* ---------- Cambios hechos en otra pestaña ---------- */
 window.addEventListener('storage', (ev) => {
   if (ev.key !== CLAVE) return;
@@ -1689,6 +2161,7 @@ window.addEventListener('storage', (ev) => {
 nuevaFactura();
 irA('factura');
 revisarAvisoCopia();
+actualizarInstalar();
 })();
 </script>
 </body>
