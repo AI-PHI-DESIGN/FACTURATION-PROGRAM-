@@ -211,7 +211,23 @@ Cuando el usuario pasa una **factura de ejemplo**:
    clientes. Pásaselo solo al usuario. El usuario final lo carga en **Ajustes → Restaurar…**.
 5. Las imágenes pegadas en el chat **no llegan como archivo**: pide que las adjunten como archivo.
 
-## 9. Posibles mejoras (no pedidas todavía)
+## 9. Fase 5: datos de ejemplo inventados y más usuarios
+
+- **Datos de ejemplo:** `crearDatosEjemplo()` en `index.html` genera una empresa, clientes y facturas inventados:
+  - el logo y la firma se dibujan en un `canvas`;
+  - las fechas son relativas a hoy, con una factura cobrada, una pendiente y una vencida;
+  - todo lleva `ejemplo: true`.
+
+  El botón **«Ver un ejemplo»** solo aparece si no hay datos. **«Borrar el ejemplo»** quita solo lo marcado.
+  Las facturas de ejemplo no cuentan para el aviso de copia de seguridad.
+- **Capturas y PDF de la documentación:** `node herramientas/generar-capturas.cjs`. Carga el ejemplo con el reloj
+  fijo y saca las capturas de ordenador y móvil, el modo oscuro, la factura impresa y el PDF. Antes de cada
+  captura mueve el ratón fuera, para que no quede abierto el detalle del gráfico.
+- **Varias personas** (Fran, su madre…): no hace falta nada especial. La app es genérica y cada dispositivo guarda
+  sus datos. Para alguien nuevo se repite lo mismo: se instala con el enlace y, si se quiere, se le prepara su
+  JSON de configuración privado.
+
+## 10. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
 - Facturas rectificativas.

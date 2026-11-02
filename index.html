@@ -545,6 +545,10 @@ dialog h2{margin-bottom:6px}
       <button type="button" class="btn peq primario" id="btn-instalar" hidden>Instalar</button>
       <button type="button" class="btn peq" id="btn-instalar-cerrar">Ahora no</button>
     </div>
+    <div class="aviso info" id="aviso-ejemplo" hidden>
+      <span>Estás viendo <strong>datos de ejemplo inventados</strong>. Cuando quieras, bórralos y empieza con los tuyos.</span>
+      <button type="button" class="btn peq primario" id="btn-borrar-ejemplo">Borrar el ejemplo</button>
+    </div>
     <div class="aviso alerta" id="aviso-copia" hidden>
       <span id="aviso-copia-texto"></span>
       <button type="button" class="btn peq" id="aviso-copia-btn">Descargar copia ahora</button>
@@ -560,6 +564,10 @@ dialog h2{margin-bottom:6px}
           <li id="paso-factura"><span class="num-paso">2</span><div><strong>Haz tu primera factura</strong><small>Eliges el cliente y el número sale solo</small></div><button type="button" class="btn peq" data-nueva>Hacer factura</button></li>
           <li><span class="num-paso">3</span><div><strong>Envíala y apunta el cobro</strong><small>PDF por WhatsApp o correo; márcala como cobrada</small></div></li>
         </ol>
+        <div id="bloque-ejemplo" style="margin-top:22px">
+          <p class="tenue" style="font-size:14px;margin-bottom:10px">¿Quieres verla antes funcionando, con datos inventados?</p>
+          <button type="button" class="btn suave" id="btn-ejemplo">Ver un ejemplo</button>
+        </div>
       </div>
     </div>
 
@@ -1044,7 +1052,7 @@ dialog h2{margin-bottom:6px}
 (function () {
 'use strict';
 
-const VERSION_APP = '3.0';
+const VERSION_APP = '3.1';
 
 /* =========================================================
    Utilidades
@@ -1786,6 +1794,8 @@ function renderInicio() {
   sel.value = empresaPorId(actual) ? actual : '';
   sel.hidden = db.empresas.length < 2;
 
+  id('aviso-ejemplo').hidden = !db.ajustes.ejemplo;
+  id('bloque-ejemplo').hidden = db.empresas.length > 0;
   const sinNada = db.empresas.length === 0 || db.facturas.length === 0;
   id('ini-vacio').hidden = !sinNada;
   id('ini-panel').hidden = sinNada;
@@ -1836,6 +1846,92 @@ id('ini-empresa').addEventListener('change', renderInicio);
 id('ini-ver-pendientes').addEventListener('click', () => { filtroEstado = 'pendientes'; irA('facturas'); });
 id('ini-ver-todas').addEventListener('click', () => { filtroEstado = ''; irA('facturas'); });
 id('btn-paso-empresa').addEventListener('click', () => abrirEmpresa(null));
+
+/* ---------- Datos de ejemplo (todo inventado) para ver la app funcionando ---------- */
+function imagenDibujada(dibujar, ancho, alto) {
+  const c = document.createElement('canvas');
+  c.width = ancho; c.height = alto;
+  dibujar(c.getContext('2d'));
+  return c.toDataURL('image/png');
+}
+function crearDatosEjemplo() {
+  const hoy = hoyISO();
+  const logo = imagenDibujada((x) => {
+    x.fillStyle = '#111'; x.font = 'bold 230px "Times New Roman", Georgia, serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Δ', 150, 160);
+  }, 300, 300);
+  const firma = imagenDibujada((x) => {
+    x.strokeStyle = '#1b2a6b'; x.lineWidth = 5; x.lineCap = 'round'; x.lineJoin = 'round';
+    x.beginPath(); x.moveTo(30, 150);
+    x.bezierCurveTo(60, 40, 120, 40, 120, 120); x.bezierCurveTo(120, 200, 70, 190, 90, 130);
+    x.bezierCurveTo(130, 30, 200, 60, 190, 140); x.bezierCurveTo(185, 190, 240, 170, 260, 110);
+    x.bezierCurveTo(275, 70, 300, 90, 290, 150); x.moveTo(60, 178); x.lineTo(330, 162); x.stroke();
+  }, 360, 220);
+  const emp = {
+    id: 'ej-empresa', ejemplo: true, nombre: 'DELTA ESTUDIO DE ARQUITECTURA S.L.', cif: 'B12345678', telefono: '',
+    direccion: 'C/ de la Paz, 7', cp: '46003', poblacion: 'Valencia', provincia: '', email: '', web: '',
+    firmante: 'D. Juan Martínez Ruiz', cargo: 'Arquitecto', color: '#000000', pie: '',
+    notaLegal: 'Factura acogida al criterio de Caja del IVA', importeEnLetra: true,
+    plantilla: 'clasica', formato: 'anual', numeracion: 'cliente', serie: '', digitos: 1, numeroInicial: 1,
+    iva: 21, irpf: 0, plazoPago: 30, formaPago: 'Transferencia bancaria', iban: 'ES00 1234 5678 9012 3456 7890', logo, firma,
+  };
+  const clientes = [
+    { id: 'ej-cli-a', ejemplo: true, nombre: 'INMOBILIARIA LEVANTE GESTIÓN SL', cif: 'B87654321', direccion: 'C/ Colón nº 12-3-2', cp: '46004', poblacion: 'Valencia', provincia: '', telefono: '', email: '', codigo: 'A', numeroInicial: 1 },
+    { id: 'ej-cli-cp', ejemplo: true, nombre: 'COMUNIDAD DE PROPIETARIOS AV. DEL PUERTO 25', cif: 'H12345678', direccion: 'Av. del Puerto, 25', cp: '46023', poblacion: 'Valencia', provincia: '', telefono: '', email: '', codigo: 'CP', numeroInicial: 1 },
+  ];
+  const ahora = new Date().toISOString();
+  const factura = (cli, numero, dias, euros, concepto, cobrada) => {
+    const fecha = sumarDias(hoy, -dias);
+    const baseCent = euros * 100;
+    const cuotaCent = redondear((baseCent * 21) / 100);
+    const serie = prefijoFactura(emp, cli.codigo);
+    return {
+      id: `ej-fac-${cli.codigo}-${numero}`, ejemplo: true, empresaId: emp.id, emisor: datosEmisor(emp), clienteId: cli.id,
+      cliente: { nombre: cli.nombre, cif: cli.cif, direccion: cli.direccion, cp: cli.cp, poblacion: cli.poblacion, provincia: '', telefono: '', email: '', codigo: cli.codigo },
+      serie, numero, codigo: codigoFactura(emp, serie, numero, fecha), fecha, vencimiento: sumarDias(fecha, 30),
+      concepto: typeof concepto === 'function' ? concepto(fecha) : concepto,
+      baseCent, aplicaIva: true, ivaPct: 21, cuotaCent, aplicaIrpf: false, irpfPct: 0, irpfCent: 0, totalCent: baseCent + cuotaCent,
+      motivoExencion: '', formaPago: emp.formaPago, iban: emp.iban, observaciones: '', incluirFirma: true,
+      cobrada, fechaCobro: cobrada ? sumarDias(fecha, 12) : '', creada: ahora, modificada: ahora, serieClave: claveDe(emp, cli.id, fecha),
+    };
+  };
+  const direccionTecnica = (fecha) => `Honorarios Profesionales correspondientes a la gestión y asesoría técnica de DIRECCIÓN TÉCNICA ${MESES[Number(fecha.slice(5, 7)) - 1].toUpperCase()} PARA EDIFICIO DESTINADO A VIVIENDAS en C/ Ejemplo nº 22 de Valencia`;
+  const facturas = [
+    factura(clientes[0], 14, 55, 2450, direccionTecnica, true),
+    factura(clientes[1], 3, 48, 1200, 'Honorarios Profesionales por la redacción del informe técnico de la fachada y la inspección de los balcones del edificio', false),
+    factura(clientes[0], 15, 25, 2450, direccionTecnica, false),
+  ];
+  return { empresas: [emp], clientes, facturas };
+}
+id('btn-ejemplo').addEventListener('click', () => {
+  if (db.empresas.length || db.facturas.length) return;
+  const ej = crearDatosEjemplo();
+  db.empresas.push(...ej.empresas);
+  db.clientes.push(...ej.clientes);
+  db.facturas.push(...ej.facturas);
+  db.ajustes.ultimaEmpresa = ej.empresas[0].id;
+  db.ajustes.ejemplo = true;
+  if (!guardarDatos()) return;
+  nuevaFactura();
+  renderInicio();
+  aviso('Ejemplo cargado: todos los datos son inventados.');
+});
+id('btn-borrar-ejemplo').addEventListener('click', () => {
+  if (!confirm('¿Borrar los datos de ejemplo?\n\nLo que hayas creado tú se queda.')) return;
+  db.empresas = db.empresas.filter((x) => !x.ejemplo);
+  db.clientes = db.clientes.filter((x) => !x.ejemplo);
+  db.facturas = db.facturas.filter((x) => !x.ejemplo);
+  db.ajustes.ejemplo = false;
+  if (!empresaPorId(db.ajustes.ultimaEmpresa)) db.ajustes.ultimaEmpresa = null;
+  if (!guardarDatos()) return;
+  edicion = null; cambiosSinGuardar = false; empresaEditando = null; clienteEditando = null;
+  delete formE.dataset.cargado;
+  delete formC.dataset.cargado;
+  nuevaFactura();
+  renderInicio();
+  revisarAvisoCopia();
+  aviso('Ejemplo borrado. ¡Ya puedes empezar con tus datos!');
+});
 
 /** Escalón «bonito» para el eje (1, 2, 2,5 o 5 × potencia de 10). */
 function pasoBonito(maximo, partes) {
@@ -2753,15 +2849,15 @@ function actualizarPreviaEmpresa() {
   const modoCliente = d.numeracion === 'cliente';
   id('lbl-inicio').hidden = modoCliente;
   id('lbl-digitos').hidden = d.formato === 'anual';
-  const numeroEjemplo = modoCliente ? 4 : d.numeroInicial;
-  const base = 100000;
+  const numeroEjemplo = modoCliente ? 15 : d.numeroInicial;
+  const base = 245000;
   const cuota = redondear(base * d.iva / 100);
   const irpf = redondear(base * d.irpf / 100);
   const f = {
     empresaId: null, emisor: datosEmisor(d),
-    cliente: { nombre: 'Comunidad de Propietarios Calle Sol 8', cif: 'H28123456', direccion: 'Calle Sol, 8', cp: '28004', poblacion: 'Madrid', provincia: 'Madrid' },
-    codigo: codigoFactura(d, prefijoFactura(d, 'CPCS'), numeroEjemplo), fecha: hoyISO(), vencimiento: d.plazoPago > 0 ? sumarDias(hoyISO(), d.plazoPago) : '',
-    concepto: 'Honorarios profesionales correspondientes a la dirección técnica de la obra (ejemplo de concepto)',
+    cliente: { nombre: 'INMOBILIARIA LEVANTE GESTIÓN SL', cif: 'B87654321', direccion: 'C/ Colón nº 12-3-2', cp: '46004', poblacion: 'Valencia', provincia: '' },
+    codigo: codigoFactura(d, prefijoFactura(d, 'A'), numeroEjemplo), fecha: hoyISO(), vencimiento: d.plazoPago > 0 ? sumarDias(hoyISO(), d.plazoPago) : '',
+    concepto: 'Honorarios Profesionales correspondientes a la gestión y asesoría técnica de DIRECCIÓN TÉCNICA PARA EDIFICIO DESTINADO A VIVIENDAS en C/ Ejemplo nº 22 de Valencia (cliente y datos inventados)',
     baseCent: base, aplicaIva: d.iva > 0, ivaPct: d.iva, cuotaCent: cuota, aplicaIrpf: d.irpf > 0, irpfPct: d.irpf, irpfCent: irpf,
     totalCent: base + cuota - irpf, motivoExencion: '', formaPago: d.formaPago, iban: d.iban, observaciones: '', incluirFirma: true,
   };
@@ -2769,7 +2865,7 @@ function actualizarPreviaEmpresa() {
   cont.innerHTML = htmlFactura(f, { vistaPrevia: true, empresa: d });
   ajustarPrevia(cont);
   if (modoCliente) {
-    id('e-numeracion-ayuda').textContent = `Cada cliente tiene un código y su propia numeración. Ejemplo: la 4.ª factura a «Comunidad Calle Sol 8» sería la ${f.codigo}. `
+    id('e-numeracion-ayuda').textContent = `Cada cliente tiene un código y su propia numeración. Ejemplo: la 15.ª factura al cliente con código «A» sería la ${f.codigo}. `
       + (d.formato === 'anual' ? 'Cada año vuelve a empezar en el 1. ' : '')
       + 'El número por el que empieza cada cliente se pone en su ficha o al hacerle la primera factura.';
   } else {
@@ -2936,7 +3032,7 @@ function renderCopias() {
 function revisarAvisoCopia() {
   const u = db.ajustes.ultimaCopia;
   const dias = u ? (Date.now() - new Date(u).getTime()) / 864e5 : Infinity;
-  id('aviso-copia').hidden = !(db.facturas.length > 0 && dias > 7);
+  id('aviso-copia').hidden = !(db.facturas.some((f) => !f.ejemplo) && dias > 7);
   id('aviso-copia-texto').textContent = u
     ? `Hace ${Math.floor(dias)} días que no haces una copia de seguridad de tus facturas.`
     : 'Aún no has hecho ninguna copia de seguridad de tus facturas.';

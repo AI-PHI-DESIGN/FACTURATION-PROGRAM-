@@ -458,7 +458,28 @@ function vigilarErrores(page, errores) {
     await movil.setOffline(false);
     await movil.close();
 
-    console.log('14. Abrir con doble clic (file://) sigue funcionando');
+    console.log('14. «Ver un ejemplo» con datos inventados');
+    const ejCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES' });
+    await ejCtx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+    await ejCtx.clock.setFixedTime(HOY);
+    const ej = await ejCtx.newPage();
+    vigilarErrores(ej, errores);
+    await ej.goto(URL_APP);
+    await ej.click('#btn-ejemplo');
+    await ej.waitForTimeout(150);
+    comprobar(await ej.isVisible('#ini-panel') && await ej.isVisible('#aviso-ejemplo'), 'carga el ejemplo y avisa de que es inventado');
+    comprobar(sinEspacios(await ej.textContent('#ini-pendiente')) === '4.416,50 €', 'pendiente del ejemplo: 2.964,50 + 1.452,00 = 4.416,50 €');
+    await ej.click('.nav-item[data-ir=facturas]');
+    comprobar(await ej.locator('#c-lista .item-factura').count() === 3 && (await ej.textContent('#c-lista')).includes('Vencida'), '3 facturas de ejemplo, una vencida');
+    await ej.click('#c-lista .item-factura:has-text("A 15/26") [data-abrir]');
+    comprobar(sinEspacios(await ej.textContent('#previa-factura')).includes('(dos mil cuatrocientos cincuenta euros)'), 'la factura de ejemplo sale con la plantilla clásica e importe en letra');
+    await ej.click('.nav-item[data-ir=inicio]');
+    await ej.click('#btn-borrar-ejemplo');
+    await ej.waitForTimeout(150);
+    comprobar(await ej.isVisible('#ini-vacio') && await ej.evaluate(() => JSON.parse(localStorage.getItem('facturacion.datos.v1')).facturas.length === 0), '«Borrar el ejemplo» lo deja todo vacío');
+    await ejCtx.close();
+
+    console.log('15. Abrir con doble clic (file://) sigue funcionando');
     const local = await browser.newContext();
     const l = await local.newPage();
     const erroresLocal = [];

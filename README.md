@@ -8,6 +8,10 @@ está **vencido**.
 - **Funciona sin internet** una vez instalada.
 - **Envía la factura en PDF** por WhatsApp o correo, y **recuerda el cobro** con un toque.
 - **Los datos se guardan en el propio dispositivo**. No se envían a ningún servidor.
+- **Cualquiera puede usarla** (Fran, tu madre…) con el mismo enlace. Cada móvil guarda sus propios datos, sin
+  mezclarse con los de otros.
+- **«Ver un ejemplo»**: en la pantalla de bienvenida se carga una empresa con facturas **inventadas** para
+  probarla. Luego se borra con «Borrar el ejemplo».
 
 **Enlace de la app:** https://ai-phi-design.github.io/FACTURATION-PROGRAM-/
 
@@ -65,7 +69,8 @@ está **vencido**.
 |---|---|
 | ![Inicio](docs/capturas/inicio.png) | ![Factura](docs/capturas/factura-impresa.png) |
 
-Ejemplo de factura en PDF, con datos inventados: [`docs/factura-ejemplo.pdf`](docs/factura-ejemplo.pdf).
+Ejemplo de factura en PDF, con la plantilla clásica y datos inventados: [`docs/factura-ejemplo.pdf`](docs/factura-ejemplo.pdf).
+Las capturas y este PDF se rehacen con `node herramientas/generar-capturas.cjs`, que usa los datos de ejemplo.
 
 ## ⚠️ Copias de seguridad
 

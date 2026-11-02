@@ -47,3 +47,6 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
 - Se publica con GitHub Pages desde la rama de trabajo: https://ai-phi-design.github.io/FACTURATION-PROGRAM-/
 - Comprueba el despliegue en la ejecución «pages build and deployment» de GitHub Actions.
 - Para transcribir notas de voz nuevas: `herramientas/transcribir-audios.sh <audios>`.
+- Para rehacer las capturas y el PDF de `docs/` con datos inventados: `node herramientas/generar-capturas.cjs`.
+- La app la usan varias personas (Fran, la madre del usuario…). Que siga siendo genérica: nada con nombres o
+  datos de una persona en el código.
