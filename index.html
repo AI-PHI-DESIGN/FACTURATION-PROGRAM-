@@ -1,0 +1,1695 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facturación</title>
+<style>
+:root{
+  --fondo:#f3f4f6; --panel:#fff; --borde:#dde1e6; --texto:#1c2430; --suave:#5f6b7a;
+  --primario:#1f4e79; --primario-osc:#163a5a; --primario-claro:#e8eff6;
+  --ok:#17663f; --ok-fondo:#dff3e7; --pend:#8a4b00; --pend-fondo:#fff0d6;
+  --peligro:#b42318; --peligro-fondo:#fdecea;
+  --radio:10px; --sombra:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--fondo);color:var(--texto);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+[hidden]{display:none !important}
+
+/* ---------- Barra superior ---------- */
+.barra{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:24px;padding:0 24px;min-height:58px;background:var(--primario);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.marca{font-weight:700;font-size:18px;letter-spacing:.02em;white-space:nowrap}
+.barra nav{display:flex;gap:4px;overflow-x:auto;padding:8px 0}
+.barra nav button{background:transparent;border:0;color:#d6e2ee;font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.barra nav button:hover{background:rgba(255,255,255,.12);color:#fff}
+.barra nav button.activa{background:#fff;color:var(--primario)}
+.aviso-copia{background:var(--pend-fondo);color:var(--pend);border-bottom:1px solid #f1d29f;padding:10px 24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-weight:600}
+
+main{max-width:1440px;margin:0 auto;padding:20px 24px 60px}
+.vista{display:none}
+.vista.activa{display:block}
+h2{margin:0 0 14px;font-size:20px}
+h3{margin:0 0 10px;font-size:16px}
+p{margin:0 0 12px}
+.suave{color:var(--suave)}
+
+/* ---------- Paneles y formularios ---------- */
+.panel{background:var(--panel);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);padding:20px}
+.panel + .panel{margin-top:16px}
+fieldset{border:0;border-top:1px solid var(--borde);margin:0;padding:14px 0 4px;min-width:0}
+fieldset.primero{border-top:0;padding-top:0}
+legend{float:left;width:100%;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--primario);padding:0;margin-bottom:10px}
+legend + *{clear:both}
+label{display:block;font-size:13px;font-weight:600;color:var(--suave);margin-bottom:10px}
+label > input:not([type=checkbox]), label > select, label > textarea{display:block;width:100%;margin-top:4px}
+input,select,textarea{font:inherit;color:var(--texto);background:#fff;border:1px solid #c5ccd4;border-radius:8px;padding:8px 10px;min-height:38px}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid #9dbcdb;outline-offset:0;border-color:var(--primario)}
+input[type=checkbox]{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--primario);flex:none}
+input[type=color]{padding:2px 4px;width:70px;height:38px;cursor:pointer}
+input[type=file]{display:none}
+label.check{display:flex;align-items:center;gap:8px;color:var(--texto);font-size:14px;cursor:pointer}
+.fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 12px}
+.fila.dos-uno{grid-template-columns:2fr 1fr}
+.fila.uno-dos{grid-template-columns:1fr 2fr}
+.ayuda{display:block;font-weight:400;color:var(--suave);margin-top:4px;font-size:12px}
+.campo-numero{display:flex;align-items:stretch;margin-top:4px}
+.campo-numero .prefijo{display:flex;align-items:center;padding:0 10px;background:var(--primario-claro);border:1px solid #c5ccd4;border-right:0;border-radius:8px 0 0 8px;color:var(--primario);font-weight:700}
+.campo-numero .prefijo:empty{display:none}
+.campo-numero .prefijo:not(:empty) + input{border-radius:0 8px 8px 0}
+.campo-numero input{width:100%}
+.resumen-importes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 10px}
+.resumen-importes div{background:#f6f8fa;border:1px solid var(--borde);border-radius:8px;padding:8px 10px}
+.resumen-importes span{display:block;font-size:12px;color:var(--suave);font-weight:600}
+.resumen-importes strong{font-size:16px;font-variant-numeric:tabular-nums}
+.resumen-importes .total{background:var(--primario);border-color:var(--primario);color:#fff}
+.resumen-importes .total span{color:#d6e2ee}
+
+/* ---------- Botones ---------- */
+button{font:inherit;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c5ccd4;background:#fff;color:var(--texto);border-radius:8px;padding:8px 14px;font-weight:600;min-height:38px;font-size:14px;text-decoration:none;margin:0}
+.btn:hover{background:#f3f5f7}
+.btn.primario{background:var(--primario);border-color:var(--primario);color:#fff}
+.btn.primario:hover{background:var(--primario-osc)}
+.btn.peligro{color:var(--peligro);border-color:#efc2bd}
+.btn.peligro:hover{background:var(--peligro-fondo)}
+.btn.peq{padding:4px 10px;min-height:30px;font-size:13px}
+.acciones{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.acciones.fin{justify-content:flex-end}
+.enlace{background:none;border:0;padding:0;color:var(--primario);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+
+/* ---------- Editor + vista previa ---------- */
+.editor{display:grid;grid-template-columns:minmax(380px,540px) minmax(0,1fr);gap:20px;align-items:start}
+.cab-editor{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.cab-editor h2{margin:0}
+.etiqueta{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--primario-claro);color:var(--primario);vertical-align:middle;margin-left:6px}
+.columna-previa{position:sticky;top:78px}
+.marco-previa{background:#dfe3e8;border-radius:var(--radio);padding:16px;max-height:calc(100vh - 100px);overflow:auto}
+.previa-ajuste{position:relative;overflow:hidden}
+.previa-ajuste .hoja{transform-origin:top left;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.titulo-previa{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:.06em}
+
+/* ---------- Tablas ---------- */
+.tabla-scroll{overflow-x:auto}
+.tabla{width:100%;border-collapse:collapse;font-size:14px}
+.tabla th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--suave);border-bottom:2px solid var(--borde);padding:8px 10px;white-space:nowrap}
+.tabla td{border-bottom:1px solid var(--borde);padding:9px 10px;vertical-align:middle}
+.tabla tr:hover td{background:#fafbfc}
+.tabla .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tabla small{color:var(--suave)}
+.tabla .vacia{text-align:center;color:var(--suave);padding:30px 10px}
+.tabla tr.seleccionada td{background:var(--primario-claro)}
+.acciones-fila{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
+.acciones-fila .btn{white-space:nowrap}
+.estado{border:0;border-radius:99px;padding:5px 12px;font-weight:700;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.estado.cobrada{background:var(--ok-fondo);color:var(--ok)}
+.estado.pendiente{background:var(--pend-fondo);color:var(--pend)}
+.estado:hover{filter:brightness(.95)}
+.estado small{font-weight:600;color:inherit;opacity:.8}
+
+/* ---------- Contabilidad ---------- */
+.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px;margin-bottom:6px}
+.tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:4px 0 18px}
+.tarjeta{background:#fff;border:1px solid var(--borde);border-radius:var(--radio);padding:12px 14px;box-shadow:var(--sombra)}
+.tarjeta span{display:block;font-size:12px;color:var(--suave);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.tarjeta strong{display:block;font-size:20px;margin-top:2px;font-variant-numeric:tabular-nums}
+.tarjeta small{color:var(--suave)}
+.tarjeta.ok{border-left:4px solid var(--ok)}
+.tarjeta.pend{border-left:4px solid #d9900f}
+.cab-panel{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.cab-panel h2{margin:0}
+
+/* ---------- Empresas / clientes ---------- */
+.lista-empresas{display:grid;gap:10px;margin-bottom:12px}
+.tarjeta-empresa{display:flex;align-items:center;gap:12px;border:1px solid var(--borde);border-radius:var(--radio);padding:10px 12px;background:#fff;cursor:pointer;text-align:left;width:100%}
+.tarjeta-empresa:hover{border-color:#a9b7c6}
+.tarjeta-empresa.seleccionada{border-color:var(--primario);box-shadow:0 0 0 2px var(--primario-claro)}
+.tarjeta-empresa .mini-logo{width:64px;height:40px;object-fit:contain;flex:none;border-radius:6px;background:#f6f8fa}
+.tarjeta-empresa .mini-color{width:12px;align-self:stretch;border-radius:4px;flex:none}
+.tarjeta-empresa div{min-width:0}
+.tarjeta-empresa strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tarjeta-empresa small{color:var(--suave)}
+.imagen-campo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 12px}
+.imagen-campo .caja-img{width:150px;height:72px;border:1px dashed #b8c1cc;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fafbfc;color:var(--suave);font-size:12px;overflow:hidden}
+.imagen-campo .caja-img img{max-width:100%;max-height:100%;object-fit:contain}
+.etiqueta-campo{font-size:13px;font-weight:600;color:var(--suave)}
+.dos-col{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(340px,1fr);gap:20px;align-items:start}
+.estrecho{max-width:760px}
+.vacio-inicio{max-width:640px;margin:40px auto;text-align:center}
+.vacio-inicio ol{text-align:left;display:inline-block;margin:8px 0 18px}
+
+/* ---------- Diálogo de firma ---------- */
+dialog{border:0;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(720px,94vw)}
+dialog::backdrop{background:rgba(15,23,42,.45)}
+#firma-lienzo{width:100%;aspect-ratio:3/1;border:1px dashed #9aa6b2;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;display:block}
+
+/* ---------- Aviso flotante ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1c2430;color:#fff;padding:10px 18px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw}
+.toast.visible{opacity:1;transform:translate(-50%,0)}
+.toast.error{background:var(--peligro)}
+
+@media (max-width:1050px){
+  .editor,.dos-col{grid-template-columns:minmax(0,1fr)}
+  .columna-previa{position:static}
+  .marco-previa{max-height:none}
+}
+@media (max-width:640px){
+  main{padding:14px 12px 50px}
+  .barra{padding:0 12px;gap:10px}
+  .marca{display:none}
+  .panel{padding:14px}
+  .resumen-importes{grid-template-columns:1fr}
+}
+
+/* =========================================================
+   HOJA DE FACTURA (A4) — se usa en la vista previa y al imprimir
+   ========================================================= */
+.hoja{--c:#1f4e79;width:210mm;min-height:297mm;padding:15mm 16mm 12mm;background:#fff;color:#222;font:9.5pt/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hoja *{box-sizing:border-box}
+.hoja .h-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10mm;padding-bottom:5mm;border-bottom:2.2pt solid var(--c)}
+.hoja .h-emisor{max-width:110mm}
+.hoja .h-logo{display:block;max-width:62mm;max-height:26mm;object-fit:contain;margin-bottom:3mm}
+.hoja .h-emisor-nombre{font-size:13pt;font-weight:700;color:var(--c);margin-bottom:1mm}
+.hoja .h-emisor div{color:#444}
+.hoja .h-doc{text-align:right;flex:none}
+.hoja .h-doc h1{margin:0 0 3mm;font-size:24pt;line-height:1;letter-spacing:.12em;color:var(--c);font-weight:800}
+.hoja .h-doc table{margin-left:auto;border-collapse:collapse}
+.hoja .h-doc td{padding:.6mm 0 .6mm 5mm;white-space:nowrap}
+.hoja .h-doc td:first-child{color:#666;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}
+.hoja .h-doc td:last-child{font-weight:700;font-size:10.5pt}
+.hoja .h-cliente{margin:6mm 0;display:flex;gap:6mm}
+.hoja .h-caja{flex:1;padding:3.5mm 4.5mm;background:color-mix(in srgb,var(--c) 7%,#fff);border-left:2.5pt solid var(--c);border-radius:0 2mm 2mm 0}
+.hoja .h-etq{display:block;font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--c);margin-bottom:1.2mm}
+.hoja .h-cliente-nombre{font-size:11.5pt;font-weight:700}
+.hoja .h-tabla{width:100%;border-collapse:collapse}
+.hoja .h-tabla th{background:var(--c);color:#fff;text-align:left;padding:2.2mm 3.5mm;font-size:8pt;text-transform:uppercase;letter-spacing:.1em}
+.hoja .h-tabla th.n,.hoja .h-tabla td.n{text-align:right;width:36mm}
+.hoja .h-tabla td{padding:4mm 3.5mm;vertical-align:top;border-bottom:.6pt solid #ccc}
+.hoja .h-concepto{white-space:pre-wrap;word-wrap:break-word;min-height:72mm;font-size:10pt}
+.hoja .h-tabla td.n{font-size:10pt;font-variant-numeric:tabular-nums}
+.hoja .h-bajo{display:flex;justify-content:space-between;align-items:flex-start;gap:8mm;margin-top:5mm}
+.hoja .h-pago{flex:1;font-size:9pt}
+.hoja .h-pago p{margin:0 0 1.5mm}
+.hoja .h-totales{width:84mm;border-collapse:collapse;flex:none}
+.hoja .h-totales td{padding:1.8mm 3.5mm;font-variant-numeric:tabular-nums}
+.hoja .h-totales td:last-child{text-align:right;white-space:nowrap}
+.hoja .h-totales tr+tr td{border-top:.6pt solid #ddd}
+.hoja .h-totales .h-total td{background:var(--c);color:#fff;font-weight:800;font-size:12.5pt;border:0}
+.hoja .h-exencion{margin-top:2mm;font-size:8.5pt;color:#444;font-style:italic;text-align:right}
+.hoja .h-firma{margin-top:8mm;margin-left:auto;width:78mm;text-align:center}
+.hoja .h-firma-img{display:block;max-width:60mm;max-height:24mm;margin:2mm auto 0;object-fit:contain}
+.hoja .h-firma-hueco{height:20mm}
+.hoja .h-firma-linea{border-top:.7pt solid #555;margin-top:1mm;padding-top:1.2mm;font-size:8.5pt;color:#444}
+.hoja .h-pie{margin-top:auto;padding-top:6mm}
+.hoja .h-pie div{border-top:.6pt solid #ccc;padding-top:2.5mm;font-size:7.5pt;color:#777;text-align:center;white-space:pre-wrap}
+.hoja .vacio{color:#b0b6bd;font-style:italic}
+
+/* ---------- Impresión ---------- */
+#zona-impresion{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff !important;margin:0}
+  body > :not(#zona-impresion){display:none !important}
+  #zona-impresion{display:block}
+  #zona-impresion .hoja{min-height:296mm;box-shadow:none;transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <div class="marca">Facturación</div>
+  <nav aria-label="Secciones">
+    <button type="button" data-vista="factura">Nueva factura</button>
+    <button type="button" data-vista="contabilidad">Contabilidad</button>
+    <button type="button" data-vista="clientes">Clientes</button>
+    <button type="button" data-vista="empresas">Empresas</button>
+    <button type="button" data-vista="copias">Copia de seguridad</button>
+  </nav>
+</header>
+<div class="aviso-copia" id="aviso-copia" hidden>
+  <span id="aviso-copia-texto">Hace tiempo que no descargas una copia de seguridad de tus facturas.</span>
+  <button type="button" class="btn peq" id="aviso-copia-btn">Descargar copia ahora</button>
+</div>
+
+<main>
+<!-- ================= NUEVA FACTURA ================= -->
+<section class="vista" id="vista-factura">
+  <div class="panel vacio-inicio" id="sin-empresas" hidden>
+    <h2>Bienvenido</h2>
+    <p>Para empezar a facturar:</p>
+    <ol>
+      <li>Da de alta tu empresa: datos, logo, firma y número de cuenta.</li>
+      <li>Indica por qué número de factura vas (por ejemplo, la 4).</li>
+      <li>Vuelve aquí y haz la factura.</li>
+    </ol>
+    <div><button type="button" class="btn primario" id="btn-ir-empresas">Dar de alta mi empresa</button></div>
+  </div>
+
+  <div class="editor" id="editor-factura">
+    <form class="panel" id="form-factura" autocomplete="off" novalidate>
+      <div class="cab-editor">
+        <h2 id="titulo-editor">Nueva factura</h2>
+        <button type="button" class="btn peq" id="btn-nueva-factura">+ Nueva en blanco</button>
+      </div>
+
+      <fieldset class="primero">
+        <legend>Empresa que factura</legend>
+        <label>Empresa
+          <select id="f-empresa"></select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Número y fecha</legend>
+        <div class="fila">
+          <label>Nº de factura
+            <span class="campo-numero"><span class="prefijo" id="f-serie"></span><input id="f-numero" type="number" min="1" step="1"></span>
+            <span class="ayuda" id="f-numero-ayuda"></span>
+          </label>
+          <label>Fecha de la factura
+            <input id="f-fecha" type="date">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cliente</legend>
+        <label>Elegir cliente guardado
+          <select id="f-cliente"></select>
+        </label>
+        <label>Nombre o razón social
+          <input id="f-cli-nombre" placeholder="Nombre del cliente">
+        </label>
+        <div class="fila uno-dos">
+          <label>CIF / NIF <input id="f-cli-cif"></label>
+          <label>Dirección <input id="f-cli-dir"></label>
+        </div>
+        <div class="fila">
+          <label>Código postal <input id="f-cli-cp" inputmode="numeric"></label>
+          <label>Población <input id="f-cli-pob"></label>
+          <label>Provincia <input id="f-cli-prov"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Concepto</legend>
+        <label>Concepto de la factura
+          <textarea id="f-concepto" rows="9" placeholder="Describe el trabajo o servicio facturado…"></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Importes</legend>
+        <div class="fila">
+          <label>Base imponible (€)
+            <input id="f-base" inputmode="decimal" placeholder="0,00">
+          </label>
+          <label id="lbl-iva">% de IVA
+            <input id="f-iva" type="number" min="0" max="100" step="0.01" list="tipos-iva">
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="f-aplica-iva"> Aplicar IVA (IVA repercutido)</label>
+        <label id="lbl-exencion">Motivo por el que no lleva IVA (sale en la factura)
+          <input id="f-exencion" list="motivos-exencion" placeholder="Ej.: Operación exenta de IVA (art. 20 Ley 37/1992)">
+        </label>
+        <div class="resumen-importes">
+          <div><span>Base imponible</span><strong id="r-base">0,00 €</strong></div>
+          <div><span id="r-iva-txt">IVA</span><strong id="r-iva">0,00 €</strong></div>
+          <div class="total"><span>Total factura</span><strong id="r-total">0,00 €</strong></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Pago y firma</legend>
+        <label>Forma de pago <input id="f-pago" list="formas-pago"></label>
+        <label>Nº de cuenta (IBAN) <input id="f-iban" placeholder="ES00 0000 0000 0000 0000 0000"></label>
+        <label>Observaciones (opcional)
+          <textarea id="f-obs" rows="2" placeholder="Ej.: vencimiento a 30 días"></textarea>
+        </label>
+        <label class="check"><input type="checkbox" id="f-incluir-firma"> Poner la firma en la factura</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cobro</legend>
+        <div class="fila">
+          <label class="check" style="margin-top:28px"><input type="checkbox" id="f-cobrada"> Factura cobrada</label>
+          <label>Fecha de cobro <input id="f-fecha-cobro" type="date"></label>
+        </div>
+      </fieldset>
+
+      <div class="acciones">
+        <button type="submit" class="btn primario">Guardar factura</button>
+        <button type="button" class="btn" id="btn-imprimir">Guardar e imprimir / PDF</button>
+        <button type="button" class="btn peligro" id="btn-borrar-factura" hidden>Borrar</button>
+      </div>
+    </form>
+
+    <div class="columna-previa">
+      <div class="titulo-previa"><span>Vista previa</span><span id="previa-codigo"></span></div>
+      <div class="marco-previa"><div class="previa-ajuste" id="previa-factura"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTABILIDAD ================= -->
+<section class="vista" id="vista-contabilidad">
+  <div class="panel">
+    <div class="cab-panel">
+      <h2>Contabilidad</h2>
+      <div class="acciones" style="margin:0">
+        <button type="button" class="btn" id="c-csv">Exportar a Excel (CSV)</button>
+        <button type="button" class="btn primario" id="c-nueva">+ Nueva factura</button>
+      </div>
+    </div>
+    <div class="filtros">
+      <label>Empresa <select id="c-empresa"></select></label>
+      <label>Estado
+        <select id="c-estado">
+          <option value="">Todas</option>
+          <option value="pendientes">No cobradas</option>
+          <option value="cobradas">Cobradas</option>
+        </select>
+      </label>
+      <label>Año <select id="c-anio"></select></label>
+      <label>Trimestre
+        <select id="c-tri">
+          <option value="">Todo el año</option>
+          <option value="1">1.er trimestre (ene-mar)</option>
+          <option value="2">2.º trimestre (abr-jun)</option>
+          <option value="3">3.er trimestre (jul-sep)</option>
+          <option value="4">4.º trimestre (oct-dic)</option>
+        </select>
+      </label>
+      <label>Buscar <input id="c-buscar" type="search" placeholder="Cliente, nº, concepto…"></label>
+    </div>
+    <div class="tarjetas" id="c-tarjetas"></div>
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Nº factura</th><th>Fecha</th><th>Empresa</th><th>Cliente</th>
+            <th class="num">Base</th><th class="num">IVA</th><th class="num">Total</th>
+            <th>Cobro</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="c-lista"></tbody>
+      </table>
+    </div>
+    <p class="suave" style="margin-top:10px;font-size:13px">Pulsa en el estado (<em>Cobrada / No cobrada</em>) para cambiarlo. Pulsa en el número para abrir la factura.</p>
+  </div>
+</section>
+
+<!-- ================= CLIENTES ================= -->
+<section class="vista" id="vista-clientes">
+  <div class="dos-col">
+    <div class="panel">
+      <div class="cab-panel">
+        <h2>Clientes</h2>
+        <input id="cl-buscar" type="search" placeholder="Buscar cliente…" style="max-width:260px">
+      </div>
+      <div class="tabla-scroll">
+        <table class="tabla">
+          <thead><tr><th>Cliente</th><th>Población</th><th class="num">Facturas</th><th class="num">Facturado</th><th class="num">Pendiente</th></tr></thead>
+          <tbody id="cl-lista"></tbody>
+        </table>
+      </div>
+    </div>
+    <form class="panel" id="form-cliente" autocomplete="off" novalidate>
+      <h2 id="cl-titulo">Nuevo cliente</h2>
+      <label>Nombre o razón social <input id="cl-nombre"></label>
+      <label>CIF / NIF <input id="cl-cif"></label>
+      <label>Dirección <input id="cl-dir"></label>
+      <div class="fila">
+        <label>Código postal <input id="cl-cp" inputmode="numeric"></label>
+        <label>Población <input id="cl-pob"></label>
+      </div>
+      <label>Provincia <input id="cl-prov"></label>
+      <div class="fila">
+        <label>Teléfono <input id="cl-tel"></label>
+        <label>Email <input id="cl-email" type="email"></label>
+      </div>
+      <div class="acciones">
+        <button type="submit" class="btn primario">Guardar cliente</button>
+        <button type="button" class="btn" id="cl-facturar" hidden>Hacerle una factura</button>
+        <button type="button" class="btn" id="cl-nuevo">Nuevo</button>
+        <button type="button" class="btn peligro" id="cl-borrar" hidden>Borrar</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ================= EMPRESAS ================= -->
+<section class="vista" id="vista-empresas">
+  <div class="editor">
+    <div>
+      <div class="panel">
+        <h2>Empresas</h2>
+        <p class="suave">Cada empresa tiene su plantilla (logo, datos, color y firma) y su propia numeración de facturas.</p>
+        <div class="lista-empresas" id="emp-lista"></div>
+        <button type="button" class="btn" id="emp-nueva">+ Añadir empresa</button>
+      </div>
+
+      <form class="panel" id="form-empresa" autocomplete="off" novalidate>
+        <h2 id="emp-titulo">Nueva empresa</h2>
+        <fieldset class="primero">
+          <legend>Datos de la empresa</legend>
+          <label>Nombre o razón social <input id="e-nombre"></label>
+          <div class="fila">
+            <label>CIF / NIF <input id="e-cif"></label>
+            <label>Teléfono <input id="e-tel"></label>
+          </div>
+          <label>Dirección <input id="e-dir"></label>
+          <div class="fila">
+            <label>Código postal <input id="e-cp" inputmode="numeric"></label>
+            <label>Población <input id="e-pob"></label>
+            <label>Provincia <input id="e-prov"></label>
+          </div>
+          <div class="fila">
+            <label>Email <input id="e-email" type="email"></label>
+            <label>Web <input id="e-web"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Plantilla</legend>
+          <span class="etiqueta-campo">Logo</span>
+          <div class="imagen-campo">
+            <div class="caja-img" id="e-logo-caja">Sin logo</div>
+            <label class="btn peq" for="e-logo-archivo" style="margin:0;color:var(--texto)">Subir logo…</label>
+            <input type="file" id="e-logo-archivo" accept="image/*">
+            <button type="button" class="btn peq peligro" id="e-logo-quitar">Quitar</button>
+          </div>
+          <span class="etiqueta-campo">Firma</span>
+          <div class="imagen-campo">
+            <div class="caja-img" id="e-firma-caja">Sin firma</div>
+            <button type="button" class="btn peq" id="e-firma-dibujar">Dibujar firma…</button>
+            <label class="btn peq" for="e-firma-archivo" style="margin:0;color:var(--texto)">Subir imagen…</label>
+            <input type="file" id="e-firma-archivo" accept="image/*">
+            <button type="button" class="btn peq peligro" id="e-firma-quitar">Quitar</button>
+          </div>
+          <div class="fila dos-uno">
+            <label>Nombre de quien firma <input id="e-firmante" placeholder="Ej.: Francisco García"></label>
+            <label>Color <input id="e-color" type="color" value="#1f4e79"></label>
+          </div>
+          <label>Texto al pie de la factura (opcional)
+            <textarea id="e-pie" rows="2" placeholder="Ej.: Inscrita en el Registro Mercantil de…"></textarea>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Numeración de facturas</legend>
+          <div class="fila">
+            <label>Serie / prefijo (opcional)
+              <input id="e-serie" placeholder="Ej.: A-  o  2026/">
+            </label>
+            <label>Número de la próxima factura
+              <input id="e-inicio" type="number" min="1" step="1" value="1">
+            </label>
+            <label>Cifras
+              <select id="e-digitos">
+                <option value="1">1 → 4</option>
+                <option value="2">2 → 04</option>
+                <option value="3">3 → 004</option>
+                <option value="4">4 → 0004</option>
+              </select>
+            </label>
+          </div>
+          <span class="ayuda" id="e-numeracion-ayuda" style="margin:-4px 0 10px"></span>
+        </fieldset>
+
+        <fieldset>
+          <legend>Valores por defecto de las facturas</legend>
+          <div class="fila">
+            <label>% de IVA <input id="e-iva" type="number" min="0" max="100" step="0.01" list="tipos-iva" value="21"></label>
+            <label>Forma de pago <input id="e-pago" list="formas-pago" value="Transferencia bancaria"></label>
+          </div>
+          <label>Nº de cuenta (IBAN) <input id="e-iban" placeholder="ES00 0000 0000 0000 0000 0000"></label>
+        </fieldset>
+
+        <div class="acciones">
+          <button type="submit" class="btn primario">Guardar empresa</button>
+          <button type="button" class="btn peligro" id="emp-borrar" hidden>Borrar empresa</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="columna-previa">
+      <div class="titulo-previa"><span>Así quedará la plantilla</span></div>
+      <div class="marco-previa"><div class="previa-ajuste" id="previa-empresa"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COPIA DE SEGURIDAD ================= -->
+<section class="vista" id="vista-copias">
+  <div class="panel estrecho">
+    <h2>Copia de seguridad</h2>
+    <p>Los datos (empresas, clientes y facturas) se guardan <strong>en este ordenador, dentro del navegador</strong>.
+      Si se borran los datos del navegador o se cambia de ordenador, solo se recuperan con una copia.</p>
+    <p><strong>Recomendación:</strong> descarga una copia cada semana y guárdala en un pendrive, en el correo o en la nube.</p>
+    <p id="cp-estado" class="suave"></p>
+    <div class="acciones">
+      <button type="button" class="btn primario" id="cp-descargar">Descargar copia de seguridad</button>
+      <label class="btn" for="cp-archivo">Restaurar una copia…</label>
+      <input type="file" id="cp-archivo" accept=".json,application/json">
+    </div>
+  </div>
+  <div class="panel estrecho">
+    <h3>Para el gestor</h3>
+    <p>Descarga todas las facturas en un archivo que se abre con Excel (número, fecha, cliente, base, IVA, total y si está cobrada).</p>
+    <button type="button" class="btn" id="cp-csv">Descargar todas las facturas (CSV)</button>
+  </div>
+</section>
+</main>
+
+<!-- Zona que solo se ve al imprimir -->
+<div id="zona-impresion"></div>
+
+<!-- Diálogo para dibujar la firma -->
+<dialog id="dlg-firma">
+  <h3>Dibuja la firma</h3>
+  <p class="suave" style="font-size:14px">Firma con el ratón o con el dedo dentro del recuadro.</p>
+  <canvas id="firma-lienzo" width="900" height="300"></canvas>
+  <div class="acciones fin">
+    <button type="button" class="btn" id="firma-borrar">Borrar</button>
+    <button type="button" class="btn" id="firma-cancelar">Cancelar</button>
+    <button type="button" class="btn primario" id="firma-usar">Usar esta firma</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<datalist id="tipos-iva"><option value="21"><option value="10"><option value="4"><option value="0"></datalist>
+<datalist id="formas-pago">
+  <option value="Transferencia bancaria"><option value="Domiciliación bancaria"><option value="Efectivo">
+  <option value="Tarjeta"><option value="Bizum"><option value="Pagaré"><option value="Cheque">
+</datalist>
+<datalist id="motivos-exencion">
+  <option value="Operación exenta de IVA (art. 20 Ley 37/1992)">
+  <option value="Inversión del sujeto pasivo (art. 84.Uno.2º Ley 37/1992)">
+  <option value="Operación no sujeta a IVA (art. 7 Ley 37/1992)">
+  <option value="Entrega intracomunitaria exenta (art. 25 Ley 37/1992)">
+</datalist>
+
+<script>
+(function () {
+'use strict';
+
+/* =========================================================
+   Utilidades
+   ========================================================= */
+const CLAVE = 'facturacion.datos.v1';
+const $ = (sel, el = document) => el.querySelector(sel);
+const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+const id = (x) => document.getElementById(x);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const normaliza = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+// useGrouping 'always' → 1.000,00 € (por defecto el español no separa los miles en números de 4 cifras)
+const fmtEuros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
+const fmtDec = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
+const euros = (cent) => fmtEuros.format((cent || 0) / 100);
+const porcentaje = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(n) + ' %';
+
+function hoyISO() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function fechaCorta(iso) {
+  if (!iso) return '';
+  const [a, m, d] = iso.split('-');
+  return `${d}/${m}/${a}`;
+}
+function fechaLarga(iso) {
+  if (!iso) return '';
+  const [a, m, d] = iso.split('-').map(Number);
+  return `${d} de ${MESES[m - 1]} de ${a}`;
+}
+/** Convierte "1.250,50" / "1250.5" / "1250" en céntimos (entero). NaN si no es válido. */
+function aCentimos(txt) {
+  let s = String(txt ?? '').trim().replace(/\s|€/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if (!/^-?\d*\.?\d*$/.test(s) || s === '-' || s === '.') return NaN;
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(Number((n * 100).toPrecision(15))) : NaN;
+}
+/** Redondeo comercial (mitad hacia fuera del cero). */
+const redondear = (x) => Math.sign(x) * Math.round(Math.abs(x));
+const leerPct = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+
+function aviso(msg, tipo) {
+  const t = id('toast');
+  t.textContent = msg;
+  t.className = 'toast visible' + (tipo === 'error' ? ' error' : '');
+  clearTimeout(t._temp);
+  t._temp = setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+function descargar(nombre, contenido, tipo) {
+  const blob = new Blob([contenido], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* =========================================================
+   Datos (se guardan en el navegador: localStorage)
+   ========================================================= */
+function datosVacios() {
+  return { version: 1, empresas: [], clientes: [], facturas: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
+}
+function normalizarDatos(d) {
+  const v = datosVacios();
+  if (!d || typeof d !== 'object') return v;
+  return {
+    version: 1,
+    empresas: Array.isArray(d.empresas) ? d.empresas : [],
+    clientes: Array.isArray(d.clientes) ? d.clientes : [],
+    facturas: Array.isArray(d.facturas) ? d.facturas.map((f) => Object.assign({}, f, { cliente: f.cliente || {}, emisor: f.emisor || {} })) : [],
+    ajustes: Object.assign(v.ajustes, d.ajustes || {}),
+  };
+}
+function cargarDatos() {
+  try {
+    const t = localStorage.getItem(CLAVE);
+    if (t) return normalizarDatos(JSON.parse(t));
+  } catch (e) { console.error(e); }
+  return datosVacios();
+}
+let db = cargarDatos();
+function guardarDatos() {
+  try {
+    localStorage.setItem(CLAVE, JSON.stringify(db));
+    return true;
+  } catch (e) {
+    console.error(e);
+    alert('¡Atención! No se han podido guardar los datos (el almacenamiento del navegador está lleno o bloqueado).\n\nDescarga una copia de seguridad y prueba con un logo o una firma más pequeños.');
+    db = cargarDatos();
+    return false;
+  }
+}
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+const empresaPorId = (x) => db.empresas.find((e) => e.id === x) || null;
+const clientePorId = (x) => db.clientes.find((c) => c.id === x) || null;
+const facturaPorId = (x) => db.facturas.find((f) => f.id === x) || null;
+const ordenarPorNombre = (a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
+
+/* ---------- Numeración: cada empresa lleva la suya ---------- */
+function codigoFactura(serie, numero, digitos) {
+  return (serie || '') + String(numero || 0).padStart(Number(digitos) || 1, '0');
+}
+function facturasDeSerie(empresaId, serie, excluirId) {
+  return db.facturas.filter((f) => f.empresaId === empresaId && (f.serie || '') === (serie || '') && f.id !== excluirId);
+}
+function siguienteNumero(emp) {
+  const max = facturasDeSerie(emp.id, emp.serie).reduce((m, f) => Math.max(m, f.numero || 0), 0);
+  return Math.max(max + 1, parseInt(emp.numeroInicial, 10) || 1);
+}
+
+/* =========================================================
+   Plantilla de factura (HTML de la hoja A4)
+   ========================================================= */
+function htmlFactura(f, opciones) {
+  const vistaPrevia = opciones && opciones.vistaPrevia;
+  const emp = (opciones && opciones.empresa) || empresaPorId(f.empresaId) || {};
+  const e = f.emisor || {};
+  const c = f.cliente || {};
+  const color = /^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color : '#1f4e79';
+  const hueco = (txt, ph) => (txt ? esc(txt) : vistaPrevia ? `<span class="vacio">${esc(ph)}</span>` : '');
+  const poblacionLinea = (o) => {
+    const pob = [o.cp, o.poblacion].filter(Boolean).join(' ');
+    return esc(pob + (o.provincia ? (pob ? ` (${o.provincia})` : o.provincia) : ''));
+  };
+  const contacto = [e.telefono && `Tel. ${e.telefono}`, e.email].filter(Boolean).map(esc).join(' · ');
+  const filaIva = f.aplicaIva
+    ? `<tr><td>IVA (${porcentaje(f.ivaPct)})</td><td>${euros(f.cuotaCent)}</td></tr>`
+    : `<tr><td>IVA</td><td>${euros(0)}</td></tr>`;
+  const exencion = !f.aplicaIva && f.motivoExencion ? `<div class="h-exencion">${esc(f.motivoExencion)}</div>` : '';
+  const pago = [
+    f.formaPago ? `<p><strong>Forma de pago:</strong> ${esc(f.formaPago)}</p>` : '',
+    f.iban ? `<p><strong>Nº de cuenta (IBAN):</strong> ${esc(f.iban)}</p>` : '',
+    f.observaciones ? `<p style="white-space:pre-wrap">${esc(f.observaciones)}</p>` : '',
+  ].join('');
+  const firmaImg = f.incluirFirma && emp.firma
+    ? `<img class="h-firma-img" src="${esc(emp.firma)}" alt="Firma">`
+    : '<div class="h-firma-hueco"></div>';
+  const lugar = e.poblacion ? `En ${esc(e.poblacion)}, a ` : 'A ';
+
+  return `
+<div class="hoja" style="--c:${color}">
+  <div class="h-cab">
+    <div class="h-emisor">
+      ${emp.logo ? `<img class="h-logo" src="${esc(emp.logo)}" alt="">` : ''}
+      <div class="h-emisor-nombre">${hueco(e.nombre, 'Nombre de la empresa')}</div>
+      ${e.cif ? `<div>CIF/NIF: ${esc(e.cif)}</div>` : ''}
+      ${e.direccion ? `<div>${esc(e.direccion)}</div>` : ''}
+      ${e.cp || e.poblacion || e.provincia ? `<div>${poblacionLinea(e)}</div>` : ''}
+      ${contacto ? `<div>${contacto}</div>` : ''}
+      ${e.web ? `<div>${esc(e.web)}</div>` : ''}
+    </div>
+    <div class="h-doc">
+      <h1>FACTURA</h1>
+      <table>
+        <tr><td>Nº factura</td><td>${hueco(f.codigo, '—')}</td></tr>
+        <tr><td>Fecha</td><td>${hueco(fechaCorta(f.fecha), '—')}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="h-cliente">
+    <div class="h-caja">
+      <span class="h-etq">Facturar a</span>
+      <div class="h-cliente-nombre">${hueco(c.nombre, 'Nombre del cliente')}</div>
+      <div>CIF/NIF: ${hueco(c.cif, '—')}</div>
+      ${c.direccion ? `<div>${esc(c.direccion)}</div>` : ''}
+      ${c.cp || c.poblacion || c.provincia ? `<div>${poblacionLinea(c)}</div>` : ''}
+    </div>
+  </div>
+
+  <table class="h-tabla">
+    <thead><tr><th>Concepto</th><th class="n">Importe</th></tr></thead>
+    <tbody><tr>
+      <td><div class="h-concepto">${hueco(f.concepto, 'Concepto de la factura…')}</div></td>
+      <td class="n">${euros(f.baseCent)}</td>
+    </tr></tbody>
+  </table>
+
+  <div class="h-bajo">
+    <div class="h-pago">${pago}</div>
+    <div>
+      <table class="h-totales">
+        <tr><td>Base imponible</td><td>${euros(f.baseCent)}</td></tr>
+        ${filaIva}
+        <tr class="h-total"><td>TOTAL</td><td>${euros(f.totalCent)}</td></tr>
+      </table>
+      ${exencion}
+    </div>
+  </div>
+
+  <div class="h-firma">
+    <div>${lugar}${hueco(fechaLarga(f.fecha), '—')}</div>
+    ${firmaImg}
+    <div class="h-firma-linea">Fdo.: ${esc(e.firmante || e.nombre || '')}</div>
+  </div>
+
+  <div class="h-pie">${e.pie ? `<div>${esc(e.pie)}</div>` : ''}</div>
+</div>`;
+}
+
+function datosEmisor(emp) {
+  return {
+    nombre: emp.nombre || '', cif: emp.cif || '', direccion: emp.direccion || '', cp: emp.cp || '',
+    poblacion: emp.poblacion || '', provincia: emp.provincia || '', telefono: emp.telefono || '',
+    email: emp.email || '', web: emp.web || '', firmante: emp.firmante || '', pie: emp.pie || '', color: emp.color || '#1f4e79',
+  };
+}
+
+/** Escala la hoja A4 para que quepa en su recuadro de vista previa. */
+function ajustarPrevia(cont) {
+  if (!cont) return;
+  const hoja = $('.hoja', cont);
+  if (!hoja || !cont.clientWidth) return;
+  const escala = Math.min(1, cont.clientWidth / hoja.offsetWidth);
+  hoja.style.transform = `scale(${escala})`;
+  cont.style.height = hoja.offsetHeight * escala + 'px';
+}
+function ajustarTodasPrevias() { $$('.previa-ajuste').forEach(ajustarPrevia); }
+if (window.ResizeObserver) {
+  const ro = new ResizeObserver(() => ajustarTodasPrevias());
+  $$('.previa-ajuste').forEach((el) => ro.observe(el));
+}
+window.addEventListener('resize', ajustarTodasPrevias);
+
+/* ---------- Imprimir / PDF ---------- */
+async function imprimir(f) {
+  const zona = id('zona-impresion');
+  zona.innerHTML = htmlFactura(f);
+  await Promise.all($$('img', zona).map((img) => (img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }))));
+  const tituloAntes = document.title;
+  document.title = `Factura ${f.codigo} - ${(f.cliente && f.cliente.nombre) || ''}`.replace(/[\\/:*?"<>|]/g, '-');
+  window.print();
+  setTimeout(() => { document.title = tituloAntes; }, 500);
+}
+
+/* =========================================================
+   Navegación entre pestañas
+   ========================================================= */
+let vistaActual = null;
+function irA(vista) {
+  vistaActual = vista;
+  $$('.vista').forEach((v) => v.classList.toggle('activa', v.id === 'vista-' + vista));
+  $$('.barra nav button').forEach((b) => b.classList.toggle('activa', b.dataset.vista === vista));
+  if (vista === 'factura') mostrarEditorOBienvenida();
+  if (vista === 'contabilidad') renderContabilidad();
+  if (vista === 'clientes') renderClientes();
+  if (vista === 'empresas') renderEmpresas();
+  if (vista === 'copias') renderCopias();
+  requestAnimationFrame(ajustarTodasPrevias);
+  window.scrollTo(0, 0);
+}
+$$('.barra nav button').forEach((b) => b.addEventListener('click', () => {
+  if (b.dataset.vista === 'factura') pedirNuevaFactura();
+  else irA(b.dataset.vista);
+}));
+
+/* =========================================================
+   Editor de facturas
+   ========================================================= */
+let edicion = null;        // factura guardada que se está editando (null = nueva)
+let numeroManual = false;  // el usuario ha escrito el número a mano
+let cambiosSinGuardar = false;
+const formF = id('form-factura');
+
+function mostrarEditorOBienvenida() {
+  const sinEmpresas = db.empresas.length === 0;
+  id('sin-empresas').hidden = !sinEmpresas;
+  id('editor-factura').hidden = sinEmpresas;
+  if (!sinEmpresas) {
+    rellenarSelectEmpresas();
+    rellenarSelectClientes();
+    if (!id('f-empresa').value) nuevaFactura();
+    else { calcularNumero(); actualizarPrevia(); }
+  }
+}
+id('btn-ir-empresas').addEventListener('click', () => { irA('empresas'); nuevaEmpresa(); });
+
+function empresaSeleccionada() { return empresaPorId(id('f-empresa').value); }
+
+function rellenarSelectEmpresas() {
+  const sel = id('f-empresa');
+  const actual = sel.value;
+  sel.innerHTML = db.empresas.slice().sort(ordenarPorNombre)
+    .map((e) => `<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('');
+  if (empresaPorId(actual)) sel.value = actual;
+}
+function rellenarSelectClientes() {
+  const sel = id('f-cliente');
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">— Cliente nuevo —</option>' + db.clientes.slice().sort(ordenarPorNombre)
+    .map((c) => `<option value="${esc(c.id)}">${esc(c.nombre)}${c.cif ? ' · ' + esc(c.cif) : ''}</option>`).join('');
+  sel.value = clientePorId(actual) ? actual : '';
+}
+
+function ponerCliente(c) {
+  id('f-cli-nombre').value = c ? c.nombre || '' : '';
+  id('f-cli-cif').value = c ? c.cif || '' : '';
+  id('f-cli-dir').value = c ? c.direccion || '' : '';
+  id('f-cli-cp').value = c ? c.cp || '' : '';
+  id('f-cli-pob').value = c ? c.poblacion || '' : '';
+  id('f-cli-prov').value = c ? c.provincia || '' : '';
+}
+
+/** Prepara el formulario para una factura nueva (opcionalmente copiando otra). */
+function nuevaFactura(copiaDe, clienteId) {
+  edicion = null;
+  numeroManual = false;
+  formF.reset();
+  rellenarSelectEmpresas();
+  rellenarSelectClientes();
+  const empId = [copiaDe && copiaDe.empresaId, db.ajustes.ultimaEmpresa].find((x) => x && empresaPorId(x))
+    || (db.empresas.slice().sort(ordenarPorNombre)[0] || {}).id || '';
+  id('f-empresa').value = empId;
+  const emp = empresaSeleccionada() || {};
+  id('f-fecha').value = hoyISO();
+  id('f-aplica-iva').checked = true;
+  id('f-iva').value = emp.iva ?? 21;
+  id('f-pago').value = emp.formaPago || '';
+  id('f-iban').value = emp.iban || '';
+  id('f-incluir-firma').checked = true;
+  if (copiaDe) {
+    id('f-cliente').value = clientePorId(copiaDe.clienteId) ? copiaDe.clienteId : '';
+    ponerCliente(copiaDe.cliente);
+    id('f-concepto').value = copiaDe.concepto || '';
+    id('f-base').value = fmtDec.format((copiaDe.baseCent || 0) / 100);
+    id('f-aplica-iva').checked = !!copiaDe.aplicaIva;
+    id('f-iva').value = copiaDe.aplicaIva ? copiaDe.ivaPct : (emp.iva ?? 21);
+    id('f-exencion').value = copiaDe.motivoExencion || '';
+    id('f-pago').value = copiaDe.formaPago || '';
+    id('f-iban').value = copiaDe.iban || '';
+    id('f-obs').value = copiaDe.observaciones || '';
+    id('f-incluir-firma').checked = copiaDe.incluirFirma !== false;
+  } else if (clienteId && clientePorId(clienteId)) {
+    id('f-cliente').value = clienteId;
+    ponerCliente(clientePorId(clienteId));
+  }
+  calcularNumero();
+  refrescarEditor();
+  cambiosSinGuardar = false;
+}
+
+/** Carga una factura guardada en el formulario para verla o modificarla. */
+function abrirFactura(f) {
+  edicion = f;
+  numeroManual = false;
+  formF.reset();
+  rellenarSelectEmpresas();
+  rellenarSelectClientes();
+  id('f-empresa').value = f.empresaId;
+  id('f-numero').value = f.numero;
+  id('f-fecha').value = f.fecha;
+  id('f-cliente').value = clientePorId(f.clienteId) ? f.clienteId : '';
+  ponerCliente(f.cliente);
+  id('f-concepto').value = f.concepto || '';
+  id('f-base').value = fmtDec.format((f.baseCent || 0) / 100);
+  id('f-aplica-iva').checked = !!f.aplicaIva;
+  id('f-iva').value = f.aplicaIva ? f.ivaPct : ((empresaPorId(f.empresaId) || {}).iva ?? 21);
+  id('f-exencion').value = f.motivoExencion || '';
+  id('f-pago').value = f.formaPago || '';
+  id('f-iban').value = f.iban || '';
+  id('f-obs').value = f.observaciones || '';
+  id('f-incluir-firma').checked = f.incluirFirma !== false;
+  id('f-cobrada').checked = !!f.cobrada;
+  id('f-fecha-cobro').value = f.fechaCobro || '';
+  calcularNumero();
+  refrescarEditor();
+  cambiosSinGuardar = false;
+  irA('factura');
+}
+
+function pedirNuevaFactura() {
+  if (edicion && cambiosSinGuardar && !confirm(`Tienes cambios sin guardar en la factura ${edicion.codigo}.\n¿Descartarlos y empezar una factura nueva?`)) {
+    irA('factura');
+    return;
+  }
+  if (edicion) nuevaFactura();
+  irA('factura');
+}
+id('btn-nueva-factura').addEventListener('click', () => {
+  if (cambiosSinGuardar && !confirm('Hay cambios sin guardar. ¿Empezar una factura nueva en blanco?')) return;
+  nuevaFactura();
+});
+
+function serieEnUso() {
+  const emp = empresaSeleccionada();
+  if (!emp) return '';
+  return edicion && edicion.empresaId === emp.id ? edicion.serie || '' : emp.serie || '';
+}
+function calcularNumero() {
+  const emp = empresaSeleccionada();
+  if (!emp) return;
+  if (!numeroManual) {
+    id('f-numero').value = edicion && edicion.empresaId === emp.id ? edicion.numero : siguienteNumero(emp);
+  }
+  id('f-serie').textContent = serieEnUso();
+  const n = parseInt(id('f-numero').value, 10);
+  id('f-numero-ayuda').textContent = n > 0 ? `Saldrá como: ${codigoFactura(serieEnUso(), n, emp.digitos)}` : '';
+}
+
+/** Lee el formulario y devuelve la factura con los importes calculados. */
+function facturaDelFormulario() {
+  const emp = empresaSeleccionada() || {};
+  const baseLeida = aCentimos(id('f-base').value);
+  const baseCent = Number.isFinite(baseLeida) ? baseLeida : 0;
+  const aplicaIva = id('f-aplica-iva').checked;
+  const ivaPct = aplicaIva ? leerPct(id('f-iva').value) : 0;
+  const cuotaCent = redondear((baseCent * ivaPct) / 100);
+  const serie = serieEnUso();
+  const numero = parseInt(id('f-numero').value, 10) || 0;
+  const cobrada = id('f-cobrada').checked;
+  return {
+    id: edicion ? edicion.id : null,
+    empresaId: emp.id || null,
+    emisor: datosEmisor(emp),
+    clienteId: id('f-cliente').value || null,
+    cliente: {
+      nombre: id('f-cli-nombre').value.trim(), cif: id('f-cli-cif').value.trim().toUpperCase(),
+      direccion: id('f-cli-dir').value.trim(), cp: id('f-cli-cp').value.trim(),
+      poblacion: id('f-cli-pob').value.trim(), provincia: id('f-cli-prov').value.trim(),
+    },
+    serie, numero,
+    codigo: numero ? codigoFactura(serie, numero, emp.digitos) : '',
+    fecha: id('f-fecha').value,
+    concepto: id('f-concepto').value.replace(/\s+$/, ''),
+    baseCent, aplicaIva, ivaPct, cuotaCent, totalCent: baseCent + cuotaCent,
+    motivoExencion: aplicaIva ? '' : id('f-exencion').value.trim(),
+    formaPago: id('f-pago').value.trim(),
+    iban: id('f-iban').value.trim(),
+    observaciones: id('f-obs').value.trim(),
+    incluirFirma: id('f-incluir-firma').checked,
+    cobrada,
+    fechaCobro: cobrada ? id('f-fecha-cobro').value || hoyISO() : '',
+    creada: edicion ? edicion.creada : null,
+    modificada: null,
+    _baseValida: Number.isFinite(baseLeida),
+  };
+}
+
+function refrescarEditor() {
+  const conIva = id('f-aplica-iva').checked;
+  id('lbl-iva').style.visibility = conIva ? 'visible' : 'hidden';
+  id('lbl-exencion').hidden = conIva;
+  id('f-fecha-cobro').disabled = !id('f-cobrada').checked;
+  id('titulo-editor').innerHTML = edicion
+    ? `Factura ${esc(edicion.codigo)} <span class="etiqueta">guardada</span>`
+    : 'Nueva factura';
+  id('btn-borrar-factura').hidden = !edicion;
+  actualizarPrevia();
+}
+function actualizarPrevia() {
+  if (!empresaSeleccionada()) return;
+  const f = facturaDelFormulario();
+  id('r-base').textContent = euros(f.baseCent);
+  id('r-iva-txt').textContent = f.aplicaIva ? `IVA ${porcentaje(f.ivaPct)}` : 'IVA (sin IVA)';
+  id('r-iva').textContent = euros(f.cuotaCent);
+  id('r-total').textContent = euros(f.totalCent);
+  id('previa-codigo').textContent = f.codigo;
+  const cont = id('previa-factura');
+  cont.innerHTML = htmlFactura(f, { vistaPrevia: true });
+  ajustarPrevia(cont);
+}
+
+formF.addEventListener('input', (ev) => {
+  cambiosSinGuardar = true;
+  if (ev.target.id === 'f-numero') numeroManual = true;
+  if (ev.target.id === 'f-numero') calcularNumero();
+  actualizarPrevia();
+});
+formF.addEventListener('change', (ev) => {
+  cambiosSinGuardar = true;
+  const t = ev.target.id;
+  if (t === 'f-empresa') {
+    const emp = empresaSeleccionada();
+    if (emp && !edicion) {
+      id('f-pago').value = emp.formaPago || '';
+      id('f-iban').value = emp.iban || '';
+      if (id('f-aplica-iva').checked) id('f-iva').value = emp.iva ?? 21;
+    }
+    numeroManual = false;
+    calcularNumero();
+  }
+  if (t === 'f-cliente') ponerCliente(clientePorId(id('f-cliente').value));
+  if (t === 'f-cobrada' && id('f-cobrada').checked && !id('f-fecha-cobro').value) id('f-fecha-cobro').value = hoyISO();
+  if (t === 'f-base') {
+    const c = aCentimos(id('f-base').value);
+    if (Number.isFinite(c)) id('f-base').value = fmtDec.format(c / 100);
+  }
+  refrescarEditor();
+});
+
+/** Guarda (o actualiza) el cliente a partir de los datos escritos en la factura. */
+function guardarClienteDeFactura(clienteId, datos) {
+  const limpiaCif = (x) => normaliza(x).replace(/[\s.-]/g, '');
+  const cif = limpiaCif(datos.cif);
+  let cli = clientePorId(clienteId);
+  // Si se ha elegido un cliente pero se ha escrito otro CIF, es otro cliente: no se sobrescribe.
+  if (cli && limpiaCif(cli.cif) && cif && limpiaCif(cli.cif) !== cif) cli = null;
+  if (!cli) {
+    cli = db.clientes.find((c) => (cif && limpiaCif(c.cif) === cif) || (!cif && !limpiaCif(c.cif) && normaliza(c.nombre) === normaliza(datos.nombre))) || null;
+  }
+  if (!cli) {
+    cli = { id: uid(), telefono: '', email: '' };
+    db.clientes.push(cli);
+  }
+  Object.assign(cli, datos);
+  return cli.id;
+}
+
+function guardarFactura() {
+  const f = facturaDelFormulario();
+  const emp = empresaSeleccionada();
+  const fallo = (msg, campo) => { aviso(msg, 'error'); if (campo) id(campo).focus(); return null; };
+  if (!emp) return fallo('Elige la empresa que hace la factura.', 'f-empresa');
+  if (!(f.numero >= 1)) return fallo('El número de factura no es válido.', 'f-numero');
+  if (!f.fecha) return fallo('Pon la fecha de la factura.', 'f-fecha');
+  if (!f.cliente.nombre) return fallo('Escribe el nombre del cliente.', 'f-cli-nombre');
+  if (!f.concepto.trim()) return fallo('Escribe el concepto de la factura.', 'f-concepto');
+  if (!f._baseValida) return fallo('Escribe la base imponible (por ejemplo: 1.250,00).', 'f-base');
+  if (f.aplicaIva && (f.ivaPct < 0 || f.ivaPct > 100)) return fallo('El % de IVA no es válido.', 'f-iva');
+
+  const mismaSerie = facturasDeSerie(emp.id, f.serie, f.id);
+  const repetida = mismaSerie.find((x) => x.numero === f.numero);
+  if (repetida) return fallo(`Ya existe la factura ${repetida.codigo} de ${emp.nombre}. Cambia el número.`, 'f-numero');
+
+  const avisos = [];
+  if (!f.cliente.cif) avisos.push('• La factura no lleva el CIF/NIF del cliente (es obligatorio en una factura completa).');
+  const anteriorPosterior = mismaSerie.find((x) => x.numero < f.numero && x.fecha > f.fecha);
+  const posteriorAnterior = mismaSerie.find((x) => x.numero > f.numero && x.fecha < f.fecha);
+  if (anteriorPosterior) avisos.push(`• La factura ${anteriorPosterior.codigo} tiene un número menor pero una fecha posterior (${fechaCorta(anteriorPosterior.fecha)}). Las facturas deben ir en orden.`);
+  if (posteriorAnterior) avisos.push(`• La factura ${posteriorAnterior.codigo} tiene un número mayor pero una fecha anterior (${fechaCorta(posteriorAnterior.fecha)}). Las facturas deben ir en orden.`);
+  if (!edicion || edicion.empresaId !== emp.id) {
+    const toca = siguienteNumero(emp);
+    if (f.numero > toca) avisos.push(`• El número que toca es el ${codigoFactura(f.serie, toca, emp.digitos)} y vas a usar el ${f.codigo}: quedará un hueco en la numeración.`);
+  }
+  if (avisos.length && !confirm('Revisa esto antes de guardar:\n\n' + avisos.join('\n') + '\n\n¿Guardar igualmente?')) return null;
+
+  const ahora = new Date().toISOString();
+  delete f._baseValida;
+  f.id = f.id || uid();
+  f.creada = f.creada || ahora;
+  f.modificada = ahora;
+  f.clienteId = guardarClienteDeFactura(f.clienteId, f.cliente);
+  const i = db.facturas.findIndex((x) => x.id === f.id);
+  if (i >= 0) db.facturas[i] = f; else db.facturas.push(f);
+  db.ajustes.ultimaEmpresa = f.empresaId;
+  if (!guardarDatos()) return null;
+
+  edicion = f;
+  numeroManual = false;
+  cambiosSinGuardar = false;
+  rellenarSelectClientes();
+  id('f-cliente').value = f.clienteId;
+  calcularNumero();
+  refrescarEditor();
+  revisarAvisoCopia();
+  aviso(`Factura ${f.codigo} guardada`);
+  return f;
+}
+formF.addEventListener('submit', (ev) => { ev.preventDefault(); guardarFactura(); });
+id('btn-imprimir').addEventListener('click', () => {
+  const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
+  if (f) imprimir(f);
+});
+id('btn-borrar-factura').addEventListener('click', () => {
+  if (edicion && borrarFactura(edicion)) nuevaFactura();
+});
+function borrarFactura(f) {
+  const msg = `¿Borrar la factura ${f.codigo} de ${f.cliente.nombre}?\n\nOjo: borrar facturas ya enviadas deja un hueco en la numeración. Si la factura era errónea, lo correcto suele ser hacer una factura rectificativa.`;
+  if (!confirm(msg)) return false;
+  db.facturas = db.facturas.filter((x) => x.id !== f.id);
+  guardarDatos();
+  aviso(`Factura ${f.codigo} borrada`);
+  return true;
+}
+
+/* Atajo: Ctrl+S / Cmd+S guarda la factura */
+document.addEventListener('keydown', (ev) => {
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 's' && vistaActual === 'factura' && !id('editor-factura').hidden) {
+    ev.preventDefault();
+    guardarFactura();
+  }
+});
+window.addEventListener('beforeunload', (ev) => {
+  if (cambiosSinGuardar) { ev.preventDefault(); ev.returnValue = ''; }
+});
+
+/* =========================================================
+   Contabilidad
+   ========================================================= */
+function rellenarFiltrosContabilidad() {
+  const selE = id('c-empresa');
+  const e = selE.value;
+  selE.innerHTML = '<option value="">Todas las empresas</option>' + db.empresas.slice().sort(ordenarPorNombre)
+    .map((x) => `<option value="${esc(x.id)}">${esc(x.nombre)}</option>`).join('');
+  selE.value = empresaPorId(e) ? e : '';
+  const selA = id('c-anio');
+  const a = selA.value;
+  const anios = new Set(db.facturas.map((f) => (f.fecha || '').slice(0, 4)).filter(Boolean));
+  anios.add(hoyISO().slice(0, 4));
+  selA.innerHTML = '<option value="">Todos los años</option>' + Array.from(anios).sort().reverse()
+    .map((x) => `<option value="${x}">${x}</option>`).join('');
+  selA.value = anios.has(a) ? a : '';
+}
+function facturasFiltradas() {
+  const emp = id('c-empresa').value;
+  const est = id('c-estado').value;
+  const anio = id('c-anio').value;
+  const tri = id('c-tri').value;
+  const q = normaliza(id('c-buscar').value);
+  return db.facturas.filter((f) =>
+    (!emp || f.empresaId === emp) &&
+    (!est || (est === 'cobradas' ? f.cobrada : !f.cobrada)) &&
+    (!anio || (f.fecha || '').slice(0, 4) === anio) &&
+    (!tri || Math.ceil(Number((f.fecha || '').slice(5, 7)) / 3) === Number(tri)) &&
+    (!q || normaliza([f.codigo, f.cliente.nombre, f.cliente.cif, f.concepto, f.emisor.nombre].join(' ')).includes(q))
+  ).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.numero - a.numero));
+}
+function renderContabilidad() {
+  rellenarFiltrosContabilidad();
+  const lista = facturasFiltradas();
+  const suma = (arr, k) => arr.reduce((s, f) => s + (f[k] || 0), 0);
+  const cobradas = lista.filter((f) => f.cobrada);
+  const pendientes = lista.filter((f) => !f.cobrada);
+  id('c-tarjetas').innerHTML = `
+    <div class="tarjeta"><span>Facturas</span><strong>${lista.length}</strong><small>en la selección</small></div>
+    <div class="tarjeta"><span>Base imponible</span><strong>${euros(suma(lista, 'baseCent'))}</strong></div>
+    <div class="tarjeta"><span>IVA repercutido</span><strong>${euros(suma(lista, 'cuotaCent'))}</strong></div>
+    <div class="tarjeta"><span>Total facturado</span><strong>${euros(suma(lista, 'totalCent'))}</strong></div>
+    <div class="tarjeta ok"><span>Cobrado</span><strong>${euros(suma(cobradas, 'totalCent'))}</strong><small>${cobradas.length} factura(s)</small></div>
+    <div class="tarjeta pend"><span>Pendiente de cobro</span><strong>${euros(suma(pendientes, 'totalCent'))}</strong><small>${pendientes.length} factura(s)</small></div>`;
+  id('c-lista').innerHTML = lista.length ? lista.map((f) => `
+    <tr>
+      <td><button type="button" class="enlace" data-abrir="${esc(f.id)}">${esc(f.codigo)}</button></td>
+      <td>${fechaCorta(f.fecha)}</td>
+      <td>${esc(f.emisor.nombre)}</td>
+      <td>${esc(f.cliente.nombre)}${f.cliente.cif ? `<br><small>${esc(f.cliente.cif)}</small>` : ''}</td>
+      <td class="num">${euros(f.baseCent)}</td>
+      <td class="num">${euros(f.cuotaCent)}</td>
+      <td class="num"><strong>${euros(f.totalCent)}</strong></td>
+      <td>${f.cobrada
+        ? `<button type="button" class="estado cobrada" data-estado="${esc(f.id)}" title="Pulsa para marcar como no cobrada">✓ Cobrada <small>${fechaCorta(f.fechaCobro)}</small></button>`
+        : `<button type="button" class="estado pendiente" data-estado="${esc(f.id)}" title="Pulsa para marcar como cobrada">● No cobrada</button>`}</td>
+      <td><div class="acciones-fila">
+        <button type="button" class="btn peq" data-imprimir="${esc(f.id)}">Imprimir / PDF</button>
+        <button type="button" class="btn peq" data-duplicar="${esc(f.id)}">Duplicar</button>
+        <button type="button" class="btn peq peligro" data-borrar="${esc(f.id)}">Borrar</button>
+      </div></td>
+    </tr>`).join('')
+    : `<tr><td colspan="9" class="vacia">${db.facturas.length ? 'No hay facturas con estos filtros.' : 'Todavía no hay facturas. Pulsa «+ Nueva factura» para hacer la primera.'}</td></tr>`;
+}
+['c-empresa', 'c-estado', 'c-anio', 'c-tri'].forEach((x) => id(x).addEventListener('change', renderContabilidad));
+id('c-buscar').addEventListener('input', renderContabilidad);
+id('c-nueva').addEventListener('click', pedirNuevaFactura);
+id('c-csv').addEventListener('click', () => exportarCSV(facturasFiltradas(), 'facturas-seleccion'));
+id('c-lista').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  const f = facturaPorId(b.dataset.abrir || b.dataset.estado || b.dataset.imprimir || b.dataset.duplicar || b.dataset.borrar);
+  if (!f) return;
+  if (b.dataset.abrir) {
+    if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
+    abrirFactura(f);
+  } else if (b.dataset.estado) {
+    if (f.cobrada) {
+      if (!confirm(`¿Marcar la factura ${f.codigo} como NO cobrada?`)) return;
+      f.cobrada = false; f.fechaCobro = '';
+    } else {
+      f.cobrada = true; f.fechaCobro = hoyISO();
+    }
+    f.modificada = new Date().toISOString();
+    guardarDatos();
+    if (edicion && edicion.id === f.id) {
+      edicion = f;
+      id('f-cobrada').checked = f.cobrada;
+      id('f-fecha-cobro').value = f.fechaCobro;
+      refrescarEditor();
+    }
+    renderContabilidad();
+    aviso(f.cobrada ? `Factura ${f.codigo} marcada como cobrada` : `Factura ${f.codigo} marcada como no cobrada`);
+  } else if (b.dataset.imprimir) {
+    imprimir(f);
+  } else if (b.dataset.duplicar) {
+    if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
+    nuevaFactura(f);
+    cambiosSinGuardar = true;
+    irA('factura');
+    aviso('Copia preparada: revisa la fecha y el concepto y guárdala.');
+  } else if (b.dataset.borrar) {
+    if (borrarFactura(f)) {
+      if (edicion && edicion.id === f.id) nuevaFactura();
+      renderContabilidad();
+    }
+  }
+});
+
+function exportarCSV(lista, nombre) {
+  if (!lista.length) { aviso('No hay facturas que exportar.', 'error'); return; }
+  const dec = (cent) => fmtDec.format((cent || 0) / 100).replace(/\./g, '');
+  const celda = (v) => {
+    const s = String(v ?? '');
+    return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const cab = ['Nº factura', 'Fecha', 'Empresa', 'CIF empresa', 'Cliente', 'CIF cliente', 'Población cliente', 'Concepto', 'Base imponible', '% IVA', 'Cuota IVA', 'Total', 'Estado', 'Fecha de cobro', 'Forma de pago'];
+  const filas = lista.slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || a.numero - b.numero).map((f) => [
+    f.codigo, fechaCorta(f.fecha), f.emisor.nombre, f.emisor.cif, f.cliente.nombre, f.cliente.cif, f.cliente.poblacion,
+    (f.concepto || '').replace(/\s*\n\s*/g, ' / '), dec(f.baseCent), f.aplicaIva ? String(f.ivaPct).replace('.', ',') : '0',
+    dec(f.cuotaCent), dec(f.totalCent), f.cobrada ? 'Cobrada' : 'No cobrada', fechaCorta(f.fechaCobro), f.formaPago,
+  ]);
+  const csv = '﻿' + [cab, ...filas].map((r) => r.map(celda).join(';')).join('\r\n');
+  descargar(`${nombre}-${hoyISO()}.csv`, csv, 'text/csv;charset=utf-8');
+}
+
+/* =========================================================
+   Clientes
+   ========================================================= */
+let clienteEditando = null;
+const formC = id('form-cliente');
+function renderClientes() {
+  const q = normaliza(id('cl-buscar').value);
+  const lista = db.clientes.filter((c) => !q || normaliza([c.nombre, c.cif, c.poblacion].join(' ')).includes(q)).sort(ordenarPorNombre);
+  id('cl-lista').innerHTML = lista.length ? lista.map((c) => {
+    const fs = db.facturas.filter((f) => f.clienteId === c.id);
+    const total = fs.reduce((s, f) => s + f.totalCent, 0);
+    const pend = fs.filter((f) => !f.cobrada).reduce((s, f) => s + f.totalCent, 0);
+    return `<tr data-cliente="${esc(c.id)}" style="cursor:pointer" class="${clienteEditando === c.id ? 'seleccionada' : ''}">
+      <td><strong>${esc(c.nombre)}</strong>${c.cif ? `<br><small>${esc(c.cif)}</small>` : ''}</td>
+      <td>${esc(c.poblacion || '')}</td>
+      <td class="num">${fs.length}</td>
+      <td class="num">${euros(total)}</td>
+      <td class="num">${pend ? `<strong style="color:var(--pend)">${euros(pend)}</strong>` : euros(0)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" class="vacia">${db.clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Aún no hay clientes. Se guardan solos al hacer una factura, o puedes añadirlos aquí.'}</td></tr>`;
+}
+function editarCliente(c) {
+  clienteEditando = c ? c.id : null;
+  formC.reset();
+  if (c) {
+    id('cl-nombre').value = c.nombre || ''; id('cl-cif').value = c.cif || ''; id('cl-dir').value = c.direccion || '';
+    id('cl-cp').value = c.cp || ''; id('cl-pob').value = c.poblacion || ''; id('cl-prov').value = c.provincia || '';
+    id('cl-tel').value = c.telefono || ''; id('cl-email').value = c.email || '';
+  }
+  id('cl-titulo').textContent = c ? c.nombre : 'Nuevo cliente';
+  id('cl-borrar').hidden = !c;
+  id('cl-facturar').hidden = !c;
+  renderClientes();
+}
+id('cl-buscar').addEventListener('input', renderClientes);
+id('cl-lista').addEventListener('click', (ev) => {
+  const tr = ev.target.closest('tr[data-cliente]');
+  if (tr) editarCliente(clientePorId(tr.dataset.cliente));
+});
+id('cl-nuevo').addEventListener('click', () => { editarCliente(null); id('cl-nombre').focus(); });
+formC.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const datos = {
+    nombre: id('cl-nombre').value.trim(), cif: id('cl-cif').value.trim().toUpperCase(), direccion: id('cl-dir').value.trim(),
+    cp: id('cl-cp').value.trim(), poblacion: id('cl-pob').value.trim(), provincia: id('cl-prov').value.trim(),
+    telefono: id('cl-tel').value.trim(), email: id('cl-email').value.trim(),
+  };
+  if (!datos.nombre) { aviso('Escribe el nombre del cliente.', 'error'); id('cl-nombre').focus(); return; }
+  let c = clientePorId(clienteEditando);
+  if (!c) { c = { id: uid() }; db.clientes.push(c); }
+  Object.assign(c, datos);
+  if (!guardarDatos()) return;
+  editarCliente(c);
+  rellenarSelectClientes();
+  aviso('Cliente guardado');
+});
+id('cl-borrar').addEventListener('click', () => {
+  const c = clientePorId(clienteEditando);
+  if (!c) return;
+  const n = db.facturas.filter((f) => f.clienteId === c.id).length;
+  if (!confirm(`¿Borrar el cliente ${c.nombre}?` + (n ? `\n\nTiene ${n} factura(s): no se borran y conservan sus datos.` : ''))) return;
+  db.clientes = db.clientes.filter((x) => x.id !== c.id);
+  guardarDatos();
+  editarCliente(null);
+  rellenarSelectClientes();
+  aviso('Cliente borrado');
+});
+id('cl-facturar').addEventListener('click', () => {
+  if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
+  nuevaFactura(null, clienteEditando);
+  irA('factura');
+});
+
+/* =========================================================
+   Empresas (plantilla + numeración)
+   ========================================================= */
+let empresaEditando = null;
+let imagenes = { logo: '', firma: '' };
+const formE = id('form-empresa');
+
+function renderEmpresas() {
+  const lista = db.empresas.slice().sort(ordenarPorNombre);
+  id('emp-lista').innerHTML = lista.length ? lista.map((e) => {
+    const n = db.facturas.filter((f) => f.empresaId === e.id).length;
+    const visual = e.logo ? `<img class="mini-logo" src="${esc(e.logo)}" alt="">` : `<span class="mini-color" style="background:${esc(e.color || '#1f4e79')}"></span>`;
+    return `<button type="button" class="tarjeta-empresa ${empresaEditando === e.id ? 'seleccionada' : ''}" data-empresa="${esc(e.id)}">
+      ${visual}
+      <div><strong>${esc(e.nombre)}</strong><small>${esc(e.cif || '')} · ${n} factura(s) · próxima: ${esc(codigoFactura(e.serie, siguienteNumero(e), e.digitos))}</small></div>
+    </button>`;
+  }).join('') : '<p class="suave">Todavía no hay ninguna empresa. Rellena los datos de abajo.</p>';
+  if (!formE.dataset.cargado) {
+    const primera = empresaPorId(empresaEditando) || lista[0] || null;
+    editarEmpresa(primera);
+  } else {
+    actualizarPreviaEmpresa();
+  }
+}
+function cajaImagen(caja, src, textoVacio) {
+  caja.innerHTML = src ? `<img src="${esc(src)}" alt="">` : esc(textoVacio);
+}
+function editarEmpresa(e) {
+  empresaEditando = e ? e.id : null;
+  formE.reset();
+  formE.dataset.cargado = '1';
+  imagenes = { logo: e ? e.logo || '' : '', firma: e ? e.firma || '' : '' };
+  const v = (x, def) => (e && e[x] != null && e[x] !== '' ? e[x] : def);
+  id('e-nombre').value = v('nombre', ''); id('e-cif').value = v('cif', ''); id('e-tel').value = v('telefono', '');
+  id('e-dir').value = v('direccion', ''); id('e-cp').value = v('cp', ''); id('e-pob').value = v('poblacion', '');
+  id('e-prov').value = v('provincia', ''); id('e-email').value = v('email', ''); id('e-web').value = v('web', '');
+  id('e-firmante').value = v('firmante', ''); id('e-color').value = v('color', '#1f4e79'); id('e-pie').value = v('pie', '');
+  id('e-serie').value = v('serie', ''); id('e-digitos').value = String(v('digitos', 3));
+  id('e-inicio').value = e ? siguienteNumero(e) : 1;
+  id('e-iva').value = v('iva', 21); id('e-pago').value = v('formaPago', 'Transferencia bancaria'); id('e-iban').value = v('iban', '');
+  id('emp-titulo').textContent = e ? e.nombre : 'Nueva empresa';
+  id('emp-borrar').hidden = !e;
+  cajaImagen(id('e-logo-caja'), imagenes.logo, 'Sin logo');
+  cajaImagen(id('e-firma-caja'), imagenes.firma, 'Sin firma');
+  $$('.tarjeta-empresa').forEach((b) => b.classList.toggle('seleccionada', b.dataset.empresa === empresaEditando));
+  actualizarPreviaEmpresa();
+}
+function nuevaEmpresa() {
+  formE.dataset.cargado = '1';
+  editarEmpresa(null);
+  id('e-nombre').focus();
+}
+function empresaDelFormulario() {
+  return {
+    nombre: id('e-nombre').value.trim(), cif: id('e-cif').value.trim().toUpperCase(), telefono: id('e-tel').value.trim(),
+    direccion: id('e-dir').value.trim(), cp: id('e-cp').value.trim(), poblacion: id('e-pob').value.trim(),
+    provincia: id('e-prov').value.trim(), email: id('e-email').value.trim(), web: id('e-web').value.trim(),
+    firmante: id('e-firmante').value.trim(), color: id('e-color').value, pie: id('e-pie').value.trim(),
+    serie: id('e-serie').value.replace(/^\s+|\s+$/g, ''), digitos: parseInt(id('e-digitos').value, 10) || 3,
+    numeroInicial: parseInt(id('e-inicio').value, 10) || 1,
+    iva: leerPct(id('e-iva').value), formaPago: id('e-pago').value.trim(), iban: id('e-iban').value.trim(),
+    logo: imagenes.logo, firma: imagenes.firma,
+  };
+}
+function actualizarPreviaEmpresa() {
+  const d = empresaDelFormulario();
+  const f = {
+    empresaId: null, emisor: datosEmisor(d),
+    cliente: { nombre: 'Cliente de ejemplo, S.L.', cif: 'B12345678', direccion: 'Calle Mayor, 1', cp: '28001', poblacion: 'Madrid', provincia: 'Madrid' },
+    codigo: codigoFactura(d.serie, d.numeroInicial, d.digitos), fecha: hoyISO(),
+    concepto: 'Ejemplo de concepto de la factura.\nAquí se describe el trabajo realizado.',
+    baseCent: 100000, aplicaIva: d.iva > 0, ivaPct: d.iva, cuotaCent: redondear(100000 * d.iva / 100), totalCent: 100000 + redondear(100000 * d.iva / 100),
+    motivoExencion: '', formaPago: d.formaPago, iban: d.iban, observaciones: '', incluirFirma: true,
+  };
+  const cont = id('previa-empresa');
+  cont.innerHTML = htmlFactura(f, { vistaPrevia: true, empresa: d });
+  ajustarPrevia(cont);
+  // Ayuda de numeración
+  const e = empresaPorId(empresaEditando);
+  const usadas = e ? facturasDeSerie(e.id, d.serie).length : 0;
+  id('e-numeracion-ayuda').textContent = `La próxima factura será la ${codigoFactura(d.serie, d.numeroInicial, d.digitos)}.`
+    + (usadas ? ` (Ya hay ${usadas} factura(s) con esta serie: el número no puede ser menor que el siguiente libre.)` : ' Si ya llevabas facturas hechas, pon aquí el número que toca (por ejemplo, 4).');
+}
+id('emp-lista').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-empresa]');
+  if (b) editarEmpresa(empresaPorId(b.dataset.empresa));
+});
+id('emp-nueva').addEventListener('click', nuevaEmpresa);
+formE.addEventListener('input', actualizarPreviaEmpresa);
+formE.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const d = empresaDelFormulario();
+  if (!d.nombre) { aviso('Escribe el nombre de la empresa.', 'error'); id('e-nombre').focus(); return; }
+  if (!d.cif) { aviso('Escribe el CIF/NIF de la empresa (es obligatorio en las facturas).', 'error'); id('e-cif').focus(); return; }
+  let e = empresaPorId(empresaEditando);
+  let ajuste = '';
+  if (e) {
+    const libre = Math.max(...facturasDeSerie(e.id, d.serie).map((f) => f.numero), 0) + 1;
+    if (d.numeroInicial < libre) {
+      ajuste = `Empresa guardada. Con esta serie ya hay facturas hasta la ${codigoFactura(d.serie, libre - 1, d.digitos)}, así que la próxima será la ${codigoFactura(d.serie, libre, d.digitos)}.`;
+      d.numeroInicial = libre;
+    }
+  }
+  if (!e) { e = { id: uid() }; db.empresas.push(e); }
+  Object.assign(e, d);
+  if (!db.ajustes.ultimaEmpresa) db.ajustes.ultimaEmpresa = e.id;
+  if (!guardarDatos()) return;
+  empresaEditando = e.id;
+  renderEmpresas();
+  editarEmpresa(e);
+  rellenarSelectEmpresas();
+  if (!edicion && !cambiosSinGuardar) nuevaFactura();
+  aviso(ajuste || 'Empresa guardada');
+});
+id('emp-borrar').addEventListener('click', () => {
+  const e = empresaPorId(empresaEditando);
+  if (!e) return;
+  const n = db.facturas.filter((f) => f.empresaId === e.id).length;
+  if (n) { alert(`No se puede borrar «${e.nombre}» porque tiene ${n} factura(s).`); return; }
+  if (!confirm(`¿Borrar la empresa «${e.nombre}»?`)) return;
+  db.empresas = db.empresas.filter((x) => x.id !== e.id);
+  if (db.ajustes.ultimaEmpresa === e.id) db.ajustes.ultimaEmpresa = null;
+  guardarDatos();
+  empresaEditando = null;
+  delete formE.dataset.cargado;
+  renderEmpresas();
+  rellenarSelectEmpresas();
+  aviso('Empresa borrada');
+});
+
+/* ---------- Imágenes: logo y firma ---------- */
+function leerArchivo(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+}
+function cargarImagen(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+/** Reduce la imagen para que no ocupe demasiado en el navegador. */
+async function prepararImagen(file, maxAncho, maxAlto) {
+  if (!file || !/^image\//.test(file.type)) throw new Error('El archivo no es una imagen.');
+  const img = await cargarImagen(await leerArchivo(file));
+  const w = img.naturalWidth || maxAncho, h = img.naturalHeight || maxAlto;
+  const s = Math.min(1, maxAncho / w, maxAlto / h);
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  const png = c.toDataURL('image/png');
+  if (file.type === 'image/jpeg') {
+    const jpg = c.toDataURL('image/jpeg', 0.9);
+    return jpg.length < png.length ? jpg : png;
+  }
+  return png;
+}
+id('e-logo-archivo').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  try {
+    imagenes.logo = await prepararImagen(file, 900, 400);
+    cajaImagen(id('e-logo-caja'), imagenes.logo, 'Sin logo');
+    actualizarPreviaEmpresa();
+    aviso('Logo cargado. Pulsa «Guardar empresa» para conservarlo.');
+  } catch (e) { aviso(e.message || 'No se pudo leer la imagen.', 'error'); }
+});
+id('e-logo-quitar').addEventListener('click', () => { imagenes.logo = ''; cajaImagen(id('e-logo-caja'), '', 'Sin logo'); actualizarPreviaEmpresa(); });
+id('e-firma-archivo').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  try {
+    imagenes.firma = await prepararImagen(file, 900, 300);
+    cajaImagen(id('e-firma-caja'), imagenes.firma, 'Sin firma');
+    actualizarPreviaEmpresa();
+    aviso('Firma cargada. Pulsa «Guardar empresa» para conservarla.');
+  } catch (e) { aviso(e.message || 'No se pudo leer la imagen.', 'error'); }
+});
+id('e-firma-quitar').addEventListener('click', () => { imagenes.firma = ''; cajaImagen(id('e-firma-caja'), '', 'Sin firma'); actualizarPreviaEmpresa(); });
+
+/* ---------- Dibujar la firma ---------- */
+const dlgFirma = id('dlg-firma');
+const lienzo = id('firma-lienzo');
+const ctxFirma = lienzo.getContext('2d');
+let dibujando = false, hayTrazo = false;
+function limpiarLienzo() { ctxFirma.clearRect(0, 0, lienzo.width, lienzo.height); hayTrazo = false; }
+function puntoLienzo(ev) {
+  const r = lienzo.getBoundingClientRect();
+  return [(ev.clientX - r.left) * (lienzo.width / r.width), (ev.clientY - r.top) * (lienzo.height / r.height)];
+}
+lienzo.addEventListener('pointerdown', (ev) => {
+  dibujando = true; hayTrazo = true;
+  lienzo.setPointerCapture(ev.pointerId);
+  const [x, y] = puntoLienzo(ev);
+  ctxFirma.lineWidth = 4; ctxFirma.lineCap = 'round'; ctxFirma.lineJoin = 'round'; ctxFirma.strokeStyle = '#14246b';
+  ctxFirma.beginPath(); ctxFirma.moveTo(x, y); ctxFirma.lineTo(x + 0.1, y + 0.1); ctxFirma.stroke();
+});
+lienzo.addEventListener('pointermove', (ev) => {
+  if (!dibujando) return;
+  const [x, y] = puntoLienzo(ev);
+  ctxFirma.lineTo(x, y); ctxFirma.stroke();
+});
+['pointerup', 'pointercancel'].forEach((t) => lienzo.addEventListener(t, () => { dibujando = false; }));
+function recortarLienzo(c) {
+  const w = c.width, h = c.height;
+  const d = c.getContext('2d').getImageData(0, 0, w, h).data;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (d[(y * w + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  if (x1 < 0) return '';
+  const m = 10;
+  x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(w - 1, x1 + m); y1 = Math.min(h - 1, y1 + m);
+  const o = document.createElement('canvas');
+  o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+  o.getContext('2d').drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
+  return o.toDataURL('image/png');
+}
+id('e-firma-dibujar').addEventListener('click', () => { limpiarLienzo(); dlgFirma.showModal(); });
+id('firma-borrar').addEventListener('click', limpiarLienzo);
+id('firma-cancelar').addEventListener('click', () => dlgFirma.close());
+id('firma-usar').addEventListener('click', () => {
+  const datos = hayTrazo ? recortarLienzo(lienzo) : '';
+  if (!datos) { alert('Dibuja la firma dentro del recuadro.'); return; }
+  imagenes.firma = datos;
+  cajaImagen(id('e-firma-caja'), imagenes.firma, 'Sin firma');
+  dlgFirma.close();
+  actualizarPreviaEmpresa();
+  aviso('Firma lista. Pulsa «Guardar empresa» para conservarla.');
+});
+
+/* =========================================================
+   Copias de seguridad
+   ========================================================= */
+function textoUltimaCopia() {
+  const u = db.ajustes.ultimaCopia;
+  if (!u) return 'Todavía no has descargado ninguna copia de seguridad.';
+  const dias = Math.floor((Date.now() - new Date(u).getTime()) / 864e5);
+  return `Última copia descargada: ${fechaCorta(u.slice(0, 10))}` + (dias > 0 ? ` (hace ${dias} día${dias === 1 ? '' : 's'}).` : ' (hoy).');
+}
+function renderCopias() {
+  const tam = new Blob([JSON.stringify(db)]).size;
+  id('cp-estado').innerHTML = `${esc(textoUltimaCopia())}<br>Ahora mismo hay ${db.empresas.length} empresa(s), ${db.clientes.length} cliente(s) y ${db.facturas.length} factura(s) (${(tam / 1024).toFixed(0)} KB).`;
+}
+function revisarAvisoCopia() {
+  const u = db.ajustes.ultimaCopia;
+  const dias = u ? (Date.now() - new Date(u).getTime()) / 864e5 : Infinity;
+  id('aviso-copia').hidden = !(db.facturas.length > 0 && dias > 7);
+  id('aviso-copia-texto').textContent = u
+    ? `Hace ${Math.floor(dias)} días que no descargas una copia de seguridad de tus facturas.`
+    : 'Aún no has descargado ninguna copia de seguridad de tus facturas.';
+}
+function descargarCopia() {
+  db.ajustes.ultimaCopia = new Date().toISOString();
+  guardarDatos();
+  descargar(`facturacion-copia-${hoyISO()}.json`, JSON.stringify(Object.assign({ app: 'facturacion' }, db), null, 1), 'application/json');
+  revisarAvisoCopia();
+  if (vistaActual === 'copias') renderCopias();
+  aviso('Copia de seguridad descargada. Guárdala en un sitio seguro.');
+}
+id('cp-descargar').addEventListener('click', descargarCopia);
+id('aviso-copia-btn').addEventListener('click', descargarCopia);
+id('cp-csv').addEventListener('click', () => exportarCSV(db.facturas, 'facturas-todas'));
+id('cp-archivo').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  try {
+    const datos = JSON.parse(await file.text());
+    if (!datos || !Array.isArray(datos.facturas) || !Array.isArray(datos.empresas)) throw new Error('formato');
+    const nuevo = normalizarDatos(datos);
+    if (!confirm(`Vas a sustituir TODOS los datos actuales (${db.facturas.length} facturas) por los de la copia (${nuevo.facturas.length} facturas, ${nuevo.empresas.length} empresas, ${nuevo.clientes.length} clientes).\n\n¿Continuar?`)) return;
+    const antes = db;
+    db = nuevo;
+    if (!guardarDatos()) { db = antes; return; }
+    edicion = null; cambiosSinGuardar = false; empresaEditando = null; clienteEditando = null;
+    delete formE.dataset.cargado;
+    nuevaFactura();
+    renderCopias();
+    revisarAvisoCopia();
+    aviso('Copia restaurada correctamente.');
+  } catch (e) {
+    aviso('Ese archivo no es una copia de seguridad válida.', 'error');
+  }
+});
+
+/* ---------- Cambios hechos en otra pestaña ---------- */
+window.addEventListener('storage', (ev) => {
+  if (ev.key !== CLAVE) return;
+  db = cargarDatos();
+  if (edicion) edicion = facturaPorId(edicion.id);
+  rellenarSelectEmpresas();
+  rellenarSelectClientes();
+  irA(vistaActual || 'factura');
+  revisarAvisoCopia();
+});
+
+/* =========================================================
+   Arranque
+   ========================================================= */
+nuevaFactura();
+irA('factura');
+revisarAvisoCopia();
+})();
+</script>
+</body>
+</html>
