@@ -10,6 +10,10 @@ está **vencido**.
 - **Los datos se guardan en el propio dispositivo**. No se envían a ningún servidor.
 - **Cualquiera puede usarla** (Fran, tu madre…) con el mismo enlace. Cada móvil guarda sus propios datos, sin
   mezclarse con los de otros.
+- **Lector con IA:** al hacer una factura o dar de alta un cliente, el botón **«Rellenar con IA desde un PDF o
+  una foto»** lee el documento con **Claude** (la IA de Anthropic) y rellena el nombre, el CIF, la dirección, el
+  teléfono y el email del cliente. Antes de usarlos se pueden revisar. Necesita internet y una clave de la API
+  de Claude (ver más abajo).
 - **«Ver un ejemplo»**: en la pantalla de bienvenida se carga una empresa con facturas **inventadas** para
   probarla. Luego se borra con «Borrar el ejemplo».
 
@@ -72,6 +76,18 @@ está **vencido**.
 Ejemplo de factura en PDF, con la plantilla clásica y datos inventados: [`docs/factura-ejemplo.pdf`](docs/factura-ejemplo.pdf).
 Las capturas y este PDF se rehacen con `node herramientas/generar-capturas.cjs`, que usa los datos de ejemplo.
 
+## Lector con IA: cómo activarlo
+
+1. Crea una clave en **console.anthropic.com → API Keys**. Conviene ponerle un **límite de gasto** a la cuenta.
+2. En la app: **Ajustes → Lector con IA** → pega la clave → **Guardar clave**. También se puede pegar la primera
+   vez que se usa el botón.
+3. **Coste:** cada documento cuesta del orden de **1 a 3 céntimos**, que se cobran en la cuenta de la clave.
+   Usa el modelo Claude Opus 5.5.
+4. **Privacidad:**
+   - el documento se envía a Anthropic para leerlo;
+   - la clave se guarda solo en ese dispositivo y **no va en las copias de seguridad**;
+   - el resto de la app sigue sin enviar nada a ningún sitio.
+
 ## ⚠️ Copias de seguridad
 
 Los datos viven en el dispositivo. **Si se borra la app o se cambia de móvil, solo se recuperan con una copia.**
@@ -102,7 +118,8 @@ visto bueno.
   - `index.html`: todo el programa;
   - `manifest.json` y `sw.js`: lo que la hace instalable y le permite funcionar sin conexión;
   - `iconos/`;
-  - `vendor/`: jsPDF y html2canvas, para el PDF.
+  - `vendor/`: jsPDF y html2canvas, para el PDF, y `anthropic-sdk.mjs`, el SDK oficial de Claude empaquetado.
+    Se rehace con `herramientas/empaquetar-sdk-claude.sh`.
 - **Publicación:** GitHub Pages desde la rama de trabajo, carpeta raíz. Al cambiar archivos, sube `VERSION` en `sw.js`.
 - Prueba de punta a punta, en ordenador y en móvil:
 

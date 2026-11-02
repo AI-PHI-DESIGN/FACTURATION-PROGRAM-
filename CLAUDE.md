@@ -48,5 +48,10 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
 - Comprueba el despliegue en la ejecución «pages build and deployment» de GitHub Actions.
 - Para transcribir notas de voz nuevas: `herramientas/transcribir-audios.sh <audios>`.
 - Para rehacer las capturas y el PDF de `docs/` con datos inventados: `node herramientas/generar-capturas.cjs`.
+- **Lector con IA:**
+  - Claude Opus 5.5 con el SDK oficial empaquetado en `vendor/anthropic-sdk.mjs`
+    (`herramientas/empaquetar-sdk-claude.sh`);
+  - la clave del usuario se guarda en `facturacion.ia.clave`: **nunca en las copias ni en el código**;
+  - en las pruebas, Claude se simula con `context.route`.
 - La app la usan varias personas (Fran, la madre del usuario…). Que siga siendo genérica: nada con nombres o
   datos de una persona en el código.

@@ -322,6 +322,14 @@ dialog h2{margin-bottom:6px}
 #dlg-firma{width:min(720px,94vw)}
 #firma-lienzo{width:100%;aspect-ratio:3/1;border:1px dashed var(--border-strong);border-radius:14px;background:#fff;touch-action:none;cursor:crosshair;display:block}
 #rec-texto{width:100%;min-height:150px;margin:8px 0 4px}
+.btn-ia{width:100%;margin:0 0 14px;background:linear-gradient(135deg,var(--primary-soft),color-mix(in srgb,var(--primary-soft) 60%,var(--surface)));border:1px dashed var(--primary);color:var(--primary-ink)}
+.btn-ia:hover{background:var(--primary-soft)}
+#dlg-ia{width:min(620px,94vw)}
+.ia-cargando{display:flex;align-items:center;gap:12px;padding:18px 0}
+.ia-giro{width:26px;height:26px;border-radius:50%;border:3px solid var(--primary-soft);border-top-color:var(--primary);animation:girar .8s linear infinite;flex:none}
+@keyframes girar{to{transform:rotate(360deg)}}
+.ia-nota{font-size:13.5px;color:var(--text-2);background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin:0 0 14px}
+.ia-error{color:var(--danger);font-weight:600}
 .dlg-acciones{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
 
 /* ---------- Aviso flotante (con «Deshacer») ---------- */
@@ -516,6 +524,7 @@ dialog h2{margin-bottom:6px}
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
   <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9.5 14.5 2.5 2.5 2.5-2.5"/></symbol>
+  <symbol id="i-ia" viewBox="0 0 24 24"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9z"/></symbol>
   <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></symbol>
 </svg>
 
@@ -678,6 +687,7 @@ dialog h2{margin-bottom:6px}
           <div class="seccion-form">
             <h3 class="titulo-seccion">Cliente</h3>
             <label>Elegir cliente guardado <select id="f-cliente"></select></label>
+            <button type="button" class="btn btn-ia" data-leer="factura"><svg class="i"><use href="#i-ia"/></svg>Rellenar con IA desde un PDF o una foto</button>
             <label>Nombre o razón social <input id="f-cli-nombre" placeholder="Nombre del cliente"></label>
             <div class="fila">
               <label>CIF / NIF <input id="f-cli-cif" autocapitalize="characters"></label>
@@ -791,6 +801,7 @@ dialog h2{margin-bottom:6px}
           </div>
         </div>
         <div class="resumen-cliente" id="cl-resumen" hidden></div>
+        <button type="button" class="btn btn-ia" data-leer="cliente"><svg class="i"><use href="#i-ia"/></svg>Rellenar con IA desde un PDF o una foto</button>
         <label>Nombre o razón social <input id="cl-nombre"></label>
         <label>CIF / NIF <input id="cl-cif" autocapitalize="characters"></label>
         <label>Dirección <input id="cl-dir"></label>
@@ -842,6 +853,18 @@ dialog h2{margin-bottom:6px}
       <div class="card">
         <div class="card-cab"><div><h2>Para el gestor</h2><p>Todas las facturas en un archivo para Excel</p></div></div>
         <button type="button" class="btn" id="cp-csv"><svg class="i"><use href="#i-send"/></svg>Enviar todas las facturas (CSV)</button>
+      </div>
+      <div class="card" id="panel-ia">
+        <div class="card-cab"><div><h2>Lector con IA</h2><p id="ia-estado"></p></div></div>
+        <p class="suave" style="font-size:14px">Lee un PDF o una foto (una factura, un presupuesto, sus datos fiscales…) y rellena los datos del cliente. Usa <strong>Claude</strong>, la IA de Anthropic: el documento se envía a Anthropic para leerlo y hace falta internet. Cuesta unos céntimos por documento, que se cobran en la cuenta de la clave.</p>
+        <label>Clave de la API de Claude
+          <input id="ia-clave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+          <span class="ayuda">Se crea en console.anthropic.com → API Keys. Se guarda solo en este dispositivo y no va en las copias de seguridad.</span>
+        </label>
+        <div class="acciones">
+          <button type="button" class="btn primario" id="ia-guardar">Guardar clave</button>
+          <button type="button" class="btn peligro" id="ia-quitar" hidden>Quitar clave</button>
+        </div>
       </div>
       <div class="card" id="panel-instalar">
         <div class="card-cab"><div><h2>Instalar la app</h2><p id="instalar-estado"></p></div></div>
@@ -1004,6 +1027,42 @@ dialog h2{margin-bottom:6px}
   </div>
 </dialog>
 
+<!-- Diálogo: leer los datos del cliente con IA -->
+<input type="file" id="ia-archivo" accept="application/pdf,image/*">
+<dialog id="dlg-ia">
+  <h2>Datos del cliente con IA</h2>
+  <div id="ia-paso-clave" hidden>
+    <p class="suave" style="font-size:14px">Para leer documentos con IA hace falta la clave de la API de Claude (se crea en console.anthropic.com → API Keys). Se guarda solo en este dispositivo.</p>
+    <label>Clave de la API de Claude <input id="ia-clave-dlg" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+  </div>
+  <div id="ia-paso-cargando" hidden>
+    <div class="ia-cargando"><span class="ia-giro"></span><span id="ia-texto">Leyendo el documento…</span></div>
+  </div>
+  <div id="ia-paso-error" hidden><p class="ia-error" id="ia-error"></p></div>
+  <form id="ia-paso-revisar" hidden novalidate>
+    <p class="ia-nota" id="ia-nota"></p>
+    <p class="suave" style="font-size:13.5px;margin-top:-4px">Revisa los datos antes de usarlos.</p>
+    <label>Nombre o razón social <input id="ia-nombre"></label>
+    <div class="fila">
+      <label>CIF / NIF <input id="ia-cif" autocapitalize="characters"></label>
+      <label>Teléfono <input id="ia-tel" type="tel"></label>
+    </div>
+    <label>Dirección <input id="ia-dir"></label>
+    <div class="fila">
+      <label>Código postal <input id="ia-cp" inputmode="numeric"></label>
+      <label>Población <input id="ia-pob"></label>
+      <label>Provincia <input id="ia-prov"></label>
+    </div>
+    <label>Email <input id="ia-email" type="email"></label>
+  </form>
+  <div class="dlg-acciones">
+    <button type="button" class="btn" id="ia-cancelar">Cancelar</button>
+    <button type="button" class="btn primario" id="ia-clave-seguir" hidden>Guardar y leer</button>
+    <button type="button" class="btn" id="ia-reintentar" hidden>Probar otra vez</button>
+    <button type="button" class="btn primario" id="ia-usar" hidden><svg class="i"><use href="#i-check"/></svg>Usar estos datos</button>
+  </div>
+</dialog>
+
 <!-- Diálogo: recordar el cobro -->
 <dialog id="dlg-recordar">
   <h2 id="rec-titulo">Recordar el cobro</h2>
@@ -1052,7 +1111,7 @@ dialog h2{margin-bottom:6px}
 (function () {
 'use strict';
 
-const VERSION_APP = '3.1';
+const VERSION_APP = '3.2';
 
 /* =========================================================
    Utilidades
@@ -2774,6 +2833,7 @@ function renderAjustes() {
     </button>`;
   }).join('') : '<p class="tenue" style="font-size:14px">Todavía no hay ninguna empresa.</p>';
   renderCopias();
+  renderIA();
   actualizarInstalar();
   aplicarTema(temaElegido());
 }
@@ -3124,6 +3184,216 @@ id('btn-instalar-2').addEventListener('click', instalar);
 id('btn-instalar-cerrar').addEventListener('click', () => {
   escribirLS('facturacion.instalar.cerrado', '1');
   actualizarInstalar();
+});
+
+/* =========================================================
+   Lector con IA (Claude): rellena los datos del cliente a partir de un PDF o una foto.
+   El SDK oficial de Claude va en vendor/anthropic-sdk.mjs y solo se carga al usarlo.
+   La clave se guarda aparte (no entra en las copias de seguridad).
+   ========================================================= */
+const CLAVE_IA = 'facturacion.ia.clave';
+const MODELO_IA = 'claude-opus-5-5';
+const leerClaveIA = () => leerLS(CLAVE_IA) || '';
+const dlgIA = id('dlg-ia');
+let destinoIA = null;     // 'factura' (editor) o 'cliente' (ficha de cliente)
+let archivoIA = null;
+let SDK = null;
+let promesaSDK = null;
+const ESQUEMA_CLIENTE = {
+  type: 'object',
+  properties: {
+    encontrado: { type: 'boolean', description: 'false si el documento no tiene datos de ningún cliente' },
+    nombre: { type: 'string', description: 'Nombre o razón social' },
+    cif: { type: 'string', description: 'CIF o NIF, sin espacios' },
+    direccion: { type: 'string', description: 'Calle, número, piso' },
+    cp: { type: 'string', description: 'Código postal' },
+    poblacion: { type: 'string' },
+    provincia: { type: 'string' },
+    telefono: { type: 'string' },
+    email: { type: 'string' },
+    nota: { type: 'string', description: 'Una frase corta: de dónde salen los datos o qué dudas hay' },
+  },
+  required: ['encontrado', 'nombre', 'cif', 'direccion', 'cp', 'poblacion', 'provincia', 'telefono', 'email', 'nota'],
+  additionalProperties: false,
+};
+function instruccionesIA() {
+  const propias = db.empresas.map((e) => `${e.nombre}${e.cif ? ` (NIF ${e.cif})` : ''}`).join('; ') || 'ninguna';
+  return [
+    'Extrae del documento los datos fiscales del CLIENTE, para hacerle una factura.',
+    `Estas son nuestras empresas, que NO son el cliente: ${propias}.`,
+    'Si el documento lo ha emitido una de nuestras empresas (una factura o un presupuesto nuestro), el cliente es el destinatario. Si no, el cliente es la otra empresa o persona que aparece.',
+    'Copia los datos tal y como aparecen en el documento; el CIF/NIF, sin espacios ni guiones. Si un dato no aparece, déjalo vacío. No te inventes nada.',
+  ].join('\n');
+}
+function cargarSDK() {
+  if (!promesaSDK) {
+    promesaSDK = import('./vendor/anthropic-sdk.mjs')
+      .then((m) => { SDK = m.default; return SDK; })
+      .catch((e) => { promesaSDK = null; throw e; });
+  }
+  return promesaSDK;
+}
+function pasoIA(paso) {
+  ['clave', 'cargando', 'error', 'revisar'].forEach((p) => { id('ia-paso-' + p).hidden = p !== paso; });
+  id('ia-clave-seguir').hidden = paso !== 'clave';
+  id('ia-reintentar').hidden = paso !== 'error';
+  id('ia-usar').hidden = paso !== 'revisar';
+}
+function errorIA(texto, pedirClave) {
+  if (pedirClave) {
+    pasoIA('clave');
+    id('ia-paso-clave').querySelector('p').textContent = texto;
+  } else {
+    pasoIA('error');
+    id('ia-error').textContent = texto;
+  }
+}
+/** Pasa el archivo a base64 (las fotos se reducen para que no pesen demasiado). */
+async function contenidoParaIA(archivo) {
+  if (archivo.type === 'application/pdf') {
+    if (archivo.size > 30 * 1024 * 1024) throw new Error('El PDF es demasiado grande (máximo 30 MB).');
+    const buf = new Uint8Array(await archivo.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: btoa(bin) } };
+  }
+  if (/^image\//.test(archivo.type)) {
+    const url = await prepararImagen(archivo, 1800, 1800);
+    const [cab, datos] = url.split(',');
+    return { type: 'image', source: { type: 'base64', media_type: cab.slice(5, cab.indexOf(';')), data: datos } };
+  }
+  throw new Error('Elige un PDF o una foto.');
+}
+async function leerConIA() {
+  pasoIA('cargando');
+  id('ia-texto').textContent = `Leyendo «${archivoIA.name}»… puede tardar unos segundos.`;
+  if (!enInternet) { errorIA('Abre la app desde su enlace de internet para usar la IA.'); return; }
+  if (!navigator.onLine) { errorIA('Hace falta conexión a internet para leer con IA.'); return; }
+  let Anthropic;
+  try {
+    Anthropic = await cargarSDK();
+  } catch (e) {
+    console.error(e);
+    errorIA('No se ha podido cargar el lector de IA. Comprueba la conexión y prueba otra vez.');
+    return;
+  }
+  try {
+    const bloque = await contenidoParaIA(archivoIA);
+    const client = new Anthropic({ apiKey: leerClaveIA(), dangerouslyAllowBrowser: true });
+    const respuesta = await client.beta.messages.create({
+      model: MODELO_IA,
+      max_tokens: 16000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: ESQUEMA_CLIENTE } },
+      messages: [{ role: 'user', content: [bloque, { type: 'text', text: instruccionesIA() }] }],
+    });
+    if (respuesta.stop_reason === 'refusal') { errorIA('La IA no ha podido leer este documento. Prueba con otro.'); return; }
+    if (respuesta.stop_reason === 'max_tokens') { errorIA('La respuesta de la IA se ha cortado. Prueba otra vez.'); return; }
+    const texto = respuesta.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    const d = JSON.parse(texto);
+    if (!d.encontrado || !(d.nombre || d.cif)) { errorIA('No he encontrado datos de ningún cliente en el documento. ' + (d.nota || '')); return; }
+    id('ia-nombre').value = d.nombre || '';
+    id('ia-cif').value = (d.cif || '').toUpperCase();
+    id('ia-dir').value = d.direccion || '';
+    id('ia-cp').value = d.cp || '';
+    id('ia-pob').value = d.poblacion || '';
+    id('ia-prov').value = d.provincia || '';
+    id('ia-tel').value = d.telefono || '';
+    id('ia-email').value = d.email || '';
+    id('ia-nota').textContent = d.nota || 'Datos leídos del documento.';
+    pasoIA('revisar');
+  } catch (e) {
+    console.error(e);
+    if (e instanceof Anthropic.AuthenticationError) errorIA('La clave de la IA no es válida. Pega una clave correcta:', true);
+    else if (e instanceof Anthropic.PermissionDeniedError) errorIA('Esta clave no tiene permiso para usar la IA. Revísala en console.anthropic.com.');
+    else if (e instanceof Anthropic.RateLimitError) errorIA('La IA está ocupada o se ha llegado al límite de la cuenta. Prueba en un minuto.');
+    else if (e instanceof Anthropic.BadRequestError) errorIA('La IA no ha podido abrir este archivo (¿está protegido o es muy grande?).');
+    else if (e instanceof Anthropic.APIConnectionError) errorIA('No hay conexión con la IA. Comprueba internet y prueba otra vez.');
+    else if (e instanceof Anthropic.APIError) errorIA(`La IA ha devuelto un error (${e.status}). Prueba otra vez en un momento.`);
+    else errorIA(e && e.message ? e.message : 'No se ha podido leer el documento.');
+  }
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-leer]');
+  if (!b) return;
+  destinoIA = b.dataset.leer;
+  id('ia-archivo').click();
+});
+id('ia-archivo').addEventListener('change', (ev) => {
+  const archivo = ev.target.files[0];
+  ev.target.value = '';
+  if (!archivo) return;
+  archivoIA = archivo;
+  if (!dlgIA.open) dlgIA.showModal();
+  if (!leerClaveIA()) errorIA('Para leer documentos con IA hace falta la clave de la API de Claude (se crea en console.anthropic.com → API Keys). Se guarda solo en este dispositivo.', true);
+  else leerConIA();
+});
+id('ia-clave-seguir').addEventListener('click', () => {
+  const k = id('ia-clave-dlg').value.trim();
+  if (!/^sk-ant-/.test(k)) { aviso('La clave empieza por «sk-ant-».', 'error'); return; }
+  escribirLS(CLAVE_IA, k);
+  id('ia-clave-dlg').value = '';
+  renderIA();
+  leerConIA();
+});
+id('ia-reintentar').addEventListener('click', leerConIA);
+id('ia-cancelar').addEventListener('click', () => dlgIA.close());
+id('ia-usar').addEventListener('click', () => {
+  const d = {
+    nombre: id('ia-nombre').value.trim(), cif: id('ia-cif').value.trim().toUpperCase(), direccion: id('ia-dir').value.trim(),
+    cp: id('ia-cp').value.trim(), poblacion: id('ia-pob').value.trim(), provincia: id('ia-prov').value.trim(),
+    telefono: id('ia-tel').value.trim(), email: id('ia-email').value.trim(),
+  };
+  if (!d.nombre) { aviso('Falta el nombre del cliente.', 'error'); id('ia-nombre').focus(); return; }
+  const existente = d.cif && db.clientes.find((c) => limpiaCif(c.cif) === limpiaCif(d.cif));
+  dlgIA.close();
+  if (destinoIA === 'factura') {
+    if (existente) {
+      id('f-cliente').value = existente.id;
+      ponerCliente(existente);
+      aviso(`${existente.nombre} ya estaba guardado: se ha elegido ese cliente.`);
+    } else {
+      id('f-cliente').value = '';
+      ponerCliente(d);
+      aviso('Datos del cliente rellenados. Revísalos y sigue con la factura.');
+    }
+    numeroManual = false;
+    cambiosSinGuardar = true;
+    calcularNumero();
+    refrescarEditor();
+  } else {
+    if (existente && existente.id !== clienteEditando) {
+      editarCliente(existente);
+      aviso(`${existente.nombre} ya estaba guardado: se ha abierto su ficha.`);
+      return;
+    }
+    id('cl-nombre').value = d.nombre; id('cl-cif').value = d.cif; id('cl-dir').value = d.direccion;
+    id('cl-cp').value = d.cp; id('cl-pob').value = d.poblacion; id('cl-prov').value = d.provincia;
+    if (d.telefono) id('cl-tel').value = d.telefono;
+    if (d.email) id('cl-email').value = d.email;
+    if (!clienteEditando && !formC.dataset.codigoManual) id('cl-codigo').value = codigoSugerido(d.nombre);
+    actualizarAyudaCliente();
+    aviso('Datos rellenados. Revísalos y pulsa «Guardar cliente».');
+  }
+});
+function renderIA() {
+  const k = leerClaveIA();
+  id('ia-estado').textContent = k ? `Activado ✔ (clave terminada en …${k.slice(-4)})` : 'Sin activar: falta la clave';
+  id('ia-quitar').hidden = !k;
+}
+id('ia-guardar').addEventListener('click', () => {
+  const k = id('ia-clave').value.trim();
+  if (!/^sk-ant-/.test(k)) { aviso('La clave empieza por «sk-ant-».', 'error'); id('ia-clave').focus(); return; }
+  escribirLS(CLAVE_IA, k);
+  id('ia-clave').value = '';
+  renderIA();
+  aviso('Clave guardada en este dispositivo.');
+});
+id('ia-quitar').addEventListener('click', () => {
+  try { localStorage.removeItem(CLAVE_IA); } catch (e) { /* nada */ }
+  renderIA();
+  aviso('Clave quitada.');
 });
 
 /* ---------- Cambios hechos en otra pestaña ---------- */

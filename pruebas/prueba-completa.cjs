@@ -479,7 +479,70 @@ function vigilarErrores(page, errores) {
     comprobar(await ej.isVisible('#ini-vacio') && await ej.evaluate(() => JSON.parse(localStorage.getItem('facturacion.datos.v1')).facturas.length === 0), '«Borrar el ejemplo» lo deja todo vacío');
     await ejCtx.close();
 
-    console.log('15. Abrir con doble clic (file://) sigue funcionando');
+    console.log('15. Lector con IA (respuestas de Claude simuladas)');
+    const iaCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES', acceptDownloads: true });
+    await iaCtx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+    await iaCtx.clock.setFixedTime(HOY);
+    const peticiones = [];
+    let respuestaIA = 'ok';
+    await iaCtx.route('https://api.anthropic.com/**', async (route) => {
+      const req = route.request();
+      const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
+      if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      peticiones.push({ headers: req.headers(), body: req.postDataJSON() });
+      if (respuestaIA === 'clave-mala') {
+        return route.fulfill({ status: 401, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }) });
+      }
+      const datos = { encontrado: true, nombre: 'TALLERES MARÍTIMOS DEL TURIA SL', cif: 'B11223344', direccion: 'C/ del Puerto nº 4', cp: '46024', poblacion: 'Valencia', provincia: 'Valencia', telefono: '961 234 567', email: 'admin@talleresturia.es', nota: 'Datos sacados del encabezado del presupuesto (inventados para la prueba).' };
+      return route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({
+        id: 'msg_prueba', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', stop_details: null,
+        content: [{ type: 'text', text: JSON.stringify(datos) }], usage: { input_tokens: 1200, output_tokens: 90 } }) });
+    });
+    const ia = await iaCtx.newPage();
+    // Aquí el 401 de la clave incorrecta es a propósito: solo cuentan los errores de JavaScript no capturados.
+    ia.on('pageerror', (e) => errores.push(e.message));
+    await ia.goto(URL_APP);
+    await ia.click('#btn-ejemplo');
+    await ia.click('.nav-nueva');
+    // Sin clave: el propio diálogo la pide
+    let [selector] = await Promise.all([ia.waitForEvent('filechooser'), ia.click('[data-leer=factura]')]);
+    await selector.setFiles(path.join(RAIZ, 'docs', 'factura-ejemplo.pdf'));
+    comprobar(await ia.isVisible('#ia-paso-clave'), 'sin clave, la app la pide antes de leer');
+    await ia.fill('#ia-clave-dlg', 'sk-ant-prueba-1234');
+    await ia.click('#ia-clave-seguir');
+    await ia.waitForSelector('#ia-paso-revisar:not([hidden])', { timeout: 15000 });
+    comprobar(await ia.inputValue('#ia-nombre') === 'TALLERES MARÍTIMOS DEL TURIA SL' && await ia.inputValue('#ia-cif') === 'B11223344', 'la IA devuelve los datos del cliente para revisarlos');
+    const pet = peticiones[0];
+    comprobar(pet && pet.body.model === 'claude-opus-5-5' && pet.body.output_config.format.type === 'json_schema' && pet.body.fallbacks === 'default', 'petición: Claude Opus 5.5, respuesta en JSON con esquema y modelo de respaldo');
+    comprobar(pet && pet.body.messages[0].content[0].type === 'document' && pet.body.messages[0].content[0].source.media_type === 'application/pdf', 'el PDF va como documento');
+    comprobar(pet && pet.headers['anthropic-dangerous-direct-browser-access'] === 'true' && (pet.headers['anthropic-beta'] || '').includes('server-side-fallback-2026-07-01'), 'cabeceras del navegador y de respaldo');
+    comprobar(pet && pet.body.messages[0].content[1].text.includes('DELTA ESTUDIO DE ARQUITECTURA'), 'le dice a la IA cuáles son nuestras empresas (para no confundirlas con el cliente)');
+    await ia.click('#ia-usar');
+    comprobar(await ia.inputValue('#f-cli-nombre') === 'TALLERES MARÍTIMOS DEL TURIA SL' && await ia.inputValue('#f-cli-cp') === '46024' && await ia.inputValue('#f-cli-email') === 'admin@talleresturia.es', 'rellena los datos del cliente en la factura');
+    comprobar((await ia.textContent('#f-numero-ayuda')).includes('TMT 1/26'), 'y le propone código y número (TMT 1/26)');
+    // Ficha de cliente + clave incorrecta
+    ia.on('dialog', (d) => d.accept());
+    await ia.click('#btn-nueva-factura');
+    await ia.click('.nav-item[data-ir=clientes]');
+    await ia.click('#cl-nuevo');
+    respuestaIA = 'clave-mala';
+    [selector] = await Promise.all([ia.waitForEvent('filechooser'), ia.click('[data-leer=cliente]')]);
+    await selector.setFiles(path.join(RAIZ, 'docs', 'factura-ejemplo.pdf'));
+    await ia.waitForSelector('#ia-paso-clave:not([hidden])', { timeout: 15000 });
+    comprobar((await ia.textContent('#ia-paso-clave')).includes('no es válida'), 'si la clave está mal, lo dice y deja ponerla de nuevo');
+    respuestaIA = 'ok';
+    await ia.fill('#ia-clave-dlg', 'sk-ant-otra-5678');
+    await ia.click('#ia-clave-seguir');
+    await ia.waitForSelector('#ia-paso-revisar:not([hidden])', { timeout: 15000 });
+    await ia.click('#ia-usar');
+    comprobar(await ia.inputValue('#cl-nombre') === 'TALLERES MARÍTIMOS DEL TURIA SL' && await ia.inputValue('#cl-codigo') === 'TMT', 'también rellena la ficha de un cliente nuevo');
+    await ia.click('.nav-item[data-ir=ajustes]');
+    comprobar((await ia.textContent('#ia-estado')).includes('…5678'), 'Ajustes muestra que la IA está activada (sin enseñar la clave)');
+    const [copiaIA] = await Promise.all([ia.waitForEvent('download'), ia.click('#cp-descargar')]);
+    comprobar(!fs.readFileSync(await copiaIA.path(), 'utf8').includes('sk-ant-'), 'la clave de la IA no va en la copia de seguridad');
+    await iaCtx.close();
+
+    console.log('16. Abrir con doble clic (file://) sigue funcionando');
     const local = await browser.newContext();
     const l = await local.newPage();
     const erroresLocal = [];

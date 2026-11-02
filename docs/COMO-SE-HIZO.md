@@ -227,7 +227,35 @@ Cuando el usuario pasa una **factura de ejemplo**:
   sus datos. Para alguien nuevo se repite lo mismo: se instala con el enlace y, si se quiere, se le prepara su
   JSON de configuración privado.
 
-## 10. Posibles mejoras (no pedidas todavía)
+## 10. Fase 6: lector con IA (PDF o foto → datos del cliente)
+
+- **Proveedor:** Claude, con el **SDK oficial** (`@anthropic-ai/sdk`). La app no tiene compilación, así que el SDK
+  se empaqueta en un solo archivo, `vendor/anthropic-sdk.mjs` (`herramientas/empaquetar-sdk-claude.sh`, con esbuild).
+  Se carga con `import()` solo al usarlo.
+- **Llamada:** `client.beta.messages.create` con:
+  - `model: 'claude-opus-5-5'`;
+  - el PDF como bloque `document` en base64 (o la foto como `image`, reducida);
+  - `output_config: { effort: 'low', format: { type: 'json_schema', schema } }`, para que la respuesta sea un JSON
+    con campos fijos;
+  - `fallbacks: 'default'` con la cabecera `server-side-fallback-2026-07-01`;
+  - `dangerouslyAllowBrowser: true`, porque se llama desde el navegador con la clave del propio usuario.
+
+  Se comprueba `stop_reason` (`refusal`, `max_tokens`) y los errores se tratan por tipo
+  (`AuthenticationError`, `RateLimitError`…). El SDK 1.x manda la clave en `Authorization: Bearer`.
+- **Instrucciones:** se le pasan **nuestras empresas** para que no las confunda con el cliente. Si el documento lo
+  emitimos nosotros, el cliente es el destinatario.
+- **Experiencia de uso:**
+  - si falta la clave, el propio diálogo la pide;
+  - los datos se **revisan** antes de usarlos;
+  - si el CIF ya existe, se elige ese cliente en lugar de duplicarlo.
+- **Privacidad:**
+  - la clave se guarda en `localStorage` aparte (`facturacion.ia.clave`) y **no va en las copias**;
+  - la interfaz avisa de que el documento se envía a Anthropic.
+- **Pruebas sin gastar:** `context.route('https://api.anthropic.com/**')` simula a Claude, respondiendo también al
+  `OPTIONS` (CORS). Se comprueban la petición, el relleno, la clave incorrecta (401) y que la clave no está en la
+  copia. Con una clave real hay que probarlo a mano.
+
+## 11. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
 - Facturas rectificativas.
