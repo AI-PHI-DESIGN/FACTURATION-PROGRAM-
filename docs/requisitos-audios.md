@@ -47,6 +47,9 @@ Las partes dudosas van marcadas con `[?]`, con la interpretación elegida al lad
 | 12 | Marcar **cobrado / no cobrado** | Casilla “Cobrada” + fecha de cobro en la factura, y botón de estado en un clic en Contabilidad. |
 | 13 | **Pestaña de contabilidad** | Pestaña **Contabilidad**: listado (tarjetas en el móvil), filtros (empresa, estado, año, trimestre, búsqueda), totales facturado / cobrado / pendiente / IVA, y exportación a Excel (CSV). |
 | 14 | **Que sea una app y que Fran la tenga en el móvil** (petición del usuario, 02/11/2026) | App web instalable (PWA): se abre con un enlace y se añade a la pantalla de inicio en Android e iPhone. Funciona sin internet, tiene el menú abajo y envía el PDF por WhatsApp o correo. |
+| 15 | **Diseño moderno + “lo que tú harías”** (petición del usuario) | Rediseño completo: menú lateral en el ordenador y barra inferior con botón + en el móvil, modo oscuro y botón «atrás». Nuevas funciones: panel de **Inicio** (pendiente, vencido, cobrado del mes, facturado del año, IVA del trimestre y gráfico mensual), **vencimientos** y estado **Vencida**, **recordatorio de cobro** por WhatsApp o email, **retención de IRPF** opcional, **Deshacer**, CSV para el gestor que se comparte desde el móvil. |
+| 16 | **Factura de ejemplo** de la empresa de Fran (PDF hecho en Word) | Plantilla **Clásica** con la misma disposición: logo y datos arriba a la izquierda, casillas «Factura» y «Fecha», cliente a la derecha, «CONCEPTO:» en un párrafo con el **importe en letra**, tabla pequeña de totales, «Ciudad, fecha», firma, «Fdo.:», **cargo** (Arquitecto), «Ruego abonen importe en la cuenta…» y **nota legal** en azul (criterio de caja). Número con formato **`A 15/26`** (código, número y año; empieza cada año). |
+| 17 | **Logos** de las dos empresas | Se suben en la ficha de cada empresa. El logo Φ venía dentro de la factura de ejemplo. Los datos reales **no** se guardan en el repositorio (es público): van en un archivo de configuración privado. |
 
 ## Interpretaciones tomadas
 
@@ -54,5 +57,8 @@ Las partes dudosas van marcadas con `[?]`, con la interpretación elegida al lad
   es **por cliente** (“sí, es cliente”), y así está ahora.
 - **Plantilla:** “La plantilla de cada empresa con su logo y sus datos” se refiere a las empresas que emiten la
   factura. Por eso se pueden tener varias, cada una con su plantilla.
+- **Formato del número:** la factura de ejemplo es la «A 15/26». Se ha tomado «A» como el código del cliente
+  (numeración por cliente). Si fuera la serie de la empresa, en la ficha de la empresa se elige «Una sola
+  numeración para toda la empresa» con la serie «A»: el número sale igual.
 - El tramo final del audio 1 se oye poco claro. Se ha entendido como la **firma**, la **fecha** y el
   **número de cuenta** que Fran pasará más adelante. Por eso el IBAN es un campo de la empresa.

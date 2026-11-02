@@ -5,10 +5,11 @@
  *
  * Levanta un servidor local, abre la app en Chromium (Playwright) y hace lo mismo que haría Fran:
  *   · Ordenador: alta de empresas, facturas con numeración POR CLIENTE (y una empresa con numeración
- *     única), importes e IVA, número repetido, Contabilidad (cobrado / no cobrado), CSV, impresión,
- *     PDF, copia de seguridad.
- *   · Móvil (Pixel 7): app instalable (manifest + service worker), funciona SIN INTERNET, menú abajo,
- *     contabilidad en tarjetas, PDF desde el móvil, sin scroll horizontal.
+ *     única), vencimientos, IRPF, sin IVA, números repetidos, Facturas (cobrada / pendiente / vencida,
+ *     «Deshacer»), panel de Inicio con gráfico, recordatorio por WhatsApp, CSV, PDF, impresión,
+ *     copia de seguridad, botón «atrás» y modo oscuro.
+ *   · Móvil (Pixel 7): instalable (manifest + service worker), SIN INTERNET, menú abajo con botón +,
+ *     barra de acciones del editor, «Ver factura», PDF, tarjetas, ficha de cliente, sin scroll horizontal.
  * Deja capturas, PDFs y un CSV en la carpeta de salida (por defecto: pruebas/salida).
  */
 const path = require('path');
@@ -29,6 +30,10 @@ function comprobar(cond, msg) {
   else { console.log('  ✘ ' + msg); fallos++; }
 }
 const sinEspacios = (s) => String(s).replace(/[  ]/g, ' ');
+const isoLocal = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+// Reloj fijo en el navegador: la numeración «A 15/26» depende del año, así la prueba da lo mismo cualquier día.
+const HOY = new Date('2026-11-02T10:00:00');
+const hace = (dias) => isoLocal(new Date(HOY.getTime() - dias * 864e5));
 function paginasPDF(ruta) {
   try { return Number(/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [ruta]).toString())[1]); }
   catch (e) { return (fs.readFileSync(ruta, 'latin1').match(/\/Type\s*\/Page[^s]/g) || []).length; }
@@ -57,8 +62,13 @@ function vigilarErrores(page, errores) {
   try {
     /* =================== ORDENADOR =================== */
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true, locale: 'es-ES' });
+    // El aviso «Instalar» sale cuando Chrome decide; en el ordenador lo damos por cerrado para que no mueva nada.
+    await ctx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+    await ctx.clock.setFixedTime(HOY);
     const page = await ctx.newPage();
     vigilarErrores(page, errores);
+    const ir = async (vista) => { await page.click(`.nav-item[data-ir=${vista}]`); await page.waitForTimeout(120); };
+    const textoToast = async () => sinEspacios(await page.textContent('#toast'));
 
     const logoPng = Buffer.from(await page.evaluate(() => {
       const c = document.createElement('canvas'); c.width = 480; c.height = 160;
@@ -71,10 +81,11 @@ function vigilarErrores(page, errores) {
     await page.goto(URL_APP);
 
     console.log('1. Primer arranque');
-    comprobar(await page.isVisible('#sin-empresas'), 'muestra la bienvenida si no hay empresas');
+    comprobar(await page.isVisible('#ini-vacio'), 'Inicio muestra los primeros pasos si no hay nada');
 
     console.log('2. Alta de empresas');
-    await page.click('#btn-ir-empresas');
+    await page.click('#btn-paso-empresa');
+    comprobar(await page.isVisible('#vista-empresa'), '«Empezar» abre la ficha de empresa');
     await page.fill('#e-nombre', 'Construcciones Fran, S.L.');
     await page.fill('#e-cif', 'b12345678');
     await page.fill('#e-tel', '600 123 456');
@@ -96,12 +107,18 @@ function vigilarErrores(page, errores) {
     await page.click('#firma-usar');
     await page.waitForSelector('#e-firma-caja img');
     comprobar(await page.inputValue('#e-modo') === 'cliente', 'por defecto, cada cliente lleva su propia numeración');
-    await page.selectOption('#e-digitos', '3');
+    comprobar(await page.inputValue('#e-plantilla') === 'clasica' && await page.inputValue('#e-formato') === 'anual', 'por defecto: plantilla clásica y número «A 15/26»');
+    await page.fill('#e-cargo', 'Arquitecto');
+    await page.fill('#e-nota', 'Factura acogida al criterio de Caja del IVA');
+    comprobar(await page.inputValue('#e-plazo') === '30', 'plazo de pago por defecto: 30 días');
+    comprobar(!(await page.isVisible('#e-digitos')), 'con el formato «A 15/26» no se piden cifras');
     await page.fill('#e-iban', 'ES91 2100 0418 4502 0005 1332');
     await page.click('#form-empresa button[type=submit]');
-    comprobar((await page.textContent('#emp-lista')).includes('numeración por cliente'), 'empresa 1 guardada con numeración por cliente');
+    await page.screenshot({ path: path.join(SALIDA, 'escritorio-4-empresa.png') });
+    await page.click('#emp-volver');
+    comprobar((await page.textContent('#aj-empresas')).includes('numeración por cliente'), 'empresa 1 guardada con numeración por cliente');
 
-    await page.click('#emp-nueva');
+    await page.click('#aj-nueva-empresa');
     await page.fill('#e-nombre', 'Reformas Integrales Norte, S.L.');
     await page.fill('#e-cif', 'B87654321');
     await page.fill('#e-dir', 'Av. de la Constitución, 3');
@@ -109,16 +126,19 @@ function vigilarErrores(page, errores) {
     await page.fill('#e-pob', 'Sevilla');
     await page.fill('#e-prov', 'Sevilla');
     await page.fill('#e-color', '#2e7d32');
+    await page.selectOption('#e-plantilla', 'moderna');
+    await page.selectOption('#e-formato', 'guion');
     await page.selectOption('#e-modo', 'empresa');
     await page.fill('#e-serie', 'R-');
     await page.selectOption('#e-digitos', '4');
     await page.click('#form-empresa button[type=submit]');
-    comprobar((await page.textContent('#emp-lista')).includes('próxima: R-0001'), 'empresa 2: numeración única de empresa R-0001');
-    await page.screenshot({ path: path.join(SALIDA, 'escritorio-3-empresas.png') });
+    await page.click('#emp-volver');
+    comprobar((await page.textContent('#aj-empresas')).includes('próxima: R-0001'), 'empresa 2: numeración única de empresa R-0001');
 
-    console.log('3. Facturas con numeración por cliente');
-    async function hacerFactura({ empresa, cliente, concepto, base, iva = true, pct, motivo, numero }) {
-      await page.click('nav button[data-vista=factura]');
+    console.log('3. Facturas');
+    async function hacerFactura({ empresa, cliente, concepto, base, iva = true, pct, motivo, numero, fecha, irpf }) {
+      await page.click('.nav-nueva');
+      await page.waitForTimeout(100);
       if (await page.isVisible('#btn-borrar-factura')) await page.click('#btn-nueva-factura');
       await page.selectOption('#f-empresa', { label: empresa });
       if (cliente.guardado) await page.selectOption('#f-cliente', { label: cliente.guardado });
@@ -127,12 +147,13 @@ function vigilarErrores(page, errores) {
         await page.fill('#f-cli-nombre', cliente.nombre);
         await page.fill('#f-cli-cif', cliente.cif);
         await page.locator('#f-cli-cif').blur();
-        if (cliente.codigo) await page.fill('#f-cli-codigo', cliente.codigo);
         await page.fill('#f-cli-dir', cliente.dir);
         await page.fill('#f-cli-cp', cliente.cp);
         await page.fill('#f-cli-pob', cliente.pob);
         await page.fill('#f-cli-prov', cliente.prov);
+        if (cliente.tel) await page.fill('#f-cli-tel', cliente.tel);
       }
+      if (fecha) { await page.fill('#f-fecha', fecha); await page.locator('#f-fecha').dispatchEvent('change'); }
       if (numero) await page.fill('#f-numero', String(numero));
       await page.fill('#f-concepto', concepto);
       await page.fill('#f-base', base);
@@ -143,38 +164,45 @@ function vigilarErrores(page, errores) {
       } else if (pct != null) {
         await page.fill('#f-iva', String(pct));
       }
+      if (irpf) { await page.check('#f-aplica-irpf'); await page.fill('#f-irpf', String(irpf)); }
       await page.click('#form-factura button[type=submit]');
       await page.waitForTimeout(150);
       return (await page.textContent('#titulo-editor')).trim();
     }
-    const SOL = { nombre: 'Comunidad de Propietarios Calle Sol 8', cif: 'h28123456', dir: 'Calle Sol, 8', cp: '28004', pob: 'Madrid', prov: 'Madrid' };
+    const SOL = { nombre: 'Comunidad de Propietarios Calle Sol 8', cif: 'h28123456', dir: 'Calle Sol, 8', cp: '28004', pob: 'Madrid', prov: 'Madrid', tel: '600 111 222' };
 
-    // Primera factura a este cliente: Fran ya le había hecho 3 → pone el 4 a mano
-    await page.click('nav button[data-vista=factura]');
+    await page.click('.nav-nueva');
     await page.fill('#f-cli-nombre', SOL.nombre);
     comprobar(await page.inputValue('#f-cli-codigo') === 'CPCS', 'el código del cliente se propone solo (CPCS)');
+    // Primera factura a este cliente (hace 60 días): Fran ya le había hecho 3 → pone el 4 a mano
     const t1 = await hacerFactura({
-      empresa: 'Construcciones Fran, S.L.', cliente: SOL, numero: 4,
+      empresa: 'Construcciones Fran, S.L.', cliente: SOL, numero: 4, fecha: hace(60),
       concepto: 'Reparación de la fachada principal:\n- Picado y enfoscado de 45 m² de paramento.\n- Pintura con revestimiento elástico.\n- Montaje y desmontaje de andamio.',
       base: '1.000',
     });
-    comprobar(t1.startsWith('Factura CPCS-004'), 'primera factura a este cliente con el nº que toca → CPCS-004 (' + t1 + ')');
+    comprobar(t1.startsWith('Factura CPCS 4/26'), 'primera factura a este cliente con el nº que toca → CPCS 4/26 (' + t1 + ')');
+    const hoja1 = await page.textContent('#previa-factura');
+    comprobar(hoja1.includes('Arquitecto') && hoja1.includes('criterio de Caja del IVA') && hoja1.includes('Ruego abonen importe en la cuenta'), 'plantilla clásica: cargo, cuenta y nota legal como en sus facturas');
+    comprobar(await page.inputValue('#f-vencimiento') === hace(30), 'vencimiento automático a 30 días (' + await page.inputValue('#f-vencimiento') + ')');
     comprobar(sinEspacios(await page.textContent('#r-total')).includes('1.210,00'), 'base 1.000 € + IVA 21 % = 1.210,00 €');
-    await page.screenshot({ path: path.join(SALIDA, 'escritorio-1-nueva-factura.png') });
+    await page.screenshot({ path: path.join(SALIDA, 'escritorio-3-editor.png') });
 
     const t2 = await hacerFactura({
       empresa: 'Construcciones Fran, S.L.', cliente: { guardado: 'Comunidad de Propietarios Calle Sol 8 · H28123456' },
-      concepto: 'Sustitución de bajantes en patio interior.', base: '2.345,67', pct: 10,
+      concepto: 'Honorarios profesionales correspondientes a la dirección técnica de octubre.', base: '2.450',
     });
-    comprobar(t2.startsWith('Factura CPCS-005'), 'siguiente factura al mismo cliente → CPCS-005 (' + t2 + ')');
-    comprobar(sinEspacios(await page.textContent('#r-total')).includes('2.580,24'), 'base 2.345,67 € + IVA 10 % = 2.580,24 €');
+    comprobar(t2.startsWith('Factura CPCS 5/26'), 'siguiente factura al mismo cliente → CPCS 5/26 (' + t2 + ')');
+    comprobar(sinEspacios(await page.textContent('#r-total')).includes('2.964,50'), 'base 2.450 € + IVA 21 % = 2.964,50 € (como su factura de ejemplo)');
+    comprobar(sinEspacios(await page.textContent('#previa-factura')).includes('octubre que asciende a la cantidad de 2.450,00 Euros (dos mil cuatrocientos cincuenta euros):'), 'el importe en letra se añade al concepto');
 
     const t3 = await hacerFactura({
       empresa: 'Construcciones Fran, S.L.',
       cliente: { nombre: 'Ayuntamiento de Getafe', cif: 'P2806500A', dir: 'Plaza de la Constitución, 1', cp: '28901', pob: 'Getafe', prov: 'Madrid' },
-      concepto: 'Reparación de aceras en la calle Madrid.', base: '500',
+      concepto: 'Reparación de aceras en la calle Madrid.', base: '500', irpf: 15,
     });
-    comprobar(t3.startsWith('Factura AG-001'), 'otro cliente empieza su propia numeración → AG-001 (' + t3 + ')');
+    comprobar(t3.startsWith('Factura AG 1/26'), 'otro cliente empieza su propia numeración → AG 1/26 (' + t3 + ')');
+    comprobar(sinEspacios(await page.textContent('#r-total')).includes('530,00'), 'con IRPF 15 %: 500 + 105 − 75 = 530,00 €');
+    comprobar((await page.textContent('#previa-factura')).includes('Retención IRPF'), 'la retención de IRPF sale en la factura');
 
     const t4 = await hacerFactura({
       empresa: 'Reformas Integrales Norte, S.L.',
@@ -190,20 +218,25 @@ function vigilarErrores(page, errores) {
     await page.click('#btn-nueva-factura');
     await page.selectOption('#f-empresa', { label: 'Construcciones Fran, S.L.' });
     await page.selectOption('#f-cliente', { label: 'Comunidad de Propietarios Calle Sol 8 · H28123456' });
-    comprobar((await page.textContent('#f-numero-ayuda')).includes('CPCS-006'), 'al elegir el cliente propone su siguiente número (CPCS-006)');
+    comprobar((await page.textContent('#f-numero-ayuda')).includes('CPCS 6/26'), 'al elegir el cliente propone su siguiente número (CPCS 6/26)');
+    await page.fill('#f-fecha', '2027-01-15');
+    await page.locator('#f-fecha').dispatchEvent('change');
+    comprobar((await page.textContent('#f-numero-ayuda')).includes('CPCS 1/27'), 'con fecha de 2027 la numeración vuelve a empezar (CPCS 1/27)');
+    await page.fill('#f-fecha', isoLocal(HOY));
+    await page.locator('#f-fecha').dispatchEvent('change');
     await page.fill('#f-numero', '4');
     await page.fill('#f-concepto', 'x');
     await page.fill('#f-base', '10');
     await page.click('#form-factura button[type=submit]');
     await page.waitForTimeout(100);
-    comprobar((await page.textContent('#toast')).includes('Ya existe la factura CPCS-004'), 'no deja repetir un número de ese cliente');
+    comprobar((await textoToast()).includes('Ya existe la factura CPCS 4/26'), 'no deja repetir un número de ese cliente');
     await page.click('#btn-nueva-factura');
     await page.selectOption('#f-empresa', { label: 'Construcciones Fran, S.L.' });
     await page.fill('#f-cli-cif', 'P2806500A');
     await page.locator('#f-cli-cif').blur();
     await page.waitForTimeout(100);
     comprobar(await page.inputValue('#f-cli-nombre') === 'Ayuntamiento de Getafe', 'al escribir el CIF de un cliente guardado, se elige ese cliente');
-    comprobar((await page.textContent('#f-numero-ayuda')).includes('AG-002'), '…y su siguiente número (AG-002)');
+    comprobar((await page.textContent('#f-numero-ayuda')).includes('AG 2/26'), '…y su siguiente número (AG 2/26)');
     await page.click('#btn-nueva-factura');
     await page.selectOption('#f-empresa', { label: 'Construcciones Fran, S.L.' });
     await page.fill('#f-cli-nombre', 'Otro cliente');
@@ -212,80 +245,139 @@ function vigilarErrores(page, errores) {
     await page.fill('#f-base', '10');
     await page.click('#form-factura button[type=submit]');
     await page.waitForTimeout(100);
-    comprobar((await page.textContent('#toast')).includes('ya es del cliente Ayuntamiento de Getafe'), 'no deja usar el código de otro cliente');
+    comprobar((await textoToast()).includes('ya es del cliente Ayuntamiento de Getafe'), 'no deja usar el código de otro cliente');
     await page.click('#btn-nueva-factura');
 
-    console.log('5. Contabilidad');
-    await page.click('nav button[data-vista=contabilidad]');
-    comprobar((await page.locator('#c-lista tr').count()) === 4, '4 facturas en Contabilidad');
+    console.log('5. Facturas: cobradas, pendientes y vencidas');
+    await ir('facturas');
+    const items = () => page.locator('#c-lista .item-factura').count();
+    comprobar(await items() === 4, '4 facturas en la lista');
     let tarjetas = sinEspacios(await page.textContent('#c-tarjetas'));
-    comprobar(tarjetas.includes('5.195,24'), 'total facturado 1.210 + 2.580,24 + 605 + 800 = 5.195,24 €');
-    comprobar(/Pendiente de cobro\s*5\.195,24/.test(tarjetas), 'todo pendiente de cobro al principio');
-    await page.click('#c-lista tr:has-text("CPCS-004") button.estado');
+    comprobar(tarjetas.includes('5.504,50'), 'total facturado 1.210 + 2.964,50 + 530 + 800 = 5.504,50 €');
+    await page.click('#c-estado button[data-valor=vencidas]');
+    comprobar(await items() === 1 && (await page.textContent('#c-lista')).includes('CPCS 4/26'), 'filtro «Vencidas»: solo CPCS 4/26 (venció hace 30 días)');
+    comprobar((await page.textContent('#c-lista .chip')).includes('Vencida'), 'la etiqueta dice «Vencida»');
+    await page.click('#c-lista .item-factura .chip');
     await page.waitForTimeout(100);
+    comprobar((await textoToast()).includes('Deshacer'), 'al marcarla como cobrada se puede deshacer');
+    await page.click('#toast-accion');
+    await page.waitForTimeout(100);
+    comprobar(await items() === 1, '«Deshacer» la deja como estaba (sigue vencida)');
+    await page.click('#c-lista .item-factura .chip');
+    await page.waitForTimeout(100);
+    comprobar(await items() === 0, 'cobrada: ya no sale en «Vencidas»');
+    await page.click('#c-estado button[data-valor=""]');
     tarjetas = sinEspacios(await page.textContent('#c-tarjetas'));
-    comprobar(/Cobrado\s*1\.210,00/.test(tarjetas), 'marcar CPCS-004 como cobrada → cobrado 1.210,00 €');
-    comprobar(/Pendiente de cobro\s*3\.985,24/.test(tarjetas), 'pendiente baja a 3.985,24 €');
-    await page.selectOption('#c-estado', 'pendientes');
-    comprobar((await page.locator('#c-lista tr').count()) === 3, 'filtro «No cobradas» muestra 3');
-    await page.selectOption('#c-estado', '');
-    await page.screenshot({ path: path.join(SALIDA, 'escritorio-2-contabilidad.png') });
+    comprobar(/Cobrado\s*1\.210,00/.test(tarjetas), 'cobrado 1.210,00 €');
+    comprobar(/Pendiente de cobro\s*4\.294,50/.test(tarjetas), 'pendiente 4.294,50 €');
+    comprobar(/IRPF retenido\s*75,00/.test(tarjetas), 'IRPF retenido 75,00 €');
+    await page.click('#c-estado button[data-valor=pendientes]');
+    comprobar(await items() === 3, 'filtro «Pendientes» muestra 3');
+    await page.click('#c-estado button[data-valor=""]');
+    await page.screenshot({ path: path.join(SALIDA, 'escritorio-2-facturas.png') });
 
-    console.log('6. CSV para el gestor');
-    const [descargaCsv] = await Promise.all([page.waitForEvent('download'), page.click('#c-csv')]);
+    console.log('6. Recordar el cobro por WhatsApp');
+    await page.click('#c-lista .item-factura:has-text("CPCS 5/26") [data-recordar]');
+    comprobar(await page.isVisible('#dlg-recordar'), 'se abre el recordatorio');
+    const mensaje = await page.inputValue('#rec-texto');
+    comprobar(mensaje.includes('CPCS 5/26') && mensaje.includes('pendiente de pago') && mensaje.includes('ES91 2100'), 'mensaje con nº, importe, «pendiente de pago» e IBAN');
+    await page.evaluate(() => { window.open = (url) => { window.__abierto = url; return null; }; });
+    await page.click('#rec-whatsapp');
+    const enlace = await page.evaluate(() => window.__abierto || '');
+    comprobar(enlace.startsWith('https://wa.me/34600111222?text=') && decodeURIComponent(enlace).includes('CPCS 5/26'), 'abre WhatsApp con el teléfono del cliente (+34 600 111 222) y el mensaje');
+
+    console.log('7. Inicio: cifras y gráfico');
+    await ir('inicio');
+    comprobar(sinEspacios(await page.textContent('#ini-pendiente')) === '4.294,50 €', 'pendiente de cobro: 4.294,50 €');
+    const tiles = sinEspacios(await page.textContent('#ini-tiles'));
+    comprobar(/Cobrado este mes\s*1\.210,00/.test(tiles), 'cobrado este mes: 1.210,00 €');
+    const barras = await page.locator('#ini-grafico .g-barra').count();
+    comprobar(barras >= 1, `el gráfico pinta ${barras} mes(es) con facturas`);
+    const zona = page.locator('#ini-grafico .g-hit').nth(HOY.getMonth());
+    await zona.hover();
+    await page.waitForTimeout(100);
+    comprobar((await page.isVisible('#ini-grafico .tooltip')) && (await page.textContent('#ini-grafico .tooltip')).includes('Facturado en'), 'al pasar por encima sale el detalle del mes');
+    comprobar(await page.locator('#ini-tabla tr').count() === 12, 'los datos del gráfico también están en tabla (12 meses)');
+    comprobar(await page.locator('#ini-por-cobrar .item-factura').count() === 3, '«Por cobrar»: 3 facturas');
+    await page.mouse.move(5, 5);
+    await page.screenshot({ path: path.join(SALIDA, 'escritorio-1-inicio.png') });
+
+    console.log('8. CSV para el gestor');
+    await ir('facturas');
+    const [descargaCsv] = await Promise.all([page.waitForEvent('download'), page.click('#c-exportar')]);
     const csv = fs.readFileSync(await descargaCsv.path(), 'utf8');
     fs.writeFileSync(path.join(SALIDA, 'facturas.csv'), csv);
-    comprobar(csv.split('\r\n').length === 5 && csv.includes('2345,67') && csv.includes('CPCS-004'), 'CSV con cabecera + 4 facturas, decimales con coma');
+    comprobar(csv.split('\r\n').length === 5 && csv.includes('2450,00') && csv.includes('CPCS 4/26') && csv.includes('Retención IRPF'), 'CSV con cabecera + 4 facturas, IRPF y decimales con coma');
 
-    console.log('7. PDF para enviar');
-    await page.click('#c-lista tr:has-text("CPCS-004") button[data-pdf]');
+    console.log('9. PDF e impresión');
+    await page.click('#c-lista .item-factura:has-text("CPCS 4/26") [data-pdf]');
     await page.waitForFunction(() => !document.getElementById('pdf-descargar').disabled, null, { timeout: 30000 });
     const [descargaPdf] = await Promise.all([page.waitForEvent('download'), page.click('#pdf-descargar')]);
-    const pdfApp = path.join(SALIDA, 'factura-CPCS-004.pdf');
+    const pdfApp = path.join(SALIDA, 'factura-CPCS-4-26.pdf');
     fs.copyFileSync(await descargaPdf.path(), pdfApp);
-    comprobar(descargaPdf.suggestedFilename() === 'Factura CPCS-004 - Comunidad de Propietarios Calle Sol 8.pdf', 'nombre del PDF: ' + descargaPdf.suggestedFilename());
+    comprobar(descargaPdf.suggestedFilename() === 'Factura CPCS 4-26 - Comunidad de Propietarios Calle Sol 8.pdf', 'nombre del PDF: ' + descargaPdf.suggestedFilename());
     comprobar(fs.readFileSync(pdfApp).subarray(0, 4).toString() === '%PDF' && paginasPDF(pdfApp) === 1, 'PDF válido de 1 página (' + Math.round(fs.statSync(pdfApp).size / 1024) + ' KB)');
-
-    console.log('8. Impresión');
     await page.evaluate(() => { window.print = () => {}; });
-    await page.click('#c-lista tr:has-text("CPCS-004") button[data-imprimir]');
+    await page.click('#c-lista .item-factura:has-text("AG 1/26") [data-imprimir]');
     await page.waitForTimeout(300);
-    const pdfImpresion = path.join(SALIDA, 'impresion-CPCS-004.pdf');
+    const impresa = await page.textContent('#zona-impresion');
+    comprobar(impresa.includes('Retención IRPF') && impresa.includes('criterio de Caja del IVA'), 'la factura impresa lleva la retención y la nota legal');
+    const pdfImpresion = path.join(SALIDA, 'impresion-AG-1-26.pdf');
     await page.pdf({ path: pdfImpresion, preferCSSPageSize: true, printBackground: true });
     comprobar(paginasPDF(pdfImpresion) === 1, 'la factura impresa cabe en 1 página A4');
     await page.emulateMedia({ media: 'print' });
     await page.screenshot({ path: path.join(SALIDA, 'factura-impresa.png'), fullPage: true });
     await page.emulateMedia({ media: 'screen' });
 
-    console.log('9. Persistencia y copia de seguridad');
+    console.log('10. Botón «atrás», persistencia y copia de seguridad');
+    await ir('inicio');
+    await ir('clientes');
+    await page.goBack();
+    await page.waitForTimeout(150);
+    comprobar(await page.isVisible('#vista-inicio'), 'el botón «atrás» vuelve a la pantalla anterior');
     await page.reload();
-    await page.click('nav button[data-vista=contabilidad]');
-    comprobar((await page.locator('#c-lista tr').count()) === 4, 'los datos siguen tras recargar');
-    comprobar(await page.isVisible('#aviso-copia'), 'avisa de que no hay copia de seguridad');
-    await page.click('nav button[data-vista=copias]');
+    await ir('facturas');
+    comprobar(await items() === 4, 'los datos siguen tras recargar');
+    await ir('inicio');
+    comprobar(await page.isVisible('#aviso-copia'), 'Inicio avisa de que no hay copia de seguridad');
+    await ir('ajustes');
     const [descargaCopia] = await Promise.all([page.waitForEvent('download'), page.click('#cp-descargar')]);
     const copia = path.join(SALIDA, 'copia.json');
     fs.copyFileSync(await descargaCopia.path(), copia);
+    await ir('inicio');
     comprobar(!(await page.isVisible('#aviso-copia')), 'el aviso desaparece tras descargar la copia');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    comprobar(await page.isVisible('#sin-empresas'), 'tras borrar los datos no queda nada');
-    await page.click('nav button[data-vista=copias]');
+    await ir('inicio');
+    comprobar(await page.isVisible('#ini-vacio'), 'tras borrar los datos no queda nada');
+    await ir('ajustes');
     await page.setInputFiles('#cp-archivo', copia);
     await page.waitForTimeout(200);
-    await page.click('nav button[data-vista=contabilidad]');
-    comprobar((await page.locator('#c-lista tr').count()) === 4, 'la copia restaura las 4 facturas');
-    await page.click('nav button[data-vista=factura]');
+    await ir('facturas');
+    comprobar(await items() === 4, 'la copia restaura las 4 facturas');
+    await page.click('.nav-nueva');
     await page.selectOption('#f-empresa', { label: 'Construcciones Fran, S.L.' });
     await page.selectOption('#f-cliente', { label: 'Comunidad de Propietarios Calle Sol 8 · H28123456' });
-    comprobar((await page.textContent('#f-numero-ayuda')).includes('CPCS-006'), 'tras restaurar, la numeración por cliente sigue (CPCS-006)');
+    comprobar((await page.textContent('#f-numero-ayuda')).includes('CPCS 6/26'), 'tras restaurar, la numeración por cliente sigue (CPCS 6/26)');
+
+    console.log('11. Modo oscuro');
+    await ir('ajustes');
+    await page.click('#aj-tema [data-tema=oscuro]');
+    const fondo = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    comprobar(fondo === 'rgb(11, 16, 32)', 'el modo oscuro cambia los colores (' + fondo + ')');
+    await ir('inicio');
+    await page.screenshot({ path: path.join(SALIDA, 'escritorio-5-oscuro.png') });
+    await ir('ajustes');
+    await page.click('#aj-tema [data-tema=auto]');
     await ctx.close();
 
     /* =================== MÓVIL =================== */
-    console.log('10. Móvil: app instalable y sin internet');
+    console.log('12. Móvil: app instalable y sin internet');
     const movil = await browser.newContext({ ...devices['Pixel 7'], acceptDownloads: true, locale: 'es-ES' });
+    await movil.clock.setFixedTime(HOY);
     const m = await movil.newPage();
     vigilarErrores(m, errores);
+    const irM = async (vista) => { await m.click(`.nav-item[data-ir=${vista}]`); await m.waitForTimeout(150); };
     await m.goto(URL_APP);
     await m.evaluate(() => navigator.serviceWorker.ready.then(() => true));
     const cdp = await movil.newCDPSession(m);
@@ -297,59 +389,82 @@ function vigilarErrores(page, errores) {
     await m.waitForFunction(() => !!navigator.serviceWorker.controller);
     await movil.setOffline(true);
     await m.reload();
-    comprobar(await m.isVisible('#sin-empresas'), 'SIN INTERNET la app se abre igual');
-    await m.click('nav button[data-vista=copias]');
+    comprobar(await m.isVisible('#ini-vacio'), 'SIN INTERNET la app se abre igual');
+    await m.screenshot({ path: path.join(SALIDA, 'movil-0-bienvenida.png') });
+    await irM('ajustes');
     await m.setInputFiles('#cp-archivo', copia);
     await m.waitForTimeout(200);
 
-    console.log('11. Móvil: diseño');
-    const nav = await m.locator('.barra nav').boundingBox();
-    const alto = m.viewportSize().height;
-    comprobar(Math.abs(nav.y + nav.height - alto) <= 1, 'el menú está abajo, como en una app');
-    await m.click('nav button[data-vista=factura]');
+    console.log('13. Móvil: diseño y uso');
+    const nav = await m.locator('.nav').boundingBox();
+    comprobar(Math.abs(nav.y + nav.height - m.viewportSize().height) <= 1, 'el menú está abajo, como en una app');
+    await irM('inicio');
     await m.waitForTimeout(200);
-    await m.screenshot({ path: path.join(SALIDA, 'movil-1-nueva-factura.png') });
+    await m.screenshot({ path: path.join(SALIDA, 'movil-1-inicio.png') });
+    await m.click('.nav-nueva');
+    await m.waitForTimeout(150);
+    comprobar(await m.isVisible('#barra-editor'), 'el botón + abre una factura nueva con la barra Guardar / Enviar PDF');
     await m.selectOption('#f-empresa', { label: 'Construcciones Fran, S.L.' });
     await m.selectOption('#f-cliente', { label: 'Comunidad de Propietarios Calle Sol 8 · H28123456' });
+    await m.screenshot({ path: path.join(SALIDA, 'movil-2-nueva-factura.png') });
     await m.fill('#f-concepto', 'Revisión de la cubierta y sustitución de 12 tejas rotas.');
     await m.fill('#f-base', '350');
     await m.locator('#f-base').blur();
-    await m.click('#form-factura button[type=submit]');
+    await m.click('#btn-guardar-movil');
     await m.waitForTimeout(150);
-    comprobar((await m.textContent('#titulo-editor')).includes('CPCS-006'), 'factura hecha desde el móvil y sin internet → CPCS-006');
-    await m.screenshot({ path: path.join(SALIDA, 'movil-2-factura-guardada.png'), fullPage: true });
-    await m.click('#btn-pdf');
+    comprobar((await m.textContent('#titulo-editor')).includes('CPCS 6/26'), 'factura hecha desde el móvil y sin internet → CPCS 6/26');
+    await m.click('#seg-editor [data-modo=previa]');
+    await m.waitForTimeout(150);
+    comprobar(await m.isVisible('#previa-factura .hoja') && !(await m.isVisible('#f-concepto')), '«Ver factura» enseña la factura en lugar del formulario');
+    await m.screenshot({ path: path.join(SALIDA, 'movil-3-ver-factura.png') });
+    await m.click('#btn-pdf-movil');
     await m.waitForFunction(() => !document.getElementById('pdf-descargar').disabled, null, { timeout: 30000 });
     comprobar((await m.textContent('#pdf-texto')).includes('PDF listo'), 'el PDF se crea en el móvil sin internet');
-    await m.screenshot({ path: path.join(SALIDA, 'movil-4-pdf.png') });
+    await m.screenshot({ path: path.join(SALIDA, 'movil-5-pdf.png') });
     const [descargaMovil] = await Promise.all([m.waitForEvent('download'), m.click('#pdf-descargar')]);
-    const pdfMovil = path.join(SALIDA, 'factura-CPCS-006-movil.pdf');
+    const pdfMovil = path.join(SALIDA, 'factura-CPCS-6-26-movil.pdf');
     fs.copyFileSync(await descargaMovil.path(), pdfMovil);
     comprobar(paginasPDF(pdfMovil) === 1, 'PDF del móvil de 1 página');
-    await m.click('nav button[data-vista=contabilidad]');
-    await m.waitForTimeout(200);
-    const display = await m.locator('#c-lista tr').first().evaluate((el) => getComputedStyle(el).display);
-    comprobar(display === 'grid', 'en el móvil las facturas se ven como tarjetas');
-    await m.click('#c-lista tr:has-text("CPCS-006") button.estado');
+    await irM('facturas');
+    const display = await m.locator('#c-lista .item-factura').first().evaluate((el) => getComputedStyle(el).gridTemplateAreas);
+    comprobar(display.includes('principal'), 'en el móvil las facturas se ven como tarjetas');
+    await m.click('#c-lista .item-factura:has-text("CPCS 6/26") .chip');
     await m.waitForTimeout(100);
-    comprobar((await m.textContent('#c-lista tr:has-text("CPCS-006")')).includes('Cobrada'), 'se marca como cobrada con un toque');
-    await m.screenshot({ path: path.join(SALIDA, 'movil-3-contabilidad.png') });
-    for (const vista of ['factura', 'contabilidad', 'clientes', 'empresas', 'copias']) {
-      await m.click(`nav button[data-vista=${vista}]`);
-      await m.waitForTimeout(100);
+    comprobar((await m.textContent('#c-lista .item-factura:has-text("CPCS 6/26")')).includes('Cobrada'), 'se marca como cobrada con un toque');
+    await m.waitForTimeout(3200);
+    await m.screenshot({ path: path.join(SALIDA, 'movil-4-facturas.png') });
+    await irM('clientes');
+    await m.click('#cl-lista .item-cliente');
+    comprobar(await m.isVisible('#form-cliente') && !(await m.isVisible('#cl-lista')), 'al tocar un cliente se abre su ficha');
+    await m.click('#cl-volver');
+    comprobar(await m.isVisible('#cl-lista'), '«atrás» vuelve a la lista de clientes');
+    for (const vista of ['inicio', 'facturas', 'clientes', 'ajustes']) {
+      await irM(vista);
       const ancho = await m.evaluate(() => document.documentElement.scrollWidth);
       comprobar(ancho <= m.viewportSize().width + 1, `sin scroll horizontal en «${vista}» (${ancho}px)`);
     }
+    await m.click('#aj-empresas .item-empresa');
+    await m.waitForTimeout(150);
+    const anchoEmp = await m.evaluate(() => document.documentElement.scrollWidth);
+    comprobar(anchoEmp <= m.viewportSize().width + 1, `sin scroll horizontal en la ficha de empresa (${anchoEmp}px)`);
+    await m.click('.nav-nueva');
+    const anchoFac = await m.evaluate(() => document.documentElement.scrollWidth);
+    comprobar(anchoFac <= m.viewportSize().width + 1, `sin scroll horizontal en el editor (${anchoFac}px)`);
+    await irM('ajustes');
+    await m.click('#aj-tema [data-tema=oscuro]');
+    await irM('inicio');
+    await m.waitForTimeout(200);
+    await m.screenshot({ path: path.join(SALIDA, 'movil-6-oscuro.png') });
     await movil.setOffline(false);
     await movil.close();
 
-    console.log('12. Abrir con doble clic (file://) sigue funcionando');
+    console.log('14. Abrir con doble clic (file://) sigue funcionando');
     const local = await browser.newContext();
     const l = await local.newPage();
     const erroresLocal = [];
     l.on('pageerror', (e) => erroresLocal.push(e.message));
     await l.goto('file://' + path.join(RAIZ, 'index.html'));
-    comprobar(await l.isVisible('#sin-empresas') && erroresLocal.length === 0, 'abre desde el archivo sin errores');
+    comprobar(await l.isVisible('#ini-vacio') && erroresLocal.length === 0, 'abre desde el archivo sin errores');
     await local.close();
   } finally {
     await browser.close();

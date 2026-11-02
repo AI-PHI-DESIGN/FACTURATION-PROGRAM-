@@ -145,10 +145,75 @@ Después se **miran las capturas** de `pruebas/salida/*.png` y el PDF (`pdftoppm
    - el aviso de Veri\*factu;
    - las dudas de interpretación.
 
-## 7. Posibles mejoras (no pedidas todavía)
+## 7. Fase 3: diseño moderno y mejoras (“lo que tú harías”)
+
+Cuando el usuario pide un **diseño moderno** y que se añada lo que yo haría, se aplica este patrón:
+
+**Diseño**
+
+- **Sistema de diseño con variables CSS**: colores, radios y sombras. El **modo oscuro** tiene su propia paleta
+  (no es invertir colores) y se puede forzar en Ajustes (`data-theme`). El tema se aplica con un script en el
+  `<head>` para que no parpadee.
+- **Navegación:**
+  - en el **ordenador**, menú **lateral** con el botón «Nueva factura» destacado;
+  - en el **móvil**, **barra inferior** con un **botón + central**. Es el mismo `<nav>`, reordenado con `order`.
+- **Historial con `history.pushState`**, para que funcione el botón **atrás** del móvil (evento `popstate`). El
+  cambio de pantalla es **síncrono**. Con `location.hash` cambiaba un instante después del toque y las pruebas
+  fallaban de forma intermitente.
+- **Editor en el móvil:** pestañas «Datos / Ver factura» y una **barra fija con Guardar / Enviar PDF** encima del menú.
+- **Listas en tarjetas** (`grid-template-areas`), interruptores en lugar de casillas, controles segmentados,
+  etiquetas de estado con icono y texto (Cobrada / Pendiente / Vencida) y un aviso flotante con **Deshacer**.
+
+**Panel de Inicio con gráfico.** Se sigue la guía `dataviz`:
+
+- una sola cifra protagonista (**Pendiente de cobro**) y tarjetas para el resto de cifras;
+- gráfico de columnas de **una sola serie**: barras de 24 px como máximo con la punta redondeada de 4 px,
+  rejilla fina, eje con números redondos y una sola etiqueta (el máximo);
+- **tooltip** al pasar o enfocar cada mes, y los mismos datos en una **tabla** desplegable;
+- color validado con `validate_palette.js` sobre el fondo claro y el oscuro.
+
+**Funciones nuevas**
+
+- **Vencimiento:** plazo de pago por empresa y fecha por factura. Estado **Vencida**.
+- **Recordar el cobro:** un mensaje editable que se envía por `wa.me/<teléfono>?text=` o `mailto:`. Los teléfonos
+  españoles de 9 cifras se pasan a +34.
+- **Retención de IRPF** opcional: el total es base + IVA − IRPF.
+- **Deshacer** al marcar como cobrada y al borrar.
+- **CSV para el gestor:** en el móvil se comparte con `navigator.share`; en el ordenador se descarga.
+
+**Lecciones de las pruebas** (fallos intermitentes):
+
+1. Nada debe **mover el contenido** en un momento cualquiera. El aviso «Instalar» aparece cuando Chrome lanza
+   `beforeinstallprompt` y empujaba la pantalla justo al tocar. Por eso los avisos van solo en Inicio, y la
+   prueba de ordenador lo da por cerrado.
+2. **No uses `setTimeout(() => campo.focus())`.** Si se está escribiendo en otro campo, el texto acaba en el
+   que recibe el foco. Pon el foco al momento, y en el móvil no lo pongas (abriría el teclado).
+3. **Fija el reloj** en la prueba con `context.clock.setFixedTime(...)`. La numeración depende del año.
+4. Si una prueba falla a veces, repite solo ese tramo varias veces y registra los datos guardados en cada intento.
+
+## 8. Fase 4: factura de ejemplo y logos del cliente
+
+Cuando el usuario pasa una **factura de ejemplo**:
+
+1. Léela entera: `pdftotext -layout`, mira la imagen y saca las imágenes con `pdfimages -j`, que trae el logo
+   y la firma.
+2. **Calca su diseño** en una plantilla nueva. Aquí es la «Clásica», que convive con la «Moderna» y se elige
+   en la ficha de cada empresa. Copia también:
+   - el **formato del número** (`A 15/26`: código, número y año; empieza en el 1 cada año);
+   - el **importe en letra** (función `importeEnLetra`);
+   - el **cargo** bajo la firma;
+   - la frase del **pago** («Ruego abonen importe en la cuenta: …»);
+   - la **nota legal** (criterio de caja).
+3. Compruébalo **rehaciendo esa misma factura con la app** y poniendo la original y la nueva una al lado de
+   la otra.
+4. **Privacidad:** si el repositorio es **público**, **no subas datos reales** (NIF, IBAN, firma, clientes).
+   Genera un **JSON de configuración privado**, que es una copia de seguridad con la empresa, sus imágenes y sus
+   clientes. Pásaselo solo al usuario. El usuario final lo carga en **Ajustes → Restaurar…**.
+5. Las imágenes pegadas en el chat **no llegan como archivo**: pide que las adjunten como archivo.
+
+## 9. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
-- Retención de IRPF.
 - Facturas rectificativas.
 - Requisitos Veri\*factu: hash encadenado, QR y envío a la AEAT.
 - Sincronizar datos entre el móvil y el ordenador. Ahora cada dispositivo tiene sus datos y se pasan con la

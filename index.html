@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Facturación</title>
 <meta name="description" content="Facturas, clientes y cobros de tus empresas, en el móvil y sin internet.">
-<meta name="theme-color" content="#1f4e79">
+<meta name="theme-color" id="meta-tema" content="#f3f5f9">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
 <link rel="icon" href="iconos/icono-192.png" type="image/png" sizes="192x192">
@@ -14,223 +14,404 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Facturación">
+<script>
+  /* Tema elegido (claro / oscuro / automático), antes de pintar para que no parpadee */
+  try {
+    var t = localStorage.getItem('facturacion.tema');
+    if (t === 'claro') document.documentElement.dataset.theme = 'light';
+    if (t === 'oscuro') document.documentElement.dataset.theme = 'dark';
+  } catch (e) {}
+</script>
 <style>
+/* =========================================================
+   Sistema de diseño
+   ========================================================= */
 :root{
-  --fondo:#f3f4f6; --panel:#fff; --borde:#dde1e6; --texto:#1c2430; --suave:#5f6b7a;
-  --primario:#1f4e79; --primario-osc:#163a5a; --primario-claro:#e8eff6;
-  --ok:#17663f; --ok-fondo:#dff3e7; --pend:#8a4b00; --pend-fondo:#fff0d6;
-  --peligro:#b42318; --peligro-fondo:#fdecea;
-  --radio:10px; --sombra:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  color-scheme:light;
+  --bg:#f3f5f9; --surface:#ffffff; --surface-2:#f7f8fb; --surface-3:#eef1f6;
+  --border:#e3e7ef; --border-strong:#cdd4e0;
+  --text:#0f172a; --text-2:#4a5568; --muted:#7c879b;
+  --primary:#2f5bd8; --primary-hover:#2449b8; --primary-soft:#eaf0ff; --primary-ink:#2447b0; --on-primary:#ffffff;
+  --ok:#11743c; --ok-soft:#e3f5ea; --warn:#8f5600; --warn-soft:#fff1d6; --danger:#c0322f; --danger-soft:#fdebea;
+  --serie-1:#2a78d6; --grid:#e8eaf0; --eje:#c3c9d4;
+  --r-lg:18px; --r:14px; --r-sm:10px;
+  --sombra-1:0 1px 2px rgba(15,23,42,.04),0 2px 6px rgba(15,23,42,.05);
+  --sombra-2:0 12px 32px rgba(15,23,42,.14);
+  --foco:0 0 0 3px rgba(47,91,216,.22);
+  --nav-ancho:248px; --nav-alto:64px;
 }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0b1020; --surface:#141b2d; --surface-2:#192238; --surface-3:#1f2a42;
+    --border:#263149; --border-strong:#34405c;
+    --text:#e8edf7; --text-2:#b3bdd0; --muted:#8792aa;
+    --primary:#7b96ff; --primary-hover:#93a9ff; --primary-soft:#1d2850; --primary-ink:#a9baff; --on-primary:#0b1020;
+    --ok:#4fd38d; --ok-soft:#10301f; --warn:#f5b84f; --warn-soft:#33260c; --danger:#ff8a8a; --danger-soft:#3b1818;
+    --serie-1:#3987e5; --grid:#232d44; --eje:#3a4662;
+    --sombra-1:0 1px 2px rgba(0,0,0,.35); --sombra-2:0 12px 32px rgba(0,0,0,.5);
+    --foco:0 0 0 3px rgba(123,150,255,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0b1020; --surface:#141b2d; --surface-2:#192238; --surface-3:#1f2a42;
+  --border:#263149; --border-strong:#34405c;
+  --text:#e8edf7; --text-2:#b3bdd0; --muted:#8792aa;
+  --primary:#7b96ff; --primary-hover:#93a9ff; --primary-soft:#1d2850; --primary-ink:#a9baff; --on-primary:#0b1020;
+  --ok:#4fd38d; --ok-soft:#10301f; --warn:#f5b84f; --warn-soft:#33260c; --danger:#ff8a8a; --danger-soft:#3b1818;
+  --serie-1:#3987e5; --grid:#232d44; --eje:#3a4662;
+  --sombra-1:0 1px 2px rgba(0,0,0,.35); --sombra-2:0 12px 32px rgba(0,0,0,.5);
+  --foco:0 0 0 3px rgba(123,150,255,.3);
+}
+
 *{box-sizing:border-box}
-html,body{margin:0}
-body{background:var(--fondo);color:var(--texto);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
-
-/* ---------- Barra superior / menú ---------- */
-.barra{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:24px;padding:env(safe-area-inset-top) 24px 0;min-height:58px;background:var(--primario);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15)}
-.marca{font-weight:700;font-size:18px;letter-spacing:.02em;white-space:nowrap}
-.barra nav{display:flex;gap:4px;overflow-x:auto;padding:8px 0}
-.barra nav button{display:inline-flex;align-items:center;gap:7px;background:transparent;border:0;color:#d6e2ee;font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
-.barra nav button svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.barra nav button:hover{background:rgba(255,255,255,.12);color:#fff}
-.barra nav button.activa{background:#fff;color:var(--primario)}
-.corto{display:none}
-.aviso-copia,.aviso-instalar{padding:10px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:600}
-.aviso-copia{background:var(--pend-fondo);color:var(--pend);border-bottom:1px solid #f1d29f}
-.aviso-instalar{background:var(--primario-claro);color:var(--primario);border-bottom:1px solid #c9d8e8}
-.aviso-copia span,.aviso-instalar span{flex:1 1 220px}
-
-main{max-width:1440px;margin:0 auto;padding:20px 24px 60px}
-.vista{display:none}
-.vista.activa{display:block}
-h2{margin:0 0 14px;font-size:20px}
-h3{margin:0 0 10px;font-size:16px}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:28px;line-height:1.15;letter-spacing:-.02em;margin:0;font-weight:750}
+h2{font-size:17px;line-height:1.3;letter-spacing:-.01em;margin:0;font-weight:700}
+h3{font-size:15px;margin:0 0 8px;font-weight:700}
 p{margin:0 0 12px}
-.suave{color:var(--suave)}
+.suave{color:var(--text-2)}
+.tenue{color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){
+  .vista.activa{animation:entrar .22s ease-out}
+  @keyframes entrar{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
 
-/* ---------- Paneles y formularios ---------- */
-.panel{background:var(--panel);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);padding:20px}
-.panel + .panel{margin-top:16px}
-fieldset{border:0;border-top:1px solid var(--borde);margin:0;padding:14px 0 4px;min-width:0}
-fieldset.primero{border-top:0;padding-top:0}
-legend{float:left;width:100%;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--primario);padding:0;margin-bottom:10px}
-legend + *{clear:both}
-label{display:block;font-size:13px;font-weight:600;color:var(--suave);margin-bottom:10px}
-label > input:not([type=checkbox]), label > select, label > textarea{display:block;width:100%;margin-top:4px}
-input,select,textarea{font:inherit;color:var(--texto);background:#fff;border:1px solid #c5ccd4;border-radius:8px;padding:8px 10px;min-height:40px}
-textarea{resize:vertical}
-input:focus,select:focus,textarea:focus{outline:2px solid #9dbcdb;outline-offset:0;border-color:var(--primario)}
-input[type=checkbox]{width:20px;height:20px;min-height:0;margin:0;accent-color:var(--primario);flex:none}
-input[type=color]{padding:2px 4px;width:70px;height:40px;cursor:pointer}
+/* ---------- Navegación: lateral en ordenador, barra inferior en el móvil ---------- */
+.nav{position:fixed;inset:0 auto 0 0;width:var(--nav-ancho);background:var(--surface);border-right:1px solid var(--border);padding:22px 14px;display:flex;flex-direction:column;gap:4px;z-index:30}
+.marca{display:flex;align-items:center;gap:10px;font-weight:750;font-size:17px;letter-spacing:-.01em;padding:0 10px 18px}
+.marca img{width:34px;height:34px;border-radius:10px}
+.nav-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:var(--text-2);font:inherit;font-weight:600;padding:10px 12px;border-radius:12px;cursor:pointer;text-align:left}
+.nav-item:hover{background:var(--surface-3);color:var(--text)}
+.nav-item.activa{background:var(--primary-soft);color:var(--primary-ink)}
+.nav-item:focus-visible{outline:none;box-shadow:var(--foco)}
+.nav-nueva{background:var(--primary);color:var(--on-primary);margin-bottom:14px;justify-content:center;box-shadow:0 6px 16px rgba(47,91,216,.25)}
+.nav-nueva:hover,.nav-nueva.activa{background:var(--primary-hover);color:var(--on-primary)}
+.nav-nueva .fab{display:inline-grid;place-items:center}
+.corto{display:none}
+.nav-pie{margin-top:auto;padding:10px 12px;font-size:12px;color:var(--muted)}
+.contenido{margin-left:var(--nav-ancho);padding:30px 36px 64px}
+.vista{display:none;max-width:1240px;margin:0 auto}
+.vista.activa{display:block}
+
+/* ---------- Cabecera de cada pantalla ---------- */
+.cab-vista{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 16px;flex-wrap:wrap;margin-bottom:22px}
+.cab-vista .titulo{display:flex;align-items:center;gap:8px;min-width:0}
+.sobretitulo{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 4px}
+.sobretitulo::first-letter{text-transform:uppercase}
+
+/* ---------- Tarjetas ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sombra-1);padding:20px;min-width:0}
+.card + .card{margin-top:16px}
+.card-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.card-cab p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.rejilla-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.rejilla-2 > .card + .card{margin-top:0}
+
+/* ---------- Formularios ---------- */
+label{display:block;font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:14px}
+label > input:not([type=checkbox]):not([type=file]), label > select, label > textarea{display:block;width:100%;margin-top:6px}
+input,select,textarea{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:10px 12px;min-height:44px;transition:border-color .15s,box-shadow .15s}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+textarea{resize:vertical;line-height:1.5}
+select{appearance:none;-webkit-appearance:none;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a94a7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:var(--foco)}
+input:disabled{opacity:.55}
+input[type=color]{padding:4px;width:72px;height:44px;cursor:pointer}
 input[type=file]{display:none}
-label.check{display:flex;align-items:center;gap:8px;color:var(--texto);font-size:14px;cursor:pointer}
-.fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 12px}
+.fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0 12px}
 .fila.dos-uno{grid-template-columns:2fr 1fr}
-.ayuda{display:block;font-weight:400;color:var(--suave);margin-top:4px;font-size:12px}
-.campo-numero{display:flex;align-items:stretch;margin-top:4px}
-.campo-numero .prefijo{display:flex;align-items:center;padding:0 10px;background:var(--primario-claro);border:1px solid #c5ccd4;border-right:0;border-radius:8px 0 0 8px;color:var(--primario);font-weight:700;white-space:nowrap}
+.ayuda{display:block;font-weight:500;color:var(--muted);margin-top:6px;font-size:12.5px;line-height:1.4}
+.seccion-form{border-top:1px solid var(--border);margin-top:6px;padding-top:18px}
+.seccion-form:first-child{border-top:0;margin-top:0;padding-top:0}
+.titulo-seccion{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:750;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 14px}
+.campo-numero{display:flex;align-items:stretch;margin-top:6px}
+.campo-numero .prefijo{display:flex;align-items:center;padding:0 12px;background:var(--primary-soft);border:1px solid var(--border-strong);border-right:0;border-radius:12px 0 0 12px;color:var(--primary-ink);font-weight:750;white-space:nowrap}
 .campo-numero .prefijo:empty{display:none}
-.campo-numero .prefijo:not(:empty) + input{border-radius:0 8px 8px 0}
+.campo-numero .prefijo:not(:empty) + input{border-radius:0 12px 12px 0}
 .campo-numero input{width:100%;min-width:0}
-.resumen-importes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 10px}
-.resumen-importes div{background:#f6f8fa;border:1px solid var(--borde);border-radius:8px;padding:8px 10px}
-.resumen-importes span{display:block;font-size:12px;color:var(--suave);font-weight:600}
-.resumen-importes strong{font-size:16px;font-variant-numeric:tabular-nums}
-.resumen-importes .total{background:var(--primario);border-color:var(--primario);color:#fff}
-.resumen-importes .total span{color:#d6e2ee}
+
+/* Interruptor */
+label.switch{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:550;color:var(--text);cursor:pointer;margin:2px 0 14px;position:relative}
+.switch input{position:absolute;opacity:0;width:46px;height:28px;margin:0;left:0;cursor:pointer}
+.switch .pista{position:relative;width:46px;height:28px;border-radius:99px;background:var(--border-strong);transition:background .2s;flex:none;pointer-events:none}
+.switch .pista::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.switch input:checked + .pista{background:var(--primary)}
+.switch input:checked + .pista::after{transform:translateX(18px)}
+.switch input:focus-visible + .pista{box-shadow:var(--foco)}
+
+/* Control segmentado */
+.seg{display:inline-flex;background:var(--surface-3);border-radius:12px;padding:3px;gap:2px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{border:0;background:transparent;color:var(--text-2);font:inherit;font-weight:650;font-size:14px;padding:7px 14px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg button.activo{background:var(--surface);color:var(--text);box-shadow:var(--sombra-1)}
+.seg button:focus-visible{outline:none;box-shadow:var(--foco)}
 
 /* ---------- Botones ---------- */
-button{font:inherit;cursor:pointer}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c5ccd4;background:#fff;color:var(--texto);border-radius:8px;padding:8px 14px;font-weight:600;min-height:40px;font-size:14px;text-decoration:none;margin:0}
-.btn:hover{background:#f3f5f7}
-.btn:disabled{opacity:.5;cursor:default}
-.btn.primario{background:var(--primario);border-color:var(--primario);color:#fff}
-.btn.primario:hover{background:var(--primario-osc)}
-.btn.peligro{color:var(--peligro);border-color:#efc2bd}
-.btn.peligro:hover{background:var(--peligro-fondo)}
-.btn.peq{padding:4px 10px;min-height:32px;font-size:13px}
-.acciones{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+button{font:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font:inherit;font-weight:650;font-size:14.5px;cursor:pointer;text-decoration:none;transition:background .15s,transform .06s;white-space:nowrap;margin:0}
+.btn:hover{background:var(--surface-2)}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:none;box-shadow:var(--foco)}
+.btn:disabled{opacity:.5;cursor:default;transform:none}
+.btn.primario{background:var(--primary);border-color:transparent;color:var(--on-primary)}
+.btn.primario:hover{background:var(--primary-hover)}
+.btn.suave{background:var(--primary-soft);border-color:transparent;color:var(--primary-ink)}
+.btn.peligro{color:var(--danger);border-color:var(--danger-soft)}
+.btn.peligro:hover{background:var(--danger-soft)}
+.btn.peq{min-height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
+.btn-icono{width:40px;height:40px;padding:0;border-radius:11px;border:0;background:transparent;color:var(--text-2);display:inline-grid;place-items:center;cursor:pointer;flex:none}
+.btn-icono:hover{background:var(--surface-3);color:var(--text)}
+.btn-icono.peligro:hover{background:var(--danger-soft);color:var(--danger)}
+.btn-icono:focus-visible{outline:none;box-shadow:var(--foco)}
+.hueco-icono{width:40px;height:40px;flex:none}
+.acciones{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .acciones.fin{justify-content:flex-end}
-.enlace{background:none;border:0;padding:0;color:var(--primario);font-weight:700;text-decoration:underline;text-underline-offset:2px}
 
-/* ---------- Editor + vista previa ---------- */
-.editor{display:grid;grid-template-columns:minmax(380px,540px) minmax(0,1fr);gap:20px;align-items:start}
-.cab-editor{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
-.cab-editor h2{margin:0}
-.etiqueta{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--primario-claro);color:var(--primario);vertical-align:middle;margin-left:6px}
-.columna-previa{position:sticky;top:78px}
-.marco-previa{background:#dfe3e8;border-radius:var(--radio);padding:16px;max-height:calc(100vh - 100px);overflow:auto}
-.previa-ajuste{position:relative;overflow:hidden}
-.previa-ajuste .hoja{transform-origin:top left;box-shadow:0 4px 18px rgba(0,0,0,.18)}
-.titulo-previa{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:.06em}
+/* ---------- Avisos ---------- */
+.aviso{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;margin:0 auto 16px;max-width:1240px;font-weight:600;font-size:14px}
+.aviso span{flex:1 1 220px}
+.aviso.info{background:var(--primary-soft);color:var(--primary-ink)}
+.aviso.alerta{background:var(--warn-soft);color:var(--warn)}
+.aviso .btn{min-height:36px}
 
-/* ---------- Tablas ---------- */
-.tabla-scroll{overflow-x:auto}
-.tabla{width:100%;border-collapse:collapse;font-size:14px}
-.tabla th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--suave);border-bottom:2px solid var(--borde);padding:8px 10px;white-space:nowrap}
-.tabla td{border-bottom:1px solid var(--borde);padding:9px 10px;vertical-align:middle}
-.tabla tr:hover td{background:#fafbfc}
+/* ---------- Chips de estado ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:99px;padding:5px 12px 5px 9px;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;line-height:1.3}
+.chip svg.i{width:16px;height:16px;stroke-width:2.2}
+.chip.cobrada{background:var(--ok-soft);color:var(--ok)}
+.chip.pendiente{background:var(--warn-soft);color:var(--warn)}
+.chip.vencida{background:var(--danger-soft);color:var(--danger)}
+.chip:hover{filter:brightness(.97)}
+.chip:focus-visible{outline:none;box-shadow:var(--foco)}
+
+/* ---------- Lista de facturas ---------- */
+.lista-facturas{display:flex;flex-direction:column;gap:8px}
+.item-factura{display:grid;grid-template-columns:minmax(0,1fr) auto 140px auto;align-items:center;gap:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 10px 10px 16px;box-shadow:var(--sombra-1)}
+.item-factura.estado-vencida{border-left:3px solid var(--danger)}
+.if-principal{all:unset;cursor:pointer;display:flex;flex-direction:column;min-width:0;gap:2px;padding:2px 0}
+.if-principal:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:6px}
+.if-cliente{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.if-meta{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.if-codigo{font-weight:750;color:var(--primary-ink)}
+.if-importe{font-weight:750;font-size:16px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.if-estado{justify-self:start}
+.if-acciones{display:flex;gap:2px;justify-content:flex-end}
+.lista-compacta .item-factura{box-shadow:none;border-width:0 0 1px;border-radius:0;padding:10px 0;grid-template-columns:minmax(0,1fr) auto auto}
+.lista-compacta .item-factura:last-child{border-bottom:0}
+.lista-compacta .item-factura.estado-vencida{border-left:0}
+.lista-compacta .if-acciones{display:none}
+.vacio-lista{padding:22px 8px;text-align:center;color:var(--muted);font-size:14px}
+
+/* ---------- Inicio: cifras y gráfico ---------- */
+.panel-cifras{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:16px}
+.hero-card{display:flex;flex-direction:column;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#2f5bd8 0%,#4b3fc6 100%);color:#fff;border-radius:var(--r-lg);padding:22px;box-shadow:0 14px 34px rgba(47,91,216,.28)}
+.hero-card .etq{font-size:14px;font-weight:650;color:rgba(255,255,255,.85)}
+.hero{font-size:clamp(40px,11vw,52px);line-height:1.05;font-weight:780;letter-spacing:-.03em;margin:6px 0 4px;word-break:break-word}
+.hero-sub{font-size:14px;color:rgba(255,255,255,.85);margin:0}
+.hero-card .btn{background:rgba(255,255,255,.16);border-color:transparent;color:#fff;align-self:flex-start}
+.hero-card .btn:hover{background:rgba(255,255,255,.26)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tiles.fila-tiles{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sombra-1);min-width:0}
+.tile .etq{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;color:var(--text-2)}
+.tile .etq svg.i{width:16px;height:16px}
+.tile strong{display:block;font-size:24px;font-weight:750;letter-spacing:-.02em;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile small{font-size:12.5px;color:var(--muted)}
+.tile.alerta .etq{color:var(--danger)}
+.tile.bien .etq{color:var(--ok)}
+.grafico{position:relative;height:250px}
+.grafico svg{display:block;width:100%;height:100%;overflow:visible}
+.g-barra{fill:var(--serie-1);transition:opacity .12s}
+.grafico.con-foco .g-barra{opacity:.45}
+.grafico.con-foco .g-barra.activa{opacity:1}
+.g-grid{stroke:var(--grid);stroke-width:1;shape-rendering:crispEdges}
+.g-eje{stroke:var(--eje);stroke-width:1;shape-rendering:crispEdges}
+.g-texto{fill:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums}
+.g-valor{fill:var(--text-2);font-size:12px;font-weight:700}
+.g-hit{fill:transparent;cursor:pointer;outline:none}
+.tooltip{position:absolute;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sombra-2);padding:9px 12px;font-size:13px;min-width:170px;transform:translate(-50%,calc(-100% - 10px));z-index:5}
+.tooltip strong{display:block;font-size:16px;font-weight:750}
+.tooltip .tt-mes{color:var(--text-2);margin-bottom:6px}
+.tooltip .tt-fila{display:flex;justify-content:space-between;gap:14px;color:var(--text-2)}
+.tooltip .tt-fila b{color:var(--text);font-weight:650}
+details.tabla-datos{margin-top:10px}
+details.tabla-datos summary{cursor:pointer;color:var(--primary-ink);font-weight:650;font-size:14px;width:max-content}
+.tabla{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+.tabla th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);padding:8px 10px}
+.tabla td{border-bottom:1px solid var(--border);padding:8px 10px}
 .tabla .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.tabla small{color:var(--suave)}
-.tabla .vacia{text-align:center;color:var(--suave);padding:30px 10px}
-.tabla tr.seleccionada td{background:var(--primario-claro)}
-.td-meta{display:none}
-.acciones-fila{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
-.acciones-fila .btn{white-space:nowrap}
-.estado{border:0;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
-.estado.cobrada{background:var(--ok-fondo);color:var(--ok)}
-.estado.pendiente{background:var(--pend-fondo);color:var(--pend)}
-.estado:hover{filter:brightness(.95)}
-.estado small{font-weight:600;color:inherit;opacity:.8}
-.codigo-cliente{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--primario-claro);color:var(--primario);border-radius:4px;padding:0 5px;margin-right:4px}
 
-/* ---------- Contabilidad ---------- */
-.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px;margin-bottom:6px}
-.tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:4px 0 18px}
-.tarjeta{background:#fff;border:1px solid var(--borde);border-radius:var(--radio);padding:12px 14px;box-shadow:var(--sombra)}
-.tarjeta span{display:block;font-size:12px;color:var(--suave);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.tarjeta strong{display:block;font-size:20px;margin-top:2px;font-variant-numeric:tabular-nums}
-.tarjeta small{color:var(--suave)}
-.tarjeta.ok{border-left:4px solid var(--ok)}
-.tarjeta.pend{border-left:4px solid #d9900f}
-.cab-panel{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.cab-panel h2{margin:0}
+/* Primeros pasos */
+.pasos-inicio{max-width:620px;margin:10px auto;text-align:center}
+.icono-grande{width:64px;height:64px;border-radius:20px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;margin:0 auto 16px}
+.icono-grande svg.i{width:30px;height:30px}
+.lista-pasos{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:10px;text-align:left}
+.lista-pasos li{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.lista-pasos .num-paso{width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary-ink);display:grid;place-items:center;font-weight:750;flex:none}
+.lista-pasos li.hecho .num-paso{background:var(--ok-soft);color:var(--ok)}
+.lista-pasos li div{flex:1;min-width:0}
+.lista-pasos small{display:block;color:var(--muted)}
 
-/* ---------- Empresas / clientes ---------- */
-.lista-empresas{display:grid;gap:10px;margin-bottom:12px}
-.tarjeta-empresa{display:flex;align-items:center;gap:12px;border:1px solid var(--borde);border-radius:var(--radio);padding:10px 12px;background:#fff;cursor:pointer;text-align:left;width:100%}
-.tarjeta-empresa:hover{border-color:#a9b7c6}
-.tarjeta-empresa.seleccionada{border-color:var(--primario);box-shadow:0 0 0 2px var(--primario-claro)}
-.tarjeta-empresa .mini-logo{width:64px;height:40px;object-fit:contain;flex:none;border-radius:6px;background:#f6f8fa}
-.tarjeta-empresa .mini-color{width:12px;align-self:stretch;border-radius:4px;flex:none}
-.tarjeta-empresa div{min-width:0}
-.tarjeta-empresa strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tarjeta-empresa small{color:var(--suave)}
-.imagen-campo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
-.imagen-campo .caja-img{width:150px;height:72px;border:1px dashed #b8c1cc;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fafbfc;color:var(--suave);font-size:12px;overflow:hidden}
+/* ---------- Editor de facturas ---------- */
+.editor{display:grid;grid-template-columns:minmax(380px,560px) minmax(0,1fr);gap:22px;align-items:start}
+.editor-form .card + .card{margin-top:14px}
+.columna-previa{position:sticky;top:24px}
+.marco-previa{background:var(--surface-3);border-radius:var(--r-lg);padding:18px;max-height:calc(100vh - 90px);overflow:auto;border:1px solid var(--border)}
+.previa-ajuste{position:relative;overflow:hidden}
+.previa-ajuste .hoja{transform-origin:top left;box-shadow:0 6px 24px rgba(15,23,42,.18)}
+.titulo-previa{display:flex;justify-content:space-between;align-items:center;margin:0 4px 10px;font-size:12.5px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.resumen-importes{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:6px 14px;margin:4px 0 6px}
+.resumen-importes .ri-fila{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:14.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.resumen-importes .ri-fila + .ri-fila{border-top:1px solid var(--border)}
+.resumen-importes .ri-total{color:var(--text);font-weight:800;font-size:19px}
+.acciones-editor{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.etiqueta{display:inline-flex;align-items:center;font-size:12px;font-weight:750;padding:3px 9px;border-radius:99px;background:var(--ok-soft);color:var(--ok);vertical-align:middle;margin-left:8px;letter-spacing:0}
+.barra-editor{display:none}
+.btn-volver{margin-left:-8px}
+
+/* ---------- Clientes ---------- */
+.dos-col{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,1fr);gap:20px;align-items:start}
+.lista-clientes{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.item-cliente{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:14px;cursor:pointer}
+.item-cliente:hover{background:var(--surface-2)}
+.item-cliente.seleccionado{background:var(--primary-soft)}
+.item-cliente:focus-visible{box-shadow:var(--foco)}
+.avatar{width:42px;height:42px;border-radius:13px;background:var(--primary-soft);color:var(--primary-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;letter-spacing:.02em}
+.item-cliente.seleccionado .avatar{background:var(--primary);color:var(--on-primary)}
+.ic-texto{flex:1;min-width:0;display:flex;flex-direction:column}
+.ic-texto strong{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic-texto small,.ic-cifras small{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic-cifras{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+.ic-cifras strong{font-variant-numeric:tabular-nums;font-weight:700}
+.ic-cifras .pend{color:var(--warn);font-weight:650}
+.buscador{position:relative}
+.buscador svg.i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);width:18px;height:18px}
+.buscador input{padding-left:38px;width:100%}
+.resumen-cliente{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.resumen-cliente div{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;min-width:0}
+.resumen-cliente span{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.resumen-cliente strong{font-size:15px;white-space:nowrap}
+
+/* ---------- Ajustes / empresas ---------- */
+.ajustes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.ajustes-grid .card + .card{margin-top:0}
+.item-empresa{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;cursor:pointer;margin-bottom:8px}
+.item-empresa:hover{background:var(--surface-2)}
+.item-empresa:focus-visible{box-shadow:var(--foco)}
+.item-empresa .mini-logo{width:56px;height:40px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--border);flex:none}
+.item-empresa .mini-color{width:40px;height:40px;border-radius:12px;flex:none}
+.item-empresa div{flex:1;min-width:0}
+.item-empresa strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-empresa small{color:var(--muted);font-size:12.5px}
+.item-empresa > svg.i{color:var(--muted)}
+.imagen-campo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 16px}
+.imagen-campo .caja-img{width:150px;height:72px;border:1px dashed var(--border-strong);border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff;color:#8a94a7;font-size:12px;overflow:hidden}
 .imagen-campo .caja-img img{max-width:100%;max-height:100%;object-fit:contain}
-.etiqueta-campo{font-size:13px;font-weight:600;color:var(--suave)}
-.dos-col{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(340px,1fr);gap:20px;align-items:start}
-.estrecho{max-width:760px}
-.vacio-inicio{max-width:640px;margin:40px auto;text-align:center}
-.vacio-inicio ol{text-align:left;display:inline-block;margin:8px 0 18px}
-.pasos{margin:0 0 12px;padding-left:20px}
+.etiqueta-campo{font-size:13px;font-weight:600;color:var(--text-2)}
+.pasos{margin:0 0 14px;padding-left:20px}
 .pasos li{margin-bottom:6px}
 
 /* ---------- Diálogos ---------- */
-dialog{border:0;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(720px,94vw)}
-dialog::backdrop{background:rgba(15,23,42,.45)}
-#dlg-pdf{width:min(460px,94vw)}
-#firma-lienzo{width:100%;aspect-ratio:3/1;border:1px dashed #9aa6b2;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;display:block}
+dialog{border:0;border-radius:20px;padding:22px;box-shadow:var(--sombra-2);width:min(560px,94vw);background:var(--surface);color:var(--text)}
+dialog::backdrop{background:rgba(15,23,42,.5);backdrop-filter:blur(2px)}
+dialog h2{margin-bottom:6px}
+#dlg-firma{width:min(720px,94vw)}
+#firma-lienzo{width:100%;aspect-ratio:3/1;border:1px dashed var(--border-strong);border-radius:14px;background:#fff;touch-action:none;cursor:crosshair;display:block}
+#rec-texto{width:100%;min-height:150px;margin:8px 0 4px}
+.dlg-acciones{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
 
-/* ---------- Aviso flotante ---------- */
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1c2430;color:#fff;padding:10px 18px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw;text-align:center}
+/* ---------- Aviso flotante (con «Deshacer») ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);display:flex;align-items:center;gap:14px;background:#111827;color:#fff;padding:12px 16px;border-radius:14px;font-weight:600;font-size:14.5px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;max-width:min(92vw,520px);box-shadow:var(--sombra-2)}
 .toast.visible{opacity:1;transform:translate(-50%,0)}
-.toast.error{background:var(--peligro)}
+.toast.visible.con-accion{pointer-events:auto}
+.toast.error{background:#b42318}
+.toast button{background:none;border:0;color:#a9c0ff;font:inherit;font-weight:800;cursor:pointer;padding:4px 2px;white-space:nowrap}
 
 /* Zona fuera de pantalla donde se pinta la factura para hacer el PDF */
 #zona-pdf{position:absolute;left:-12000px;top:0;width:210mm;pointer-events:none}
 
-@media (max-width:1050px){
-  .editor,.dos-col{grid-template-columns:minmax(0,1fr)}
+/* ---------- Pantallas medianas ---------- */
+@media (max-width:1180px){
+  .editor{grid-template-columns:minmax(0,1fr)}
   .columna-previa{position:static}
   .marco-previa{max-height:none}
+  .dos-col{grid-template-columns:minmax(0,1fr)}
 }
+@media (min-width:861px){ .solo-movil{display:none !important} }
 
-/* ---------- Móvil: menú abajo, tarjetas, letra de 16 px (evita el zoom en iPhone) ---------- */
-@media (max-width:760px){
-  .barra{min-height:50px;padding:env(safe-area-inset-top) 16px 0;justify-content:center}
-  .marca{font-size:17px}
-  .barra nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--borde);box-shadow:0 -2px 10px rgba(16,24,40,.08);padding:0 0 env(safe-area-inset-bottom);gap:0;overflow:visible}
-  .barra nav button{flex:1 1 0;min-width:0;flex-direction:column;gap:3px;padding:8px 2px 7px;border-radius:0;font-size:11px;color:var(--suave)}
-  .barra nav button svg{width:24px;height:24px}
-  .barra nav button:hover{background:transparent;color:var(--suave)}
-  .barra nav button.activa{background:transparent;color:var(--primario)}
-  .barra nav button.activa svg{stroke-width:2.5}
+/* ---------- Móvil ---------- */
+@media (max-width:860px){
+  .nav{inset:auto 0 0 0;width:auto;height:calc(var(--nav-alto) + env(safe-area-inset-bottom));flex-direction:row;align-items:stretch;gap:0;padding:0 4px env(safe-area-inset-bottom);border-right:0;border-top:1px solid var(--border);background:color-mix(in srgb,var(--surface) 90%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px)}
+  .marca,.nav-pie{display:none}
+  .nav-item{flex:1 1 0;min-width:0;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:6px 2px;border-radius:0;font-size:11px;font-weight:650;color:var(--muted);text-align:center}
+  .nav-item:hover{background:transparent;color:var(--muted)}
+  .nav-item.activa{background:transparent;color:var(--primary)}
+  .nav-item svg.i{width:24px;height:24px}
+  .nav-item[data-ir="inicio"]{order:1}
+  .nav-item[data-ir="facturas"]{order:2}
+  .nav-nueva{order:3}
+  .nav-item[data-ir="clientes"]{order:4}
+  .nav-item[data-ir="ajustes"]{order:5}
+  .nav-nueva,.nav-nueva:hover,.nav-nueva.activa{background:transparent;color:var(--muted);margin:0;box-shadow:none}
+  .nav-nueva .fab{width:50px;height:50px;border-radius:17px;background:var(--primary);color:var(--on-primary);margin-top:-26px;box-shadow:0 8px 20px rgba(47,91,216,.35)}
+  .nav-nueva .fab svg.i{width:26px;height:26px;stroke-width:2.4}
+  .nav-nueva.activa{color:var(--primary)}
   .largo{display:none}
   .corto{display:inline}
-  .aviso-copia,.aviso-instalar{padding:10px 14px;font-size:14px}
-  main{padding:14px 12px calc(86px + env(safe-area-inset-bottom))}
+  .contenido{margin-left:0;padding:calc(18px + env(safe-area-inset-top)) 16px calc(var(--nav-alto) + 30px + env(safe-area-inset-bottom))}
+  h1{font-size:27px}
+  .cab-vista{margin-bottom:16px}
+  .card{padding:16px;border-radius:16px}
   input,select,textarea{font-size:16px}
-  .panel{padding:14px}
-  .resumen-importes{grid-template-columns:1fr 1fr}
-  .resumen-importes .total{grid-column:1/-1}
-  .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
   .solo-escritorio{display:none !important}
-  .ocultar-movil{display:none}
-  .acciones .btn{flex:1 1 auto}
-  .marco-previa{padding:8px}
+  .panel-cifras{grid-template-columns:minmax(0,1fr)}
+  .tiles{gap:10px}
+  .tile{padding:13px 14px;border-radius:16px}
+  .tile strong{font-size:19px}
+  .rejilla-2{grid-template-columns:minmax(0,1fr)}
+  .ajustes-grid{grid-template-columns:minmax(0,1fr)}
+  .grafico{height:220px}
 
-  /* Contabilidad en tarjetas */
-  #vista-contabilidad > .panel{background:transparent;border:0;box-shadow:none;padding:0}
-  .filtros{grid-template-columns:1fr 1fr}
-  .filtros label:last-child{grid-column:1/-1}
-  .tarjetas{grid-template-columns:1fr 1fr;gap:8px}
-  .tarjeta{padding:10px 12px}
-  .tarjeta strong{font-size:17px}
-  .tabla-facturas thead{display:none}
-  .tabla-facturas,.tabla-facturas tbody{display:block}
-  .tabla-facturas tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"num total" "cli cli" "meta meta" "estado estado" "acc acc";gap:4px 10px;align-items:center;padding:12px 14px;border:1px solid var(--borde);border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:var(--sombra)}
-  .tabla-facturas tr:hover td{background:transparent}
-  .tabla-facturas td{border:0;padding:0}
-  .tabla-facturas .td-num{grid-area:num;font-size:16px}
-  .tabla-facturas .td-total{grid-area:total;font-size:17px}
-  .tabla-facturas .td-cli{grid-area:cli;font-weight:600}
-  .tabla-facturas .td-meta{grid-area:meta;display:block;font-size:13px;color:var(--suave)}
-  .tabla-facturas .td-estado{grid-area:estado;margin-top:6px}
-  .tabla-facturas .td-acc{grid-area:acc;margin-top:4px}
-  .tabla-facturas .td-fecha,.tabla-facturas .td-emp,.tabla-facturas .td-base,.tabla-facturas .td-iva{display:none}
-  .tabla-facturas .acciones-fila{justify-content:flex-start}
-  .tabla-facturas .acciones-fila .btn{flex:1 1 auto}
-  .tabla-facturas td.vacia{grid-column:1/-1}
-  .tabla-facturas .estado{width:100%;justify-content:center;padding:9px 12px;font-size:14px}
+  .item-factura{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"principal importe" "estado acciones";padding:12px 10px 8px 14px;gap:8px 10px}
+  .item-factura .if-principal{grid-area:principal}
+  .item-factura .if-importe{grid-area:importe;align-self:start;padding-top:2px}
+  .item-factura .if-estado{grid-area:estado}
+  .item-factura .if-acciones{grid-area:acciones}
+  .lista-compacta .item-factura{grid-template-areas:"principal importe" "estado estado";padding:12px 0}
+  .item-factura .if-cliente,.item-factura .if-meta{white-space:normal;overflow-wrap:anywhere}
+  .tiles.fila-tiles{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;margin:0 -16px 16px;padding:2px 16px 8px;scrollbar-width:none}
+  .tiles.fila-tiles::-webkit-scrollbar{display:none}
+  .tiles.fila-tiles .tile{flex:0 0 46%;scroll-snap-align:start}
+
+  /* Editor: pestañas Datos / Vista previa y barra de acciones fija */
+  .editor[data-modo="datos"] .columna-previa{display:none}
+  .editor[data-modo="previa"] .editor-form{display:none}
+  .marco-previa{padding:10px}
+  body[data-vista="factura"] .barra-editor{display:flex;position:fixed;left:0;right:0;bottom:calc(var(--nav-alto) + env(safe-area-inset-bottom));gap:10px;padding:10px 14px;background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--border);z-index:25}
+  .barra-editor .btn{flex:1}
+  body[data-vista="factura"] .contenido{padding-bottom:calc(var(--nav-alto) + 100px + env(safe-area-inset-bottom))}
+  .toast{bottom:calc(var(--nav-alto) + 16px + env(safe-area-inset-bottom))}
+  body[data-vista="factura"] .toast{bottom:calc(var(--nav-alto) + 84px + env(safe-area-inset-bottom))}
+
+  /* Clientes: lista o ficha, una cada vez */
+  #vista-clientes.editando .col-lista{display:none}
+  #vista-clientes:not(.editando) .col-ficha{display:none}
+
+  /* Diálogos como hoja inferior */
+  dialog{margin:auto auto 0;width:100%;max-width:100%;border-radius:22px 22px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom))}
+  #dlg-firma{width:100%}
+  .dlg-acciones .btn{flex:1 1 auto}
 }
 
 /* =========================================================
    HOJA DE FACTURA (A4) — vista previa, impresión y PDF
+   (sin tablas con fondo, sin tabular-nums y sin color-mix: html2canvas los pinta mal)
    ========================================================= */
-.hoja{--c:#1f4e79;--c-claro:#eef3f8;width:210mm;min-height:297mm;padding:15mm 16mm 12mm;background:#fff;color:#222;font:9.5pt/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hoja{--c:#1f4e79;--c-claro:#eef3f8;width:210mm;min-height:297mm;padding:15mm 16mm 12mm;background:#fff;color:#222;font:9.5pt/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact;text-align:left;letter-spacing:0}
 .hoja *{box-sizing:border-box}
 .hoja .h-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10mm;padding-bottom:5mm;border-bottom:2.2pt solid var(--c)}
 .hoja .h-emisor{max-width:110mm}
@@ -249,7 +430,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 .hoja .h-cliente-nombre{font-size:11.5pt;font-weight:700}
 .hoja .h-lineas-cab{display:flex;justify-content:space-between;background:var(--c);color:#fff;padding:2.2mm 3.5mm;font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
 .hoja .h-linea{display:flex;align-items:flex-start;gap:6mm;padding:4mm 3.5mm;border-bottom:.6pt solid #ccc}
-.hoja .h-concepto{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word;min-height:72mm;font-size:10pt}
+.hoja .h-concepto{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word;min-height:60mm;font-size:10pt}
 .hoja .h-linea .n{flex:none;text-align:right;white-space:nowrap;font-size:10pt}
 .hoja .h-bajo{display:flex;justify-content:space-between;align-items:flex-start;gap:8mm;margin-top:5mm}
 .hoja .h-pago{flex:1;font-size:9pt}
@@ -268,6 +449,36 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 .hoja .h-pie div{border-top:.6pt solid #ccc;padding-top:2.5mm;font-size:7.5pt;color:#777;text-align:center;white-space:pre-wrap}
 .hoja .vacio{color:#b0b6bd;font-style:italic}
 
+/* ---------- Plantilla «Clásica» (como las facturas hechas en Word) ---------- */
+.hoja.clasica{font:10pt/1.35 Arial,Helvetica,sans-serif;color:#111;padding:22mm 22mm 14mm 28mm}
+.hoja.clasica .hc-cab{display:flex;align-items:center;gap:8mm;margin-left:12mm}
+.hoja.clasica .hc-logo{display:block;max-width:28mm;max-height:21mm}
+.hoja.clasica .hc-emisor{font-weight:700;font-size:9pt;line-height:1.3}
+.hoja.clasica .hc-nombre span{background:var(--c);color:#fff;padding:0 1mm}
+.hoja.clasica .hc-contacto{font-weight:400}
+.hoja.clasica .hc-datos{margin:7mm 14mm 0 auto;width:54mm}
+.hoja.clasica .hc-casilla{border:.7pt solid #222;padding:.4mm 2mm;font-size:9.5pt}
+.hoja.clasica .hc-casilla + .hc-casilla{margin-top:3.5mm}
+.hoja.clasica .hc-cliente{margin:9mm 0 0 auto;width:78mm;font-weight:700;font-size:9.5pt;line-height:1.3}
+.hoja.clasica .hc-concepto{margin-top:11mm;text-align:justify;text-indent:12mm;font-size:10.5pt;line-height:1.3;white-space:pre-wrap;word-wrap:break-word}
+.hoja.clasica .hc-totales{margin:10mm auto 0;width:86mm;border:.8pt solid #222}
+.hoja.clasica .hc-fila{display:flex;font-size:10pt}
+.hoja.clasica .hc-fila + .hc-fila{border-top:.8pt solid #222}
+.hoja.clasica .hc-fila > *{padding:.3mm 2mm}
+.hoja.clasica .hc-fila > :first-child{flex:1}
+.hoja.clasica .hc-fila > :last-child{width:45%;text-align:right;white-space:nowrap;border-left:.8pt solid #222}
+.hoja.clasica .hc-total{background:#d9d9d9;border-top-width:1.6pt}
+.hoja.clasica .hc-exencion{text-align:center;font-size:8.5pt;font-style:italic;margin-top:2mm}
+.hoja.clasica .hc-lugar{text-align:center;margin-top:16mm;font-size:10pt}
+.hoja.clasica .hc-firma{display:flex;justify-content:center;align-items:center;min-height:24mm;margin:2mm 0}
+.hoja.clasica .hc-firma img{display:block;max-width:56mm;max-height:30mm}
+.hoja.clasica .hc-fdo,.hoja.clasica .hc-cargo,.hoja.clasica .hc-cuenta,.hoja.clasica .hc-obs{text-align:center;font-size:9.5pt}
+.hoja.clasica .hc-cargo,.hoja.clasica .hc-cuenta{font-weight:700}
+.hoja.clasica .hc-obs{white-space:pre-wrap;margin-top:1mm}
+.hoja.clasica .hc-nota{text-align:center;color:#1d3fd8;font-weight:700;font-size:10pt;margin-top:.5mm}
+.hoja.clasica .hc-pie{margin-top:auto;padding-top:6mm}
+.hoja.clasica .hc-pie div{font-size:7.5pt;color:#666;text-align:center;white-space:pre-wrap}
+
 /* ---------- Impresión ---------- */
 #zona-impresion{display:none}
 @media print{
@@ -279,187 +490,136 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 }
 </style>
 </head>
-<body>
+<body data-vista="inicio">
 
-<header class="barra">
-  <div class="marca">Facturación</div>
-  <nav aria-label="Secciones">
-    <button type="button" data-vista="factura">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></svg>
-      <span class="largo">Nueva factura</span><span class="corto">Nueva</span>
-    </button>
-    <button type="button" data-vista="contabilidad">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18"/><path d="M6 16v-5"/><path d="M11 16V6"/><path d="M16 16v-8"/><path d="M21 16v-3"/></svg>
-      <span class="largo">Contabilidad</span><span class="corto">Contabilidad</span>
-    </button>
-    <button type="button" data-vista="clientes">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.8 3.1 2.5 3.5 5.2"/></svg>
-      <span class="largo">Clientes</span><span class="corto">Clientes</span>
-    </button>
-    <button type="button" data-vista="empresas">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M2 21h20"/><path d="M8 7h4M8 11h4M8 15h4"/></svg>
-      <span class="largo">Empresas</span><span class="corto">Empresas</span>
-    </button>
-    <button type="button" data-vista="copias">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
-      <span class="largo">Copia de seguridad</span><span class="corto">Copias</span>
-    </button>
-  </nav>
-</header>
-<div class="aviso-instalar" id="aviso-instalar" hidden>
-  <span id="aviso-instalar-texto"></span>
-  <button type="button" class="btn peq primario" id="btn-instalar" hidden>Instalar</button>
-  <button type="button" class="btn peq" id="btn-instalar-cerrar">Ahora no</button>
-</div>
-<div class="aviso-copia" id="aviso-copia" hidden>
-  <span id="aviso-copia-texto">Hace tiempo que no descargas una copia de seguridad de tus facturas.</span>
-  <button type="button" class="btn peq" id="aviso-copia-btn">Descargar copia ahora</button>
-</div>
+<!-- Iconos -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.8 3.1 2.5 3.5 5.2"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M2 21h20"/><path d="M8 7h4M8 11h4M8 15h4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 17V5"/><path d="m7 10 5-5 5 5"/><path d="M5 21h14"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></symbol>
+  <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9.5 14.5 2.5 2.5 2.5-2.5"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></symbol>
+</svg>
 
-<main>
-<!-- ================= NUEVA FACTURA ================= -->
-<section class="vista" id="vista-factura">
-  <div class="panel vacio-inicio" id="sin-empresas" hidden>
-    <h2>Bienvenido</h2>
-    <p>Para empezar a facturar:</p>
-    <ol>
-      <li>Da de alta tu empresa: datos, logo, firma y número de cuenta.</li>
-      <li>Haz la factura: elige el cliente y su número sale solo.</li>
-      <li>Envíala en PDF por WhatsApp o correo.</li>
-    </ol>
-    <div><button type="button" class="btn primario" id="btn-ir-empresas">Dar de alta mi empresa</button></div>
-  </div>
+<nav class="nav" aria-label="Secciones">
+  <div class="marca"><img src="iconos/icono.svg" alt=""><span>Facturación</span></div>
+  <button type="button" class="nav-item nav-nueva" data-ir="factura" data-nueva aria-label="Nueva factura">
+    <span class="fab"><svg class="i"><use href="#i-plus"/></svg></span><span class="largo">Nueva factura</span><span class="corto">Nueva</span>
+  </button>
+  <button type="button" class="nav-item" data-ir="inicio"><svg class="i"><use href="#i-home"/></svg><span>Inicio</span></button>
+  <button type="button" class="nav-item" data-ir="facturas"><svg class="i"><use href="#i-file"/></svg><span>Facturas</span></button>
+  <button type="button" class="nav-item" data-ir="clientes"><svg class="i"><use href="#i-users"/></svg><span>Clientes</span></button>
+  <button type="button" class="nav-item" data-ir="ajustes"><svg class="i"><use href="#i-settings"/></svg><span>Ajustes</span></button>
+  <div class="nav-pie" id="nav-pie"></div>
+</nav>
 
-  <div class="editor" id="editor-factura">
-    <form class="panel" id="form-factura" autocomplete="off" novalidate>
-      <div class="cab-editor">
-        <h2 id="titulo-editor">Nueva factura</h2>
-        <button type="button" class="btn peq" id="btn-nueva-factura">+ Nueva</button>
+<main class="contenido">
+
+  <!-- ================= INICIO ================= -->
+  <section class="vista" id="vista-inicio">
+    <header class="cab-vista">
+      <div><p class="sobretitulo" id="ini-fecha"></p><h1>Inicio</h1></div>
+      <select id="ini-empresa" aria-label="Empresa" style="width:auto;min-width:220px"></select>
+    </header>
+    <!-- Avisos solo en Inicio, para que no muevan el contenido de las demás pantallas -->
+    <div class="aviso info" id="aviso-instalar" hidden>
+      <span id="aviso-instalar-texto"></span>
+      <button type="button" class="btn peq primario" id="btn-instalar" hidden>Instalar</button>
+      <button type="button" class="btn peq" id="btn-instalar-cerrar">Ahora no</button>
+    </div>
+    <div class="aviso alerta" id="aviso-copia" hidden>
+      <span id="aviso-copia-texto"></span>
+      <button type="button" class="btn peq" id="aviso-copia-btn">Descargar copia ahora</button>
+    </div>
+
+    <div id="ini-vacio" hidden>
+      <div class="pasos-inicio">
+        <div class="icono-grande"><svg class="i"><use href="#i-euro"/></svg></div>
+        <h1 style="font-size:24px">Tus facturas, en el móvil</h1>
+        <p class="suave" style="margin-top:8px">Haz facturas, envíalas en PDF y controla qué te han pagado.</p>
+        <ol class="lista-pasos">
+          <li id="paso-empresa"><span class="num-paso">1</span><div><strong>Da de alta tu empresa</strong><small>Datos, logo, firma y número de cuenta</small></div><button type="button" class="btn peq primario" id="btn-paso-empresa">Empezar</button></li>
+          <li id="paso-factura"><span class="num-paso">2</span><div><strong>Haz tu primera factura</strong><small>Eliges el cliente y el número sale solo</small></div><button type="button" class="btn peq" data-nueva>Hacer factura</button></li>
+          <li><span class="num-paso">3</span><div><strong>Envíala y apunta el cobro</strong><small>PDF por WhatsApp o correo; márcala como cobrada</small></div></li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="ini-panel">
+      <div class="panel-cifras">
+        <div class="hero-card">
+          <div>
+            <span class="etq">Pendiente de cobro</span>
+            <div class="hero" id="ini-pendiente">0,00 €</div>
+            <p class="hero-sub" id="ini-pendiente-sub"></p>
+          </div>
+          <button type="button" class="btn peq" id="ini-ver-pendientes">Ver facturas pendientes</button>
+        </div>
+        <div class="tiles" id="ini-tiles"></div>
       </div>
 
-      <fieldset class="primero">
-        <legend>Empresa que factura</legend>
-        <label>Empresa
-          <select id="f-empresa"></select>
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Cliente</legend>
-        <label>Elegir cliente guardado
-          <select id="f-cliente"></select>
-        </label>
-        <label>Nombre o razón social
-          <input id="f-cli-nombre" placeholder="Nombre del cliente">
-        </label>
-        <div class="fila">
-          <label>CIF / NIF <input id="f-cli-cif" autocapitalize="characters"></label>
-          <label id="lbl-codigo">Código del cliente
-            <input id="f-cli-codigo" autocapitalize="characters" maxlength="8">
-            <span class="ayuda">Va delante del nº de sus facturas</span>
-          </label>
+      <div class="card" style="margin-top:16px">
+        <div class="card-cab">
+          <div><h2>Facturado por mes</h2><p id="ini-grafico-sub"></p></div>
         </div>
-        <label>Dirección <input id="f-cli-dir"></label>
-        <div class="fila">
-          <label>Código postal <input id="f-cli-cp" inputmode="numeric"></label>
-          <label>Población <input id="f-cli-pob"></label>
-          <label>Provincia <input id="f-cli-prov"></label>
+        <div class="grafico" id="ini-grafico"></div>
+        <details class="tabla-datos">
+          <summary>Ver los datos en tabla</summary>
+          <table class="tabla">
+            <thead><tr><th>Mes</th><th class="num">Facturado</th><th class="num">Cobrado</th><th class="num">Pendiente</th></tr></thead>
+            <tbody id="ini-tabla"></tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="rejilla-2">
+        <div class="card">
+          <div class="card-cab"><div><h2>Por cobrar</h2><p>Primero las que vencen antes</p></div></div>
+          <div class="lista-facturas lista-compacta" id="ini-por-cobrar"></div>
         </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Número y fecha</legend>
-        <div class="fila">
-          <label>Nº de factura
-            <span class="campo-numero"><span class="prefijo" id="f-serie"></span><input id="f-numero" type="number" inputmode="numeric" min="1" step="1"></span>
-            <span class="ayuda" id="f-numero-ayuda"></span>
-          </label>
-          <label>Fecha de la factura
-            <input id="f-fecha" type="date">
-          </label>
+        <div class="card">
+          <div class="card-cab"><div><h2>Últimas facturas</h2></div><button type="button" class="btn peq" id="ini-ver-todas">Ver todas</button></div>
+          <div class="lista-facturas lista-compacta" id="ini-ultimas"></div>
         </div>
-      </fieldset>
+      </div>
+    </div>
+  </section>
 
-      <fieldset>
-        <legend>Concepto</legend>
-        <label>Concepto de la factura
-          <textarea id="f-concepto" rows="8" placeholder="Describe el trabajo o servicio facturado…"></textarea>
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Importes</legend>
-        <div class="fila">
-          <label>Base imponible (€)
-            <input id="f-base" inputmode="decimal" placeholder="0,00">
-          </label>
-          <label id="lbl-iva">% de IVA
-            <input id="f-iva" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-iva">
-          </label>
-        </div>
-        <label class="check"><input type="checkbox" id="f-aplica-iva"> Aplicar IVA (IVA repercutido)</label>
-        <label id="lbl-exencion">Motivo por el que no lleva IVA (sale en la factura)
-          <input id="f-exencion" list="motivos-exencion" placeholder="Ej.: Operación exenta de IVA (art. 20 Ley 37/1992)">
-        </label>
-        <div class="resumen-importes">
-          <div><span>Base imponible</span><strong id="r-base">0,00 €</strong></div>
-          <div><span id="r-iva-txt">IVA</span><strong id="r-iva">0,00 €</strong></div>
-          <div class="total"><span>Total factura</span><strong id="r-total">0,00 €</strong></div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Pago y firma</legend>
-        <label>Forma de pago <input id="f-pago" list="formas-pago"></label>
-        <label>Nº de cuenta (IBAN) <input id="f-iban" placeholder="ES00 0000 0000 0000 0000 0000"></label>
-        <label>Observaciones (opcional)
-          <textarea id="f-obs" rows="2" placeholder="Ej.: vencimiento a 30 días"></textarea>
-        </label>
-        <label class="check"><input type="checkbox" id="f-incluir-firma"> Poner la firma en la factura</label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Cobro</legend>
-        <div class="fila">
-          <label class="check" style="margin-top:28px"><input type="checkbox" id="f-cobrada"> Factura cobrada</label>
-          <label>Fecha de cobro <input id="f-fecha-cobro" type="date"></label>
-        </div>
-      </fieldset>
-
+  <!-- ================= FACTURAS (CONTABILIDAD) ================= -->
+  <section class="vista" id="vista-facturas">
+    <header class="cab-vista">
+      <div><p class="sobretitulo">Contabilidad</p><h1>Facturas</h1></div>
       <div class="acciones">
-        <button type="submit" class="btn primario">Guardar factura</button>
-        <button type="button" class="btn" id="btn-pdf">Enviar / descargar PDF</button>
-        <button type="button" class="btn solo-escritorio" id="btn-imprimir">Imprimir</button>
-        <button type="button" class="btn peligro" id="btn-borrar-factura" hidden>Borrar</button>
+        <button type="button" class="btn" id="c-exportar"><svg class="i"><use href="#i-send"/></svg>Enviar al gestor</button>
+        <button type="button" class="btn primario solo-escritorio" data-nueva><svg class="i"><use href="#i-plus"/></svg>Nueva factura</button>
       </div>
-    </form>
-
-    <div class="columna-previa">
-      <div class="titulo-previa"><span>Vista previa</span><span id="previa-codigo"></span></div>
-      <div class="marco-previa"><div class="previa-ajuste" id="previa-factura"></div></div>
+    </header>
+    <div class="seg" id="c-estado" role="group" aria-label="Estado" style="margin-bottom:12px">
+      <button type="button" data-valor="" class="activo">Todas</button>
+      <button type="button" data-valor="pendientes">Pendientes</button>
+      <button type="button" data-valor="vencidas">Vencidas</button>
+      <button type="button" data-valor="cobradas">Cobradas</button>
     </div>
-  </div>
-</section>
-
-<!-- ================= CONTABILIDAD ================= -->
-<section class="vista" id="vista-contabilidad">
-  <div class="panel">
-    <div class="cab-panel">
-      <h2>Contabilidad</h2>
-      <div class="acciones" style="margin:0">
-        <button type="button" class="btn solo-escritorio" id="c-csv">Exportar a Excel (CSV)</button>
-        <button type="button" class="btn primario" id="c-nueva">+ Nueva factura</button>
-      </div>
-    </div>
-    <div class="filtros">
+    <div class="fila" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
       <label>Empresa <select id="c-empresa"></select></label>
-      <label>Estado
-        <select id="c-estado">
-          <option value="">Todas</option>
-          <option value="pendientes">No cobradas</option>
-          <option value="cobradas">Cobradas</option>
-        </select>
-      </label>
       <label>Año <select id="c-anio"></select></label>
       <label>Trimestre
         <select id="c-tri">
@@ -470,87 +630,243 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
           <option value="4">4.º trimestre</option>
         </select>
       </label>
-      <label>Buscar <input id="c-buscar" type="search" placeholder="Cliente, nº, concepto…"></label>
+      <label>Buscar
+        <span class="buscador" style="display:block;margin-top:6px"><svg class="i"><use href="#i-search"/></svg><input id="c-buscar" type="search" placeholder="Cliente, nº, concepto…"></span>
+      </label>
     </div>
-    <div class="tarjetas" id="c-tarjetas"></div>
-    <div class="tabla-scroll">
-      <table class="tabla tabla-facturas">
-        <thead>
-          <tr>
-            <th>Nº factura</th><th>Fecha</th><th>Empresa</th><th>Cliente</th>
-            <th class="num">Base</th><th class="num">IVA</th><th class="num">Total</th>
-            <th>Cobro</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="c-lista"></tbody>
-      </table>
-    </div>
-    <p class="suave" style="margin-top:10px;font-size:13px">Pulsa en el estado (<em>Cobrada / No cobrada</em>) para cambiarlo. Pulsa en el número para abrir la factura.</p>
-  </div>
-</section>
+    <div class="tiles fila-tiles" id="c-tarjetas"></div>
+    <div class="lista-facturas" id="c-lista"></div>
+  </section>
 
-<!-- ================= CLIENTES ================= -->
-<section class="vista" id="vista-clientes">
-  <div class="dos-col">
-    <div class="panel">
-      <div class="cab-panel">
-        <h2>Clientes</h2>
-        <input id="cl-buscar" type="search" placeholder="Buscar cliente…" style="max-width:260px">
-      </div>
-      <div class="tabla-scroll">
-        <table class="tabla">
-          <thead><tr><th>Cliente</th><th class="ocultar-movil">Población</th><th class="num ocultar-movil">Facturas</th><th class="num">Facturado</th><th class="num">Pendiente</th></tr></thead>
-          <tbody id="cl-lista"></tbody>
-        </table>
-      </div>
-    </div>
-    <form class="panel" id="form-cliente" autocomplete="off" novalidate>
-      <h2 id="cl-titulo">Nuevo cliente</h2>
-      <label>Nombre o razón social <input id="cl-nombre"></label>
-      <label>CIF / NIF <input id="cl-cif" autocapitalize="characters"></label>
-      <label>Dirección <input id="cl-dir"></label>
-      <div class="fila">
-        <label>Código postal <input id="cl-cp" inputmode="numeric"></label>
-        <label>Población <input id="cl-pob"></label>
-      </div>
-      <label>Provincia <input id="cl-prov"></label>
-      <div class="fila">
-        <label>Teléfono <input id="cl-tel" type="tel"></label>
-        <label>Email <input id="cl-email" type="email"></label>
-      </div>
-      <fieldset>
-        <legend>Numeración de sus facturas</legend>
-        <div class="fila">
-          <label>Código del cliente <input id="cl-codigo" autocapitalize="characters" maxlength="8"></label>
-          <label>Empezar su numeración en <input id="cl-inicio" type="number" inputmode="numeric" min="1" step="1" value="1"></label>
-        </div>
-        <span class="ayuda" id="cl-numeracion-ayuda" style="margin:-4px 0 10px"></span>
-      </fieldset>
+  <!-- ================= EDITOR DE FACTURA ================= -->
+  <section class="vista" id="vista-factura">
+    <header class="cab-vista">
+      <div class="titulo"><h1 id="titulo-editor">Nueva factura</h1></div>
       <div class="acciones">
-        <button type="submit" class="btn primario">Guardar cliente</button>
-        <button type="button" class="btn" id="cl-facturar" hidden>Hacerle una factura</button>
-        <button type="button" class="btn" id="cl-nuevo">Nuevo</button>
-        <button type="button" class="btn peligro" id="cl-borrar" hidden>Borrar</button>
+        <button type="button" class="btn peq" id="btn-nueva-factura"><svg class="i"><use href="#i-plus"/></svg>Nueva en blanco</button>
+        <button type="button" class="btn peq peligro" id="btn-borrar-factura" hidden><svg class="i"><use href="#i-trash"/></svg>Borrar</button>
       </div>
-    </form>
-  </div>
-</section>
+    </header>
 
-<!-- ================= EMPRESAS ================= -->
-<section class="vista" id="vista-empresas">
-  <div class="editor">
-    <div>
-      <div class="panel">
-        <h2>Empresas</h2>
-        <p class="suave">Cada empresa tiene su plantilla (logo, datos, color y firma) y su numeración de facturas.</p>
-        <div class="lista-empresas" id="emp-lista"></div>
-        <button type="button" class="btn" id="emp-nueva">+ Añadir empresa</button>
+    <div class="card pasos-inicio" id="editor-vacio" hidden>
+      <div class="icono-grande"><svg class="i"><use href="#i-building"/></svg></div>
+      <h2>Primero, tu empresa</h2>
+      <p class="suave" style="margin-top:8px">Para hacer facturas, da de alta la empresa que factura: datos, logo, firma y número de cuenta.</p>
+      <button type="button" class="btn primario" id="btn-ir-empresas">Dar de alta mi empresa</button>
+    </div>
+
+    <div class="seg solo-movil" id="seg-editor" style="width:100%;margin-bottom:14px">
+      <button type="button" data-modo="datos" class="activo" style="flex:1">Datos</button>
+      <button type="button" data-modo="previa" style="flex:1">Ver factura</button>
+    </div>
+
+    <div class="editor" id="editor-factura" data-modo="datos">
+      <form class="editor-form" id="form-factura" autocomplete="off" novalidate>
+        <div class="card">
+          <div class="seccion-form" id="fila-empresa">
+            <h3 class="titulo-seccion">Empresa que factura</h3>
+            <label>Empresa <select id="f-empresa"></select></label>
+          </div>
+          <div class="seccion-form">
+            <h3 class="titulo-seccion">Cliente</h3>
+            <label>Elegir cliente guardado <select id="f-cliente"></select></label>
+            <label>Nombre o razón social <input id="f-cli-nombre" placeholder="Nombre del cliente"></label>
+            <div class="fila">
+              <label>CIF / NIF <input id="f-cli-cif" autocapitalize="characters"></label>
+              <label id="lbl-codigo">Código del cliente
+                <input id="f-cli-codigo" autocapitalize="characters" maxlength="8">
+                <span class="ayuda">Va delante del nº de sus facturas</span>
+              </label>
+            </div>
+            <label>Dirección <input id="f-cli-dir"></label>
+            <div class="fila">
+              <label>Código postal <input id="f-cli-cp" inputmode="numeric"></label>
+              <label>Población <input id="f-cli-pob"></label>
+              <label>Provincia <input id="f-cli-prov"></label>
+            </div>
+            <div class="fila">
+              <label>Teléfono (opcional) <input id="f-cli-tel" type="tel" inputmode="tel" placeholder="Para recordarle el cobro"></label>
+              <label>Email (opcional) <input id="f-cli-email" type="email" inputmode="email"></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="titulo-seccion">Número y fechas</h3>
+          <label>Nº de factura
+            <span class="campo-numero"><span class="prefijo" id="f-serie"></span><input id="f-numero" type="number" inputmode="numeric" min="1" step="1"></span>
+            <span class="ayuda" id="f-numero-ayuda"></span>
+          </label>
+          <div class="fila">
+            <label>Fecha de la factura <input id="f-fecha" type="date"></label>
+            <label>Vencimiento <input id="f-vencimiento" type="date"><span class="ayuda" id="f-venc-ayuda"></span></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="titulo-seccion">Concepto</h3>
+          <label>Concepto de la factura
+            <textarea id="f-concepto" rows="7" placeholder="Describe el trabajo o servicio facturado…"></textarea>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3 class="titulo-seccion">Importes</h3>
+          <label>Base imponible (€) <input id="f-base" inputmode="decimal" placeholder="0,00"></label>
+          <div class="fila" style="align-items:end">
+            <label class="switch"><input type="checkbox" id="f-aplica-iva"><span class="pista"></span><span>Aplicar IVA</span></label>
+            <label id="lbl-iva">% de IVA <input id="f-iva" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-iva"></label>
+          </div>
+          <label id="lbl-exencion">Motivo por el que no lleva IVA (sale en la factura)
+            <input id="f-exencion" list="motivos-exencion" placeholder="Ej.: Operación exenta de IVA (art. 20 Ley 37/1992)">
+          </label>
+          <div class="fila" style="align-items:end">
+            <label class="switch"><input type="checkbox" id="f-aplica-irpf"><span class="pista"></span><span>Retención IRPF</span></label>
+            <label id="lbl-irpf">% de IRPF <input id="f-irpf" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-irpf"></label>
+          </div>
+          <div class="resumen-importes">
+            <div class="ri-fila"><span>Base imponible</span><span id="r-base">0,00 €</span></div>
+            <div class="ri-fila"><span id="r-iva-txt">IVA</span><span id="r-iva">0,00 €</span></div>
+            <div class="ri-fila" id="r-irpf-fila" hidden><span id="r-irpf-txt">Retención IRPF</span><span id="r-irpf">0,00 €</span></div>
+            <div class="ri-fila ri-total"><span>Total</span><span id="r-total">0,00 €</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="titulo-seccion">Pago y firma</h3>
+          <label>Forma de pago <input id="f-pago" list="formas-pago"></label>
+          <label>Nº de cuenta (IBAN) <input id="f-iban" placeholder="ES00 0000 0000 0000 0000 0000"></label>
+          <label>Observaciones (opcional)
+            <textarea id="f-obs" rows="2" placeholder="Ej.: obra de la calle Sol, 8"></textarea>
+          </label>
+          <label class="switch"><input type="checkbox" id="f-incluir-firma"><span class="pista"></span><span>Poner la firma en la factura</span></label>
+        </div>
+
+        <div class="card">
+          <h3 class="titulo-seccion">Cobro</h3>
+          <div class="fila" style="align-items:end">
+            <label class="switch"><input type="checkbox" id="f-cobrada"><span class="pista"></span><span>Factura cobrada</span></label>
+            <label>Fecha de cobro <input id="f-fecha-cobro" type="date"></label>
+          </div>
+        </div>
+
+        <div class="acciones-editor solo-escritorio">
+          <button type="submit" class="btn primario"><svg class="i"><use href="#i-check"/></svg>Guardar factura</button>
+          <button type="button" class="btn" id="btn-pdf"><svg class="i"><use href="#i-send"/></svg>Enviar / descargar PDF</button>
+          <button type="button" class="btn" id="btn-imprimir"><svg class="i"><use href="#i-printer"/></svg>Imprimir</button>
+        </div>
+      </form>
+
+      <aside class="columna-previa">
+        <div class="titulo-previa"><span>Vista previa</span><span id="previa-codigo"></span></div>
+        <div class="marco-previa"><div class="previa-ajuste" id="previa-factura"></div></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ================= CLIENTES ================= -->
+  <section class="vista" id="vista-clientes">
+    <header class="cab-vista">
+      <div><h1>Clientes</h1></div>
+      <button type="button" class="btn primario" id="cl-nuevo"><svg class="i"><use href="#i-plus"/></svg>Nuevo cliente</button>
+    </header>
+    <div class="dos-col">
+      <div class="card col-lista">
+        <div class="buscador"><svg class="i"><use href="#i-search"/></svg><input id="cl-buscar" type="search" placeholder="Buscar por nombre, CIF o código…"></div>
+        <div class="lista-clientes" id="cl-lista"></div>
       </div>
+      <form class="card col-ficha" id="form-cliente" autocomplete="off" novalidate>
+        <div class="card-cab">
+          <div class="titulo" style="display:flex;align-items:center;gap:6px;min-width:0">
+            <button type="button" class="btn-icono solo-movil btn-volver" id="cl-volver" aria-label="Volver a la lista"><svg class="i"><use href="#i-back"/></svg></button>
+            <h2 id="cl-titulo">Nuevo cliente</h2>
+          </div>
+        </div>
+        <div class="resumen-cliente" id="cl-resumen" hidden></div>
+        <label>Nombre o razón social <input id="cl-nombre"></label>
+        <label>CIF / NIF <input id="cl-cif" autocapitalize="characters"></label>
+        <label>Dirección <input id="cl-dir"></label>
+        <div class="fila">
+          <label>Código postal <input id="cl-cp" inputmode="numeric"></label>
+          <label>Población <input id="cl-pob"></label>
+        </div>
+        <label>Provincia <input id="cl-prov"></label>
+        <div class="fila">
+          <label>Teléfono <input id="cl-tel" type="tel" inputmode="tel"></label>
+          <label>Email <input id="cl-email" type="email" inputmode="email"></label>
+        </div>
+        <div class="seccion-form">
+          <h3 class="titulo-seccion">Numeración de sus facturas</h3>
+          <div class="fila">
+            <label>Código del cliente <input id="cl-codigo" autocapitalize="characters" maxlength="8"></label>
+            <label>Empezar su numeración en <input id="cl-inicio" type="number" inputmode="numeric" min="1" step="1" value="1"></label>
+          </div>
+          <span class="ayuda" id="cl-numeracion-ayuda" style="margin:-6px 0 14px"></span>
+        </div>
+        <div class="acciones">
+          <button type="submit" class="btn primario">Guardar cliente</button>
+          <button type="button" class="btn" id="cl-facturar" hidden><svg class="i"><use href="#i-plus"/></svg>Hacerle una factura</button>
+          <button type="button" class="btn peligro" id="cl-borrar" hidden>Borrar</button>
+        </div>
+      </form>
+    </div>
+  </section>
 
-      <form class="panel" id="form-empresa" autocomplete="off" novalidate>
-        <h2 id="emp-titulo">Nueva empresa</h2>
-        <fieldset class="primero">
-          <legend>Datos de la empresa</legend>
+  <!-- ================= AJUSTES ================= -->
+  <section class="vista" id="vista-ajustes">
+    <header class="cab-vista"><div><h1>Ajustes</h1></div></header>
+    <div class="ajustes-grid">
+      <div class="card">
+        <div class="card-cab"><div><h2>Mis empresas</h2><p>Plantilla, numeración y datos de cada empresa</p></div></div>
+        <div id="aj-empresas"></div>
+        <button type="button" class="btn suave" id="aj-nueva-empresa"><svg class="i"><use href="#i-plus"/></svg>Añadir empresa</button>
+      </div>
+      <div class="card">
+        <div class="card-cab"><div><h2>Copia de seguridad</h2><p>Los datos se guardan en este dispositivo</p></div></div>
+        <p class="suave" style="font-size:14px">Si se borra la app o cambias de móvil, solo se recuperan con una copia. Descárgala cada semana y guárdala fuera del móvil (correo, Google Drive, iCloud…).</p>
+        <p id="cp-estado" class="tenue" style="font-size:13.5px"></p>
+        <div class="acciones">
+          <button type="button" class="btn primario" id="cp-descargar"><svg class="i"><use href="#i-download"/></svg>Descargar copia</button>
+          <label class="btn" for="cp-archivo" style="color:var(--text);font-size:14.5px"><svg class="i"><use href="#i-upload"/></svg>Restaurar…</label>
+          <input type="file" id="cp-archivo" accept=".json,application/json">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-cab"><div><h2>Para el gestor</h2><p>Todas las facturas en un archivo para Excel</p></div></div>
+        <button type="button" class="btn" id="cp-csv"><svg class="i"><use href="#i-send"/></svg>Enviar todas las facturas (CSV)</button>
+      </div>
+      <div class="card" id="panel-instalar">
+        <div class="card-cab"><div><h2>Instalar la app</h2><p id="instalar-estado"></p></div></div>
+        <ul class="pasos">
+          <li><strong>Android (Chrome):</strong> menú <strong>⋮</strong> → <strong>«Instalar aplicación»</strong>.</li>
+          <li><strong>iPhone (Safari):</strong> <strong>Compartir</strong> → <strong>«Añadir a pantalla de inicio»</strong>.</li>
+          <li><strong>Ordenador:</strong> icono de instalar en la barra de direcciones.</li>
+        </ul>
+        <button type="button" class="btn primario" id="btn-instalar-2" hidden>Instalar ahora</button>
+      </div>
+      <div class="card">
+        <div class="card-cab"><div><h2>Apariencia</h2><p>Modo claro, oscuro o el del sistema</p></div></div>
+        <div class="seg" id="aj-tema" role="group" aria-label="Tema">
+          <button type="button" data-tema="auto">Automático</button>
+          <button type="button" data-tema="claro">Claro</button>
+          <button type="button" data-tema="oscuro">Oscuro</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EMPRESA (editor) ================= -->
+  <section class="vista" id="vista-empresa">
+    <header class="cab-vista">
+      <div class="titulo">
+        <button type="button" class="btn-icono btn-volver" id="emp-volver" aria-label="Volver a Ajustes"><svg class="i"><use href="#i-back"/></svg></button>
+        <h1 id="emp-titulo">Nueva empresa</h1>
+      </div>
+    </header>
+    <div class="editor">
+      <form class="editor-form" id="form-empresa" autocomplete="off" novalidate>
+        <div class="card">
+          <h3 class="titulo-seccion">Datos de la empresa</h3>
           <label>Nombre o razón social <input id="e-nombre"></label>
           <div class="fila">
             <label>CIF / NIF <input id="e-cif" autocapitalize="characters"></label>
@@ -566,14 +882,20 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
             <label>Email <input id="e-email" type="email"></label>
             <label>Web <input id="e-web"></label>
           </div>
-        </fieldset>
+        </div>
 
-        <fieldset>
-          <legend>Plantilla</legend>
+        <div class="card">
+          <h3 class="titulo-seccion">Plantilla</h3>
+          <label>Diseño de la factura
+            <select id="e-plantilla">
+              <option value="clasica">Clásica (como las facturas hechas en Word)</option>
+              <option value="moderna">Moderna (con color)</option>
+            </select>
+          </label>
           <span class="etiqueta-campo">Logo</span>
           <div class="imagen-campo">
             <div class="caja-img" id="e-logo-caja">Sin logo</div>
-            <label class="btn peq" for="e-logo-archivo" style="margin:0;color:var(--texto)">Subir logo…</label>
+            <label class="btn peq" for="e-logo-archivo" style="margin:0;color:var(--text)">Subir logo…</label>
             <input type="file" id="e-logo-archivo" accept="image/*">
             <button type="button" class="btn peq peligro" id="e-logo-quitar">Quitar</button>
           </div>
@@ -581,7 +903,7 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
           <div class="imagen-campo">
             <div class="caja-img" id="e-firma-caja">Sin firma</div>
             <button type="button" class="btn peq" id="e-firma-dibujar">Dibujar firma…</button>
-            <label class="btn peq" for="e-firma-archivo" style="margin:0;color:var(--texto)">Subir imagen…</label>
+            <label class="btn peq" for="e-firma-archivo" style="margin:0;color:var(--text)">Subir imagen…</label>
             <input type="file" id="e-firma-archivo" accept="image/*">
             <button type="button" class="btn peq peligro" id="e-firma-quitar">Quitar</button>
           </div>
@@ -589,27 +911,34 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
             <label>Nombre de quien firma <input id="e-firmante" placeholder="Ej.: Francisco García"></label>
             <label>Color <input id="e-color" type="color" value="#1f4e79"></label>
           </div>
+          <label>Cargo o profesión (sale debajo de la firma) <input id="e-cargo" placeholder="Ej.: Arquitecto"></label>
+          <label>Nota legal (sale al final, en azul en la clásica)
+            <input id="e-nota" list="notas-legales" placeholder="Ej.: Factura acogida al criterio de Caja del IVA">
+          </label>
+          <label class="switch"><input type="checkbox" id="e-letra"><span class="pista"></span><span>Escribir el importe en letra al final del concepto</span></label>
           <label>Texto al pie de la factura (opcional)
             <textarea id="e-pie" rows="2" placeholder="Ej.: Inscrita en el Registro Mercantil de…"></textarea>
           </label>
-        </fieldset>
+        </div>
 
-        <fieldset>
-          <legend>Numeración de facturas</legend>
+        <div class="card">
+          <h3 class="titulo-seccion">Numeración de facturas</h3>
           <label>Cómo se numeran las facturas
             <select id="e-modo">
               <option value="cliente">Cada cliente lleva su propia numeración</option>
               <option value="empresa">Una sola numeración para toda la empresa</option>
             </select>
           </label>
+          <label>Formato del número
+            <select id="e-formato">
+              <option value="anual">A 15/26 — número / año (empieza de nuevo cada año)</option>
+              <option value="guion">CPCS-004 — con guion y ceros</option>
+            </select>
+          </label>
           <div class="fila">
-            <label>Serie / prefijo (opcional)
-              <input id="e-serie" placeholder="Ej.: A-">
-            </label>
-            <label id="lbl-inicio">Número de la próxima factura
-              <input id="e-inicio" type="number" inputmode="numeric" min="1" step="1" value="1">
-            </label>
-            <label>Cifras
+            <label>Serie / prefijo (opcional) <input id="e-serie" placeholder="Ej.: A"></label>
+            <label id="lbl-inicio">Número de la próxima factura <input id="e-inicio" type="number" inputmode="numeric" min="1" step="1" value="1"></label>
+            <label id="lbl-digitos">Cifras
               <select id="e-digitos">
                 <option value="1">1 → 4</option>
                 <option value="2">2 → 04</option>
@@ -618,63 +947,39 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
               </select>
             </label>
           </div>
-          <span class="ayuda" id="e-numeracion-ayuda" style="margin:-4px 0 10px"></span>
-        </fieldset>
+          <span class="ayuda" id="e-numeracion-ayuda" style="margin:-6px 0 6px"></span>
+        </div>
 
-        <fieldset>
-          <legend>Valores por defecto de las facturas</legend>
+        <div class="card">
+          <h3 class="titulo-seccion">Valores por defecto de las facturas</h3>
           <div class="fila">
             <label>% de IVA <input id="e-iva" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-iva" value="21"></label>
-            <label>Forma de pago <input id="e-pago" list="formas-pago" value="Transferencia bancaria"></label>
+            <label>% de IRPF (0 = no retener) <input id="e-irpf" type="number" inputmode="decimal" min="0" max="100" step="0.01" list="tipos-irpf" value="0"></label>
+            <label>Plazo de pago (días) <input id="e-plazo" type="number" inputmode="numeric" min="0" step="1" value="30"></label>
           </div>
+          <label>Forma de pago <input id="e-pago" list="formas-pago" value="Transferencia bancaria"></label>
           <label>Nº de cuenta (IBAN) <input id="e-iban" placeholder="ES00 0000 0000 0000 0000 0000"></label>
-        </fieldset>
+        </div>
 
-        <div class="acciones">
-          <button type="submit" class="btn primario">Guardar empresa</button>
+        <div class="acciones-editor">
+          <button type="submit" class="btn primario"><svg class="i"><use href="#i-check"/></svg>Guardar empresa</button>
           <button type="button" class="btn peligro" id="emp-borrar" hidden>Borrar empresa</button>
         </div>
       </form>
-    </div>
 
-    <div class="columna-previa">
-      <div class="titulo-previa"><span>Así quedará la plantilla</span></div>
-      <div class="marco-previa"><div class="previa-ajuste" id="previa-empresa"></div></div>
+      <aside class="columna-previa">
+        <div class="titulo-previa"><span>Así quedará la plantilla</span></div>
+        <div class="marco-previa"><div class="previa-ajuste" id="previa-empresa"></div></div>
+      </aside>
     </div>
-  </div>
-</section>
-
-<!-- ================= COPIA DE SEGURIDAD ================= -->
-<section class="vista" id="vista-copias">
-  <div class="panel estrecho">
-    <h2>Copia de seguridad</h2>
-    <p>Los datos (empresas, clientes y facturas) se guardan <strong>en este dispositivo</strong>.
-      Si se borra la app o los datos del navegador, o se cambia de móvil, solo se recuperan con una copia.</p>
-    <p><strong>Recomendación:</strong> descarga una copia cada semana y guárdala fuera del móvil (correo, Google Drive, iCloud…).</p>
-    <p id="cp-estado" class="suave"></p>
-    <div class="acciones">
-      <button type="button" class="btn primario" id="cp-descargar">Descargar copia de seguridad</button>
-      <label class="btn" for="cp-archivo">Restaurar una copia…</label>
-      <input type="file" id="cp-archivo" accept=".json,application/json">
-    </div>
-  </div>
-  <div class="panel estrecho" id="panel-instalar">
-    <h3>Instalar la app</h3>
-    <p id="instalar-estado" class="suave"></p>
-    <ul class="pasos">
-      <li><strong>Android (Chrome):</strong> menú <strong>⋮</strong> → <strong>«Instalar aplicación»</strong> o <strong>«Añadir a pantalla de inicio»</strong>.</li>
-      <li><strong>iPhone (Safari):</strong> botón <strong>Compartir</strong> (cuadrado con flecha) → <strong>«Añadir a pantalla de inicio»</strong>.</li>
-      <li><strong>Ordenador (Chrome o Edge):</strong> icono de instalar en la barra de direcciones.</li>
-    </ul>
-    <button type="button" class="btn primario" id="btn-instalar-2" hidden>Instalar ahora</button>
-  </div>
-  <div class="panel estrecho">
-    <h3>Para el gestor</h3>
-    <p>Descarga todas las facturas en un archivo que se abre con Excel (número, fecha, cliente, base, IVA, total y si está cobrada).</p>
-    <button type="button" class="btn" id="cp-csv">Descargar todas las facturas (CSV)</button>
-  </div>
-</section>
+  </section>
 </main>
+
+<!-- Barra de acciones del editor en el móvil -->
+<div class="barra-editor" id="barra-editor">
+  <button type="submit" form="form-factura" class="btn primario" id="btn-guardar-movil"><svg class="i"><use href="#i-check"/></svg>Guardar</button>
+  <button type="button" class="btn" id="btn-pdf-movil"><svg class="i"><use href="#i-send"/></svg>Enviar PDF</button>
+</div>
 
 <!-- Zonas auxiliares: impresión y PDF -->
 <div id="zona-impresion"></div>
@@ -682,30 +987,48 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 
 <!-- Diálogo: PDF listo para enviar -->
 <dialog id="dlg-pdf">
-  <h3 id="pdf-titulo">Factura</h3>
+  <h2 id="pdf-titulo">Factura</h2>
   <p class="suave" id="pdf-texto">Preparando el PDF…</p>
-  <div class="acciones fin">
+  <div class="dlg-acciones">
     <button type="button" class="btn" id="pdf-cerrar">Cerrar</button>
-    <button type="button" class="btn" id="pdf-descargar" disabled>Descargar</button>
-    <button type="button" class="btn primario" id="pdf-enviar" disabled hidden>Enviar (WhatsApp, correo…)</button>
+    <button type="button" class="btn" id="pdf-descargar" disabled><svg class="i"><use href="#i-download"/></svg>Descargar</button>
+    <button type="button" class="btn primario" id="pdf-enviar" disabled hidden><svg class="i"><use href="#i-send"/></svg>Enviar (WhatsApp, correo…)</button>
+  </div>
+</dialog>
+
+<!-- Diálogo: recordar el cobro -->
+<dialog id="dlg-recordar">
+  <h2 id="rec-titulo">Recordar el cobro</h2>
+  <p class="suave" style="font-size:14px">Puedes cambiar el mensaje antes de enviarlo.</p>
+  <textarea id="rec-texto" aria-label="Mensaje"></textarea>
+  <div class="dlg-acciones">
+    <button type="button" class="btn" id="rec-cerrar">Cerrar</button>
+    <button type="button" class="btn" id="rec-copiar"><svg class="i"><use href="#i-copy"/></svg>Copiar</button>
+    <button type="button" class="btn" id="rec-email"><svg class="i"><use href="#i-mail"/></svg>Email</button>
+    <button type="button" class="btn primario" id="rec-whatsapp"><svg class="i"><use href="#i-msg"/></svg>WhatsApp</button>
   </div>
 </dialog>
 
 <!-- Diálogo para dibujar la firma -->
 <dialog id="dlg-firma">
-  <h3>Dibuja la firma</h3>
+  <h2>Dibuja la firma</h2>
   <p class="suave" style="font-size:14px">Firma con el dedo o con el ratón dentro del recuadro.</p>
   <canvas id="firma-lienzo" width="900" height="300"></canvas>
-  <div class="acciones fin">
+  <div class="dlg-acciones">
     <button type="button" class="btn" id="firma-borrar">Borrar</button>
     <button type="button" class="btn" id="firma-cancelar">Cancelar</button>
     <button type="button" class="btn primario" id="firma-usar">Usar esta firma</button>
   </div>
 </dialog>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-texto"></span><button type="button" id="toast-accion" hidden></button></div>
 
+<datalist id="notas-legales">
+  <option value="Factura acogida al criterio de Caja del IVA">
+  <option value="Régimen especial del criterio de caja">
+</datalist>
 <datalist id="tipos-iva"><option value="21"><option value="10"><option value="4"><option value="0"></datalist>
+<datalist id="tipos-irpf"><option value="15"><option value="7"><option value="1"><option value="19"></datalist>
 <datalist id="formas-pago">
   <option value="Transferencia bancaria"><option value="Domiciliación bancaria"><option value="Efectivo">
   <option value="Tarjeta"><option value="Bizum"><option value="Pagaré"><option value="Cheque">
@@ -721,6 +1044,8 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
 (function () {
 'use strict';
 
+const VERSION_APP = '3.0';
+
 /* =========================================================
    Utilidades
    ========================================================= */
@@ -731,6 +1056,7 @@ const id = (x) => document.getElementById(x);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const normaliza = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const ico = (n) => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 // useGrouping 'always' → 1.000,00 € (por defecto el español no separa los miles en números de 4 cifras)
 const fmtEuros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
@@ -739,11 +1065,19 @@ const euros = (cent) => fmtEuros.format((cent || 0) / 100);
 const porcentaje = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(n) + ' %';
 const leerLS = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const escribirLS = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } };
+const esTactil = () => window.matchMedia('(pointer: coarse)').matches;
+const esMovil = () => window.matchMedia('(max-width: 860px)').matches;
 
 function hoyISO() {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
+function sumarDias(iso, n) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+const diasEntre = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
 function fechaCorta(iso) {
   if (!iso) return '';
   const [a, m, d] = iso.split('-');
@@ -767,19 +1101,25 @@ function aCentimos(txt) {
 /** Redondeo comercial (mitad hacia fuera del cero). */
 const redondear = (x) => Math.sign(x) * Math.round(Math.abs(x));
 const leerPct = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
-/** Color de la empresa mezclado con blanco (para el fondo del recuadro del cliente). */
+/** Color de la empresa mezclado con blanco (fondo del recuadro del cliente en la factura). */
 function aclarar(hex, t) {
   const n = parseInt(hex.slice(1), 16);
   const m = (c) => Math.round(c * t + 255 * (1 - t));
   return `rgb(${m((n >> 16) & 255)},${m((n >> 8) & 255)},${m(n & 255)})`;
 }
 
-function aviso(msg, tipo) {
+/** Aviso flotante. opciones: { tipo: 'error', accion: 'Deshacer', fn } */
+function aviso(msg, opciones) {
+  const o = typeof opciones === 'string' ? { tipo: opciones } : (opciones || {});
   const t = id('toast');
-  t.textContent = msg;
-  t.className = 'toast visible' + (tipo === 'error' ? ' error' : '');
+  id('toast-texto').textContent = msg;
+  const b = id('toast-accion');
+  b.hidden = !o.accion;
+  b.textContent = o.accion || '';
+  b.onclick = o.accion ? () => { t.className = 'toast'; o.fn(); } : null;
+  t.className = 'toast visible' + (o.tipo === 'error' ? ' error' : '') + (o.accion ? ' con-accion' : '');
   clearTimeout(t._temp);
-  t._temp = setTimeout(() => { t.className = 'toast'; }, 3000);
+  t._temp = setTimeout(() => { t.className = 'toast'; }, o.accion ? 6000 : 3000);
 }
 function descargarBlob(nombre, blob) {
   const url = URL.createObjectURL(blob);
@@ -792,23 +1132,44 @@ const descargar = (nombre, contenido, tipo) => descargarBlob(nombre, new Blob([c
 const nombreArchivo = (s) => String(s).replace(/[\\/:*?"<>|\n\r]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90);
 
 /* =========================================================
+   Tema (claro / oscuro / automático)
+   ========================================================= */
+function temaElegido() { return leerLS('facturacion.tema') || 'auto'; }
+function aplicarTema(t) {
+  const r = document.documentElement;
+  if (t === 'claro') r.dataset.theme = 'light';
+  else if (t === 'oscuro') r.dataset.theme = 'dark';
+  else delete r.dataset.theme;
+  escribirLS('facturacion.tema', t);
+  $$('#aj-tema button').forEach((b) => b.classList.toggle('activo', b.dataset.tema === t));
+  const oscuro = r.dataset.theme === 'dark' || (!r.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  id('meta-tema').setAttribute('content', oscuro ? '#0b1020' : '#f3f5f9');
+  if (vistaActual === 'inicio') renderInicio();
+}
+id('aj-tema').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-tema]');
+  if (b) aplicarTema(b.dataset.tema);
+});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => aplicarTema(temaElegido()));
+
+/* =========================================================
    Datos (se guardan en el dispositivo: localStorage)
    ========================================================= */
 function datosVacios() {
-  return { version: 2, empresas: [], clientes: [], facturas: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
+  return { version: 3, empresas: [], clientes: [], facturas: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
 }
 function normalizarDatos(d) {
   const v = datosVacios();
   if (!d || typeof d !== 'object') return v;
   const facturas = Array.isArray(d.facturas)
-    ? d.facturas.map((f) => Object.assign({}, f, { cliente: f.cliente || {}, emisor: f.emisor || {} }))
+    ? d.facturas.map((f) => Object.assign({ irpfCent: 0, irpfPct: 0, aplicaIrpf: false, vencimiento: '' }, f, { cliente: f.cliente || {}, emisor: f.emisor || {} }))
     : [];
-  // Empresas de la versión 1 (sin modo de numeración): si ya tienen facturas, siguen con numeración única.
-  const empresas = (Array.isArray(d.empresas) ? d.empresas : []).map((e) => Object.assign({}, e, {
+  const empresas = (Array.isArray(d.empresas) ? d.empresas : []).map((e) => Object.assign({ plazoPago: 30, irpf: 0, plantilla: 'moderna', formato: 'guion', importeEnLetra: false, cargo: '', notaLegal: '' }, e, {
+    // Empresas de la versión 1 (sin modo de numeración): si ya tienen facturas, siguen con numeración única.
     numeracion: e.numeracion || (facturas.some((f) => f.empresaId === e.id) ? 'empresa' : 'cliente'),
   }));
   return {
-    version: 2,
+    version: 3,
     empresas,
     clientes: Array.isArray(d.clientes) ? d.clientes : [],
     facturas,
@@ -841,30 +1202,70 @@ const clientePorId = (x) => db.clientes.find((c) => c.id === x) || null;
 const facturaPorId = (x) => db.facturas.find((f) => f.id === x) || null;
 const ordenarPorNombre = (a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
 
+/* ---------- Estado de cobro ---------- */
+function estadoDe(f) {
+  if (f.cobrada) return 'cobrada';
+  if (f.vencimiento && f.vencimiento < hoyISO()) return 'vencida';
+  return 'pendiente';
+}
+function textoVencimiento(f) {
+  const est = estadoDe(f);
+  if (est === 'cobrada') return f.fechaCobro ? `cobrada el ${fechaCorta(f.fechaCobro)}` : 'cobrada';
+  if (!f.vencimiento) return '';
+  const d = diasEntre(hoyISO(), f.vencimiento);
+  if (est === 'vencida') return `vencida hace ${-d} día${d === -1 ? '' : 's'}`;
+  if (d === 0) return 'vence hoy';
+  return `vence en ${d} día${d === 1 ? '' : 's'}`;
+}
+function chipEstado(f) {
+  const est = estadoDe(f);
+  const datos = {
+    cobrada: ['check', 'Cobrada', 'Pulsa para marcarla como no cobrada'],
+    pendiente: ['clock', 'Pendiente', 'Pulsa para marcarla como cobrada'],
+    vencida: ['alert', 'Vencida', 'Pulsa para marcarla como cobrada'],
+  }[est];
+  return `<button type="button" class="chip ${est}" data-estado title="${datos[2]}">${ico(datos[0])}${datos[1]}</button>`;
+}
+
 /* ---------- Numeración ----------
    · Modo «cliente» (por defecto): cada cliente lleva su propia numeración dentro de cada empresa.
      El nº de factura lleva delante el código del cliente: CPCS-004.
    · Modo «empresa»: una sola numeración para toda la empresa (con serie opcional): A-0004.
    Cada factura guarda su «serieClave», que identifica la serie a la que pertenece. */
 const porCliente = (emp) => !!emp && emp.numeracion !== 'empresa';
-function codigoFactura(serie, numero, digitos) {
-  return (serie || '') + String(numero || 0).padStart(Number(digitos) || 1, '0');
-}
+/* Formato del número: «anual» → A 15/26 (número / año; empieza en el 1 cada año) · «guion» → CPCS-004 */
+const formatoDe = (emp) => (emp && emp.formato === 'anual' ? 'anual' : 'guion');
+/** Parte fija del número: serie de la empresa y, si va por cliente, el código del cliente. */
 function prefijoFactura(emp, codigoCliente) {
-  return (emp.serie || '') + (porCliente(emp) && codigoCliente ? codigoCliente + '-' : '');
+  const cod = porCliente(emp) && codigoCliente ? codigoCliente : '';
+  if (formatoDe(emp) === 'anual') return ((emp.serie || '') + cod).trim();
+  return (emp.serie || '') + (cod ? cod + '-' : '');
 }
-function claveSerie(empresaId, modoCliente, clienteId, serie) {
-  return modoCliente ? `${empresaId}|cliente|${clienteId || 'nuevo'}` : `${empresaId}|serie|${serie || ''}`;
+function codigoFactura(emp, serie, numero, fecha) {
+  if (formatoDe(emp) === 'anual') return `${serie ? serie + ' ' : ''}${numero || 0}/${(fecha || hoyISO()).slice(2, 4)}`;
+  return (serie || '') + String(numero || 0).padStart(Number(emp && emp.digitos) || 1, '0');
 }
+function claveSerie(empresaId, modoCliente, clienteId, serie, anio) {
+  const base = modoCliente ? `${empresaId}|cliente|${clienteId || 'nuevo'}` : `${empresaId}|serie|${serie || ''}`;
+  return anio ? `${base}|${anio}` : base;
+}
+/** Serie de una factura de esta empresa (y cliente) en esa fecha. Con el formato anual, cada año es una serie. */
+const claveDe = (emp, clienteId, fecha) => claveSerie(emp.id, porCliente(emp), clienteId, emp.serie, formatoDe(emp) === 'anual' ? (fecha || hoyISO()).slice(0, 4) : '');
 const claveDeFactura = (f) => f.serieClave || claveSerie(f.empresaId, false, null, f.serie);
 const facturasDeSerie = (clave, excluirId) => db.facturas.filter((f) => claveDeFactura(f) === clave && f.id !== excluirId);
 /** Siguiente número libre: el mayor usado + 1, o el número inicial si es mayor. */
-function siguienteNumero(emp, cli) {
+function siguienteNumero(emp, cli, fecha) {
   const modo = porCliente(emp);
   const cliId = cli && cli.id;
-  const usadas = modo && !cliId ? [] : facturasDeSerie(claveSerie(emp.id, modo, cliId, emp.serie));
-  const max = usadas.reduce((m, f) => Math.max(m, f.numero || 0), 0);
-  const inicio = modo ? parseInt(cli && cli.numeroInicial, 10) || 1 : parseInt(emp.numeroInicial, 10) || 1;
+  let inicio = modo ? parseInt(cli && cli.numeroInicial, 10) || 1 : parseInt(emp.numeroInicial, 10) || 1;
+  if (modo && !cliId) return inicio;
+  const clave = claveDe(emp, cliId, fecha);
+  const max = facturasDeSerie(clave).reduce((m, f) => Math.max(m, f.numero || 0), 0);
+  if (formatoDe(emp) === 'anual') {
+    // El número inicial solo cuenta el primer año: si ya hay facturas de años anteriores, se empieza en el 1.
+    const base = claveSerie(emp.id, modo, cliId, emp.serie, '') + '|';
+    if (db.facturas.some((f) => { const k = claveDeFactura(f); return k.startsWith(base) && k.slice(-4) < clave.slice(-4); })) inicio = 1;
+  }
   return Math.max(max + 1, inicio);
 }
 const limpiarCodigo = (s) => normaliza(s).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
@@ -879,12 +1280,42 @@ function codigoSugerido(nombre, excluirId) {
   return codigo;
 }
 
+/* ---------- Importe en letra (2.450,00 → «dos mil cuatrocientos cincuenta euros») ---------- */
+const UNIDADES = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince',
+  'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte', 'veintiuno', 'veintidós', 'veintitrés', 'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve'];
+const DECENAS = ['', '', '', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+const CENTENAS = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+const apocopar = (t) => t.replace(/veintiuno$/, 'veintiún').replace(/uno$/, 'un');
+function menorDeMil(n) {
+  if (n === 100) return 'cien';
+  const c = Math.floor(n / 100), r = n % 100;
+  const d = !r ? '' : r < 30 ? UNIDADES[r] : DECENAS[Math.floor(r / 10)] + (r % 10 ? ' y ' + UNIDADES[r % 10] : '');
+  return [CENTENAS[c], d].filter(Boolean).join(' ');
+}
+function enteroEnLetra(n) {
+  if (n === 0) return 'cero';
+  const millones = Math.floor(n / 1e6), miles = Math.floor((n % 1e6) / 1000), resto = n % 1000;
+  return [
+    millones ? (millones === 1 ? 'un millón' : apocopar(enteroEnLetra(millones)) + ' millones') : '',
+    miles ? (miles === 1 ? 'mil' : apocopar(menorDeMil(miles)) + ' mil') : '',
+    resto ? menorDeMil(resto) : '',
+  ].filter(Boolean).join(' ');
+}
+function importeEnLetra(cent) {
+  const total = Math.abs(Math.round(cent || 0));
+  const e = Math.floor(total / 100), c = total % 100;
+  let t = apocopar(enteroEnLetra(e)) + (e > 0 && e % 1e6 === 0 ? ' de' : '') + (e === 1 ? ' euro' : ' euros');
+  if (c) t += ' con ' + apocopar(enteroEnLetra(c)) + (c === 1 ? ' céntimo' : ' céntimos');
+  return (cent < 0 ? 'menos ' : '') + t;
+}
+
 /* =========================================================
    Plantilla de factura (HTML de la hoja A4)
    ========================================================= */
 function htmlFactura(f, opciones) {
   const vistaPrevia = opciones && opciones.vistaPrevia;
   const emp = (opciones && opciones.empresa) || empresaPorId(f.empresaId) || {};
+  if (emp.plantilla === 'clasica') return htmlFacturaClasica(f, emp, vistaPrevia);
   const e = f.emisor || {};
   const c = f.cliente || {};
   const color = /^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color : '#1f4e79';
@@ -895,10 +1326,13 @@ function htmlFactura(f, opciones) {
   };
   const contacto = [e.telefono && `Tel. ${e.telefono}`, e.email].filter(Boolean).map(esc).join(' · ');
   // En la hoja, espacio normal antes de «€» (el espacio duro sale demasiado ancho en el PDF); las cifras no se parten por CSS.
-  const eur = (cent) => euros(cent).replace(/[\u00a0\u202f]/g, ' ');
+  const eur = (cent) => euros(cent).replace(/[  ]/g, ' ');
   const filaIva = f.aplicaIva
     ? `<div class="h-fila"><span>IVA (${porcentaje(f.ivaPct)})</span><span>${eur(f.cuotaCent)}</span></div>`
     : `<div class="h-fila"><span>IVA</span><span>${eur(0)}</span></div>`;
+  const filaIrpf = f.aplicaIrpf && f.irpfCent
+    ? `<div class="h-fila"><span>Retención IRPF (${porcentaje(f.irpfPct)})</span><span>-${eur(f.irpfCent)}</span></div>`
+    : '';
   const exencion = !f.aplicaIva && f.motivoExencion ? `<div class="h-exencion">${esc(f.motivoExencion)}</div>` : '';
   const pago = [
     f.formaPago ? `<p><strong>Forma de pago:</strong> ${esc(f.formaPago)}</p>` : '',
@@ -927,6 +1361,7 @@ function htmlFactura(f, opciones) {
       <table>
         <tr><td>Nº factura</td><td>${hueco(f.codigo, '—')}</td></tr>
         <tr><td>Fecha</td><td>${hueco(fechaCorta(f.fecha), '—')}</td></tr>
+        ${f.vencimiento ? `<tr><td>Vencimiento</td><td>${fechaCorta(f.vencimiento)}</td></tr>` : ''}
       </table>
     </div>
   </div>
@@ -955,6 +1390,7 @@ function htmlFactura(f, opciones) {
       <div class="h-totales">
         <div class="h-fila"><span>Base imponible</span><span>${eur(f.baseCent)}</span></div>
         ${filaIva}
+        ${filaIrpf}
         <div class="h-fila h-total"><span>TOTAL</span><span>${eur(f.totalCent)}</span></div>
       </div>
       ${exencion}
@@ -971,11 +1407,71 @@ function htmlFactura(f, opciones) {
 </div>`;
 }
 
+/** Plantilla «Clásica»: la misma disposición que las facturas que Fran hacía en Word. */
+function htmlFacturaClasica(f, emp, vistaPrevia) {
+  const e = f.emisor || {};
+  const c = f.cliente || {};
+  const color = /^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color : '#000000';
+  const hueco = (txt, ph) => (txt ? esc(txt) : vistaPrevia ? `<span class="vacio">${esc(ph)}</span>` : '');
+  const eur = (cent) => euros(cent).replace(/[\u00a0\u202f]/g, ' ');
+  const texto = (f.concepto || '').replace(/[\s.:;,]+$/, '');
+  const letra = emp.importeEnLetra && f.baseCent
+    ? ` que asciende a la cantidad de <b>${esc(fmtDec.format(f.baseCent / 100))} Euros (${esc(importeEnLetra(f.baseCent))})</b>:`
+    : '';
+  const concepto = texto ? esc(texto) + letra : hueco('', 'Concepto de la factura…');
+  const contacto = [e.telefono && `Tel. ${e.telefono}`, e.email].filter(Boolean).map(esc).join(' · ');
+  const pobCliente = [c.poblacion ? c.poblacion.toUpperCase() : '', c.cp].filter(Boolean).join(' ')
+    + (c.provincia && normaliza(c.provincia) !== normaliza(c.poblacion) ? ` (${c.provincia})` : '');
+  const firmaImg = f.incluirFirma && emp.firma ? `<img src="${esc(emp.firma)}" alt="Firma">` : '';
+  const pago = f.iban ? `<div class="hc-cuenta">Ruego abonen importe en la cuenta: ${esc(f.iban)}</div>`
+    : f.formaPago ? `<div class="hc-cuenta">Forma de pago: ${esc(f.formaPago)}</div>` : '';
+  return `
+<div class="hoja clasica" style="--c:${color}">
+  <div class="hc-cab">
+    ${emp.logo ? `<img class="hc-logo" src="${esc(emp.logo)}" alt="">` : ''}
+    <div class="hc-emisor">
+      <div class="hc-nombre"><span>${hueco(e.nombre, 'Nombre de la empresa')}</span></div>
+      ${e.direccion ? `<div>${esc(e.direccion)}</div>` : ''}
+      ${e.cp || e.poblacion ? `<div>${esc([e.cp, e.poblacion].filter(Boolean).join(' '))}</div>` : ''}
+      ${e.cif ? `<div>N.I.F. nº ${esc(e.cif)}</div>` : ''}
+      ${contacto ? `<div class="hc-contacto">${contacto}</div>` : ''}
+    </div>
+  </div>
+  <div class="hc-datos">
+    <div class="hc-casilla">Factura: ${hueco(f.codigo, '—')}</div>
+    <div class="hc-casilla">Fecha: ${hueco(fechaLarga(f.fecha), '—')}</div>
+  </div>
+  <div class="hc-cliente">
+    <div>${hueco(c.nombre, 'Nombre del cliente')}</div>
+    ${c.direccion ? `<div>${esc(c.direccion)}</div>` : ''}
+    <div>C.I.F. nº ${hueco(c.cif, '—')}</div>
+    ${pobCliente ? `<div>${esc(pobCliente)}</div>` : ''}
+  </div>
+  <div class="hc-concepto">CONCEPTO: ${concepto}</div>
+  <div class="hc-totales">
+    <div class="hc-fila"><span>Base imponible</span><b>${eur(f.baseCent)}</b></div>
+    ${f.aplicaIva ? `<div class="hc-fila"><span>${porcentaje(f.ivaPct)} IVA</span><span>${eur(f.cuotaCent)}</span></div>` : `<div class="hc-fila"><span>IVA</span><span>${eur(0)}</span></div>`}
+    ${f.aplicaIrpf && f.irpfCent ? `<div class="hc-fila"><span>Retención IRPF ${porcentaje(f.irpfPct)}</span><span>-${eur(f.irpfCent)}</span></div>` : ''}
+    <div class="hc-fila hc-total"><b>TOTAL</b><b>${eur(f.totalCent)}</b></div>
+  </div>
+  ${!f.aplicaIva && f.motivoExencion ? `<div class="hc-exencion">${esc(f.motivoExencion)}</div>` : ''}
+  <div class="hc-lugar">${e.poblacion ? esc(e.poblacion) + ', ' : ''}${hueco(fechaLarga(f.fecha), '—')}.</div>
+  <div class="hc-firma">${firmaImg}</div>
+  <div class="hc-fdo">Fdo.: <b>${esc(e.firmante || e.nombre || '')}</b></div>
+  ${e.cargo ? `<div class="hc-cargo">${esc(e.cargo)}</div>` : ''}
+  ${pago}
+  ${f.observaciones ? `<div class="hc-obs">${esc(f.observaciones)}</div>` : ''}
+  ${e.notaLegal ? `<div class="hc-nota">${esc(e.notaLegal)}</div>` : ''}
+  <div class="hc-pie">${e.pie ? `<div>${esc(e.pie)}</div>` : ''}</div>
+</div>`;
+}
+
 function datosEmisor(emp) {
   return {
     nombre: emp.nombre || '', cif: emp.cif || '', direccion: emp.direccion || '', cp: emp.cp || '',
     poblacion: emp.poblacion || '', provincia: emp.provincia || '', telefono: emp.telefono || '',
     email: emp.email || '', web: emp.web || '', firmante: emp.firmante || '', pie: emp.pie || '', color: emp.color || '#1f4e79',
+    cargo: emp.cargo || '', notaLegal: emp.notaLegal || '',
   };
 }
 
@@ -993,7 +1489,7 @@ if (window.ResizeObserver) {
   const ro = new ResizeObserver(() => ajustarTodasPrevias());
   $$('.previa-ajuste').forEach((el) => ro.observe(el));
 }
-window.addEventListener('resize', ajustarTodasPrevias);
+window.addEventListener('resize', () => { ajustarTodasPrevias(); if (vistaActual === 'inicio') pintarGraficoInicio(); });
 
 function esperarImagenes(el) {
   return Promise.all($$('img', el).map((img) => (img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }))));
@@ -1108,26 +1604,347 @@ id('pdf-descargar').addEventListener('click', () => {
 });
 id('pdf-cerrar').addEventListener('click', () => dlgPdf.close());
 
+/* ---------- Recordar el cobro (WhatsApp / email) ---------- */
+const dlgRec = id('dlg-recordar');
+let recordando = null;
+function contactoDe(f) {
+  const cli = clientePorId(f.clienteId) || {};
+  return { tel: cli.telefono || f.cliente.telefono || '', email: cli.email || f.cliente.email || '' };
+}
+function telefonoWhatsApp(t) {
+  let d = String(t || '').replace(/[^\d+]/g, '');
+  if (d.startsWith('+')) d = d.slice(1);
+  else if (d.startsWith('00')) d = d.slice(2);
+  else if (/^[6789]\d{8}$/.test(d)) d = '34' + d;
+  return /^\d{8,15}$/.test(d) ? d : '';
+}
+function textoRecordatorio(f) {
+  const vencida = estadoDe(f) === 'vencida';
+  const lineas = [
+    `Hola${f.cliente.nombre ? ', ' + f.cliente.nombre : ''}.`,
+    `Te recuerdo que la factura ${f.codigo} del ${fechaCorta(f.fecha)}, por importe de ${euros(f.totalCent)}, `
+      + (vencida ? `venció el ${fechaCorta(f.vencimiento)} y está pendiente de pago.` : 'está pendiente de pago.'),
+  ];
+  if (f.iban) lineas.push(`Puedes pagarla por transferencia a la cuenta ${f.iban}.`);
+  lineas.push('Muchas gracias.', f.emisor.firmante || f.emisor.nombre || '');
+  return lineas.filter(Boolean).join('\n');
+}
+function abrirRecordatorio(f) {
+  recordando = f;
+  const c = contactoDe(f);
+  id('rec-titulo').textContent = `Recordar el cobro · ${f.codigo}`;
+  id('rec-texto').value = textoRecordatorio(f);
+  id('rec-whatsapp').title = c.tel ? `Enviar a ${c.tel}` : 'Elegirás el contacto en WhatsApp';
+  id('rec-email').title = c.email ? `Enviar a ${c.email}` : 'Escribirás la dirección en tu correo';
+  dlgRec.showModal();
+}
+id('rec-cerrar').addEventListener('click', () => dlgRec.close());
+id('rec-whatsapp').addEventListener('click', () => {
+  if (!recordando) return;
+  const tel = telefonoWhatsApp(contactoDe(recordando).tel);
+  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(id('rec-texto').value)}`, '_blank', 'noopener');
+  dlgRec.close();
+});
+id('rec-email').addEventListener('click', () => {
+  if (!recordando) return;
+  const email = contactoDe(recordando).email;
+  location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Factura ' + recordando.codigo + ' pendiente de pago')}&body=${encodeURIComponent(id('rec-texto').value)}`;
+  dlgRec.close();
+});
+id('rec-copiar').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(id('rec-texto').value);
+    aviso('Mensaje copiado');
+  } catch (e) {
+    id('rec-texto').select();
+    aviso('Selecciona el texto y cópialo', 'error');
+  }
+});
+
 /* =========================================================
-   Navegación entre pestañas
+   Navegación (con el botón «atrás» del móvil)
    ========================================================= */
+const VISTAS = ['inicio', 'facturas', 'factura', 'clientes', 'ajustes', 'empresa'];
 let vistaActual = null;
+const vistaDeHash = () => { const v = location.hash.slice(1); return VISTAS.includes(v) ? v : 'inicio'; };
 function irA(vista) {
+  if (!VISTAS.includes(vista)) vista = 'inicio';
+  if (location.hash !== '#' + vista) history.pushState(null, '', '#' + vista);   // así funciona el botón «atrás»
+  mostrarVista(vista);
+}
+function mostrarVista(vista) {
   vistaActual = vista;
+  document.body.dataset.vista = vista;
   $$('.vista').forEach((v) => v.classList.toggle('activa', v.id === 'vista-' + vista));
-  $$('.barra nav button').forEach((b) => b.classList.toggle('activa', b.dataset.vista === vista));
+  const nav = vista === 'empresa' ? 'ajustes' : vista;
+  $$('.nav-item').forEach((b) => b.classList.toggle('activa', b.dataset.ir === nav));
+  if (vista === 'inicio') renderInicio();
+  if (vista === 'facturas') renderContabilidad();
   if (vista === 'factura') mostrarEditorOBienvenida();
-  if (vista === 'contabilidad') renderContabilidad();
-  if (vista === 'clientes') renderClientes();
-  if (vista === 'empresas') renderEmpresas();
-  if (vista === 'copias') renderCopias();
-  requestAnimationFrame(ajustarTodasPrevias);
+  if (vista === 'clientes') { id('vista-clientes').classList.remove('editando'); renderClientes(); }
+  if (vista === 'ajustes') renderAjustes();
+  if (vista === 'empresa') renderEmpresaVista();
+  requestAnimationFrame(() => { ajustarTodasPrevias(); if (vista === 'inicio') pintarGraficoInicio(); });
   window.scrollTo(0, 0);
 }
-$$('.barra nav button').forEach((b) => b.addEventListener('click', () => {
-  if (b.dataset.vista === 'factura') pedirNuevaFactura();
-  else irA(b.dataset.vista);
-}));
+window.addEventListener('popstate', () => mostrarVista(vistaDeHash()));
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-nueva], .nav-item[data-ir]');
+  if (!b) return;
+  if (b.hasAttribute('data-nueva')) pedirNuevaFactura();
+  else irA(b.dataset.ir);
+});
+
+/* =========================================================
+   Lista de facturas (Inicio y Facturas)
+   ========================================================= */
+function htmlItemFactura(f, compacto) {
+  const est = estadoDe(f);
+  const varias = db.empresas.length > 1;
+  const meta = [`<b class="if-codigo">${esc(f.codigo)}</b>`, fechaCorta(f.fecha), varias ? esc(f.emisor.nombre) : '', esc(textoVencimiento(f))]
+    .filter(Boolean).join(' · ');
+  const acciones = compacto ? '' : `
+    <span class="if-acciones">
+      <button type="button" class="btn-icono" data-pdf title="Enviar / descargar PDF" aria-label="PDF de la factura ${esc(f.codigo)}">${ico('pdf')}</button>
+      ${est !== 'cobrada' ? `<button type="button" class="btn-icono" data-recordar title="Recordar el cobro" aria-label="Recordar el cobro de ${esc(f.codigo)}">${ico('msg')}</button>` : '<span class="hueco-icono"></span>'}
+      <button type="button" class="btn-icono solo-escritorio" data-imprimir title="Imprimir" aria-label="Imprimir ${esc(f.codigo)}">${ico('printer')}</button>
+      <button type="button" class="btn-icono" data-duplicar title="Duplicar" aria-label="Duplicar ${esc(f.codigo)}">${ico('copy')}</button>
+      <button type="button" class="btn-icono peligro" data-borrar title="Borrar" aria-label="Borrar ${esc(f.codigo)}">${ico('trash')}</button>
+    </span>`;
+  return `<article class="item-factura estado-${est}" data-id="${esc(f.id)}">
+    <button type="button" class="if-principal" data-abrir><span class="if-cliente">${esc(f.cliente.nombre)}</span><span class="if-meta">${meta}</span></button>
+    <span class="if-importe">${euros(f.totalCent)}</span>
+    <span class="if-estado">${chipEstado(f)}</span>${acciones}
+  </article>`;
+}
+function renderVistaActual() {
+  if (vistaActual === 'inicio') renderInicio();
+  if (vistaActual === 'facturas') renderContabilidad();
+  if (vistaActual === 'clientes') renderClientes();
+}
+/** Marca una factura como cobrada / no cobrada, con «Deshacer». */
+function alternarCobro(f) {
+  const antes = { cobrada: f.cobrada, fechaCobro: f.fechaCobro, modificada: f.modificada };
+  if (f.cobrada) { f.cobrada = false; f.fechaCobro = ''; } else { f.cobrada = true; f.fechaCobro = hoyISO(); }
+  f.modificada = new Date().toISOString();
+  guardarDatos();
+  sincronizarCobroEditor(f);
+  renderVistaActual();
+  aviso(f.cobrada ? `Factura ${f.codigo} cobrada` : `Factura ${f.codigo} marcada como pendiente`, {
+    accion: 'Deshacer',
+    fn: () => { Object.assign(f, antes); guardarDatos(); sincronizarCobroEditor(f); renderVistaActual(); },
+  });
+}
+function sincronizarCobroEditor(f) {
+  if (edicion && edicion.id === f.id) {
+    edicion = f;
+    id('f-cobrada').checked = !!f.cobrada;
+    id('f-fecha-cobro').value = f.fechaCobro || '';
+    refrescarEditor();
+  }
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('button');
+  const art = b && b.closest('.item-factura');
+  if (!art) return;
+  const f = facturaPorId(art.dataset.id);
+  if (!f) return;
+  const d = b.dataset;
+  if ('abrir' in d) {
+    if (cambiosSinGuardar && !(edicion && edicion.id === f.id) && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
+    abrirFactura(f);
+  } else if ('estado' in d) alternarCobro(f);
+  else if ('pdf' in d) prepararPDF(f);
+  else if ('recordar' in d) abrirRecordatorio(f);
+  else if ('imprimir' in d) imprimir(f);
+  else if ('duplicar' in d) {
+    if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
+    nuevaFactura(f);
+    cambiosSinGuardar = true;
+    irA('factura');
+    aviso('Copia preparada: revisa la fecha y el concepto y guárdala.');
+  } else if ('borrar' in d) {
+    if (borrarFactura(f)) {
+      if (edicion && edicion.id === f.id) nuevaFactura();
+      renderVistaActual();
+    }
+  }
+});
+
+/* =========================================================
+   Inicio: cifras, gráfico y listas
+   ========================================================= */
+const sumar = (arr, k) => arr.reduce((s, f) => s + (f[k] || 0), 0);
+let datosGrafico = null;
+function renderInicio() {
+  const fmtDia = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  id('ini-fecha').textContent = fmtDia.format(new Date());
+  const sel = id('ini-empresa');
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Todas las empresas</option>' + db.empresas.slice().sort(ordenarPorNombre)
+    .map((e) => `<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('');
+  sel.value = empresaPorId(actual) ? actual : '';
+  sel.hidden = db.empresas.length < 2;
+
+  const sinNada = db.empresas.length === 0 || db.facturas.length === 0;
+  id('ini-vacio').hidden = !sinNada;
+  id('ini-panel').hidden = sinNada;
+  id('paso-empresa').classList.toggle('hecho', db.empresas.length > 0);
+  id('btn-paso-empresa').hidden = db.empresas.length > 0;
+  $('#paso-empresa .num-paso').innerHTML = db.empresas.length ? ico('check') : '1';
+  if (sinNada) return;
+
+  const hoy = hoyISO();
+  const anio = hoy.slice(0, 4);
+  const mes = hoy.slice(0, 7);
+  const tri = Math.ceil(Number(hoy.slice(5, 7)) / 3);
+  const fs = db.facturas.filter((f) => !sel.value || f.empresaId === sel.value);
+  const pendientes = fs.filter((f) => !f.cobrada);
+  const vencidas = pendientes.filter((f) => estadoDe(f) === 'vencida');
+  const delAnio = fs.filter((f) => (f.fecha || '').startsWith(anio));
+  const delTri = delAnio.filter((f) => Math.ceil(Number(f.fecha.slice(5, 7)) / 3) === tri);
+  const cobradasMes = fs.filter((f) => f.cobrada && (f.fechaCobro || '').startsWith(mes));
+
+  id('ini-pendiente').textContent = euros(sumar(pendientes, 'totalCent'));
+  id('ini-pendiente-sub').textContent = pendientes.length
+    ? `${pendientes.length} factura${pendientes.length === 1 ? '' : 's'} por cobrar` + (vencidas.length ? ` · ${vencidas.length} vencida${vencidas.length === 1 ? '' : 's'}` : '')
+    : '¡Todo cobrado!';
+  id('ini-tiles').innerHTML = `
+    <div class="tile ${vencidas.length ? 'alerta' : 'bien'}"><span class="etq">${ico(vencidas.length ? 'alert' : 'check')}Vencido</span><strong>${euros(sumar(vencidas, 'totalCent'))}</strong><small>${vencidas.length ? `${vencidas.length} factura${vencidas.length === 1 ? '' : 's'} fuera de plazo` : 'Nada fuera de plazo'}</small></div>
+    <div class="tile"><span class="etq">Cobrado este mes</span><strong>${euros(sumar(cobradasMes, 'totalCent'))}</strong><small>${MESES[Number(hoy.slice(5, 7)) - 1]} · ${cobradasMes.length} factura${cobradasMes.length === 1 ? '' : 's'}</small></div>
+    <div class="tile"><span class="etq">Facturado en ${anio}</span><strong>${euros(sumar(delAnio, 'totalCent'))}</strong><small>${delAnio.length} factura${delAnio.length === 1 ? '' : 's'}</small></div>
+    <div class="tile"><span class="etq">IVA del ${tri}.º trimestre</span><strong>${euros(sumar(delTri, 'cuotaCent'))}</strong><small>IVA repercutido</small></div>`;
+
+  // Gráfico: facturado por mes del año en curso
+  datosGrafico = { anio, meses: MESES.map((nombre, i) => {
+    const m = `${anio}-${String(i + 1).padStart(2, '0')}`;
+    const delMes = fs.filter((f) => (f.fecha || '').startsWith(m));
+    const cobrado = sumar(delMes.filter((f) => f.cobrada), 'totalCent');
+    const facturado = sumar(delMes, 'totalCent');
+    return { nombre, facturado, cobrado, pendiente: facturado - cobrado, n: delMes.length };
+  }) };
+  id('ini-grafico-sub').textContent = `${anio} · total de cada mes, en euros`;
+  id('ini-tabla').innerHTML = datosGrafico.meses.map((m) => `<tr><td>${m.nombre}</td><td class="num">${euros(m.facturado)}</td><td class="num">${euros(m.cobrado)}</td><td class="num">${euros(m.pendiente)}</td></tr>`).join('');
+  pintarGraficoInicio();
+
+  const porCobrar = pendientes.slice().sort((a, b) => (a.vencimiento || a.fecha || '').localeCompare(b.vencimiento || b.fecha || '')).slice(0, 5);
+  id('ini-por-cobrar').innerHTML = porCobrar.length ? porCobrar.map((f) => htmlItemFactura(f, true)).join('') : '<div class="vacio-lista">No hay nada pendiente de cobro 🎉</div>';
+  const ultimas = fs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.creada || '').localeCompare(a.creada || '')).slice(0, 5);
+  id('ini-ultimas').innerHTML = ultimas.map((f) => htmlItemFactura(f, true)).join('');
+}
+id('ini-empresa').addEventListener('change', renderInicio);
+id('ini-ver-pendientes').addEventListener('click', () => { filtroEstado = 'pendientes'; irA('facturas'); });
+id('ini-ver-todas').addEventListener('click', () => { filtroEstado = ''; irA('facturas'); });
+id('btn-paso-empresa').addEventListener('click', () => abrirEmpresa(null));
+
+/** Escalón «bonito» para el eje (1, 2, 2,5 o 5 × potencia de 10). */
+function pasoBonito(maximo, partes) {
+  const crudo = maximo / partes;
+  const pot = Math.pow(10, Math.floor(Math.log10(crudo)));
+  return [1, 2, 2.5, 5, 10].map((k) => k * pot).find((p) => p >= crudo);
+}
+const svgNS = 'http://www.w3.org/2000/svg';
+function nodoSVG(tag, attrs, padre) {
+  const n = document.createElementNS(svgNS, tag);
+  Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+  if (padre) padre.appendChild(n);
+  return n;
+}
+/** Gráfico de columnas (una serie): barras finas con la punta redondeada, rejilla fina, tooltip y tabla aparte. */
+function pintarGraficoInicio() {
+  const cont = id('ini-grafico');
+  if (!datosGrafico || !cont.clientWidth || id('ini-panel').hidden) return;
+  cont.innerHTML = '';
+  const meses = datosGrafico.meses;
+  const ancho = cont.clientWidth;
+  const alto = cont.clientHeight;
+  const maxEur = Math.max(...meses.map((m) => m.facturado)) / 100;
+  const paso = maxEur > 0 ? pasoBonito(maxEur, 4) : 250;
+  const tope = Math.max(paso, Math.ceil(maxEur / paso) * paso);
+  const compacto = tope >= 10000;
+  const fmtEje = new Intl.NumberFormat('es-ES', compacto ? { notation: 'compact', maximumFractionDigits: 1 } : { useGrouping: 'always', maximumFractionDigits: 0 });
+  const ticks = [];
+  for (let v = 0; v <= tope + 1e-9; v += paso) ticks.push(v);
+  const etiquetas = ticks.map((t) => fmtEje.format(t));
+  const izq = Math.max(...etiquetas.map((t) => t.length)) * 7 + 10;
+  const m = { arriba: 22, abajo: 26, izq, der: 6 };
+  const plotW = ancho - m.izq - m.der;
+  const plotH = alto - m.arriba - m.abajo;
+  const y = (eur) => m.arriba + plotH - (eur / tope) * plotH;
+  const banda = plotW / 12;
+  const barW = Math.min(24, banda * 0.6);
+  const svg = nodoSVG('svg', { viewBox: `0 0 ${ancho} ${alto}`, role: 'img', 'aria-label': `Facturado por mes en ${datosGrafico.anio}` }, cont);
+
+  ticks.forEach((t, i) => {
+    const yy = Math.round(y(t)) + 0.5;
+    nodoSVG('line', { x1: m.izq, x2: ancho - m.der, y1: yy, y2: yy, class: i === 0 ? 'g-eje' : 'g-grid' }, svg);
+    const tx = nodoSVG('text', { x: m.izq - 8, y: yy + 4, 'text-anchor': 'end', class: 'g-texto' }, svg);
+    tx.textContent = etiquetas[i];
+  });
+  const cortos = banda < 34;
+  let iMax = -1;
+  meses.forEach((mm, i) => { if (mm.facturado > 0 && (iMax < 0 || mm.facturado > meses[iMax].facturado)) iMax = i; });
+  const barras = [];
+  meses.forEach((mm, i) => {
+    const cx = m.izq + banda * i + banda / 2;
+    const eur = mm.facturado / 100;
+    const h = (eur / tope) * plotH;
+    const base = m.arriba + plotH;
+    if (h > 0) {
+      const r = Math.min(4, h, barW / 2);
+      const x0 = cx - barW / 2;
+      const yTop = base - h;
+      const d = `M${x0},${base} V${yTop + r} Q${x0},${yTop} ${x0 + r},${yTop} H${x0 + barW - r} Q${x0 + barW},${yTop} ${x0 + barW},${yTop + r} V${base} Z`;
+      barras[i] = nodoSVG('path', { d, class: 'g-barra' }, svg);
+    }
+    const lbl = nodoSVG('text', { x: cx, y: alto - 8, 'text-anchor': 'middle', class: 'g-texto' }, svg);
+    lbl.textContent = cortos ? mm.nombre[0].toUpperCase() : mm.nombre.slice(0, 3);
+    if (i === iMax) {
+      const v = nodoSVG('text', { x: Math.min(Math.max(cx, m.izq + 30), ancho - 30), y: base - h - 7, 'text-anchor': 'middle', class: 'g-valor' }, svg);
+      v.textContent = fmtEuros.format(Math.round(eur)).replace(/,00/, '');
+    }
+  });
+  // Tooltip: cada mes es una zona de toque (más grande que la barra)
+  const tip = document.createElement('div');
+  tip.className = 'tooltip';
+  tip.hidden = true;
+  cont.appendChild(tip);
+  const mostrar = (i) => {
+    const mm = meses[i];
+    cont.classList.add('con-foco');
+    barras.forEach((b, j) => b && b.classList.toggle('activa', j === i));
+    tip.replaceChildren();
+    const fuerte = document.createElement('strong');
+    fuerte.textContent = euros(mm.facturado);
+    const mes = document.createElement('div');
+    mes.className = 'tt-mes';
+    mes.textContent = `Facturado en ${mm.nombre} ${datosGrafico.anio}` + (mm.n ? ` · ${mm.n} factura${mm.n === 1 ? '' : 's'}` : '');
+    tip.append(fuerte, mes);
+    [['Cobrado', mm.cobrado], ['Pendiente', mm.pendiente]].forEach(([t, v]) => {
+      const fila = document.createElement('div');
+      fila.className = 'tt-fila';
+      const a = document.createElement('span'); a.textContent = t;
+      const b = document.createElement('b'); b.textContent = euros(v);
+      fila.append(a, b);
+      tip.appendChild(fila);
+    });
+    tip.hidden = false;
+    const cx = m.izq + banda * i + banda / 2;
+    const yTop = y(mm.facturado / 100);
+    const mitad = tip.offsetWidth / 2;
+    tip.style.left = Math.min(Math.max(cx, mitad), ancho - mitad) + 'px';
+    tip.style.top = Math.max(yTop, 70) + 'px';
+  };
+  const ocultar = () => { tip.hidden = true; cont.classList.remove('con-foco'); barras.forEach((b) => b && b.classList.remove('activa')); };
+  cont.onpointerleave = ocultar;
+  meses.forEach((mm, i) => {
+    const r = nodoSVG('rect', { x: m.izq + banda * i, y: m.arriba, width: banda, height: plotH, class: 'g-hit', tabindex: 0, 'aria-label': `${mm.nombre}: ${euros(mm.facturado)} facturado` }, svg);
+    r.addEventListener('pointerenter', () => mostrar(i));
+    r.addEventListener('focus', () => mostrar(i));
+    r.addEventListener('pointerleave', ocultar);
+    r.addEventListener('blur', ocultar);
+  });
+}
 
 /* =========================================================
    Editor de facturas
@@ -1135,21 +1952,35 @@ $$('.barra nav button').forEach((b) => b.addEventListener('click', () => {
 let edicion = null;        // factura guardada que se está editando (null = nueva)
 let numeroManual = false;  // el usuario ha escrito el número a mano
 let codigoManual = false;  // el usuario ha escrito el código del cliente a mano
+let vencManual = false;    // el usuario ha cambiado el vencimiento a mano
 let cambiosSinGuardar = false;
 const formF = id('form-factura');
 
 function mostrarEditorOBienvenida() {
   const sinEmpresas = db.empresas.length === 0;
-  id('sin-empresas').hidden = !sinEmpresas;
+  id('editor-vacio').hidden = !sinEmpresas;
   id('editor-factura').hidden = sinEmpresas;
+  id('seg-editor').hidden = sinEmpresas;
+  id('btn-nueva-factura').hidden = sinEmpresas;
   if (!sinEmpresas) {
     rellenarSelectEmpresas();
     rellenarSelectClientes();
     if (!id('f-empresa').value) nuevaFactura();
-    else { calcularNumero(); actualizarPrevia(); }
+    else { calcularNumero(); refrescarEditor(); }
   }
 }
-id('btn-ir-empresas').addEventListener('click', () => { irA('empresas'); nuevaEmpresa(); });
+id('btn-ir-empresas').addEventListener('click', () => abrirEmpresa(null));
+id('seg-editor').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-modo]');
+  if (!b) return;
+  id('editor-factura').dataset.modo = b.dataset.modo;
+  $$('#seg-editor button').forEach((x) => x.classList.toggle('activo', x === b));
+  requestAnimationFrame(ajustarTodasPrevias);
+});
+function modoEditor(modo) {
+  id('editor-factura').dataset.modo = modo;
+  $$('#seg-editor button').forEach((x) => x.classList.toggle('activo', x.dataset.modo === modo));
+}
 
 function empresaSeleccionada() { return empresaPorId(id('f-empresa').value); }
 
@@ -1159,6 +1990,7 @@ function rellenarSelectEmpresas() {
   sel.innerHTML = db.empresas.slice().sort(ordenarPorNombre)
     .map((e) => `<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('');
   if (empresaPorId(actual)) sel.value = actual;
+  id('fila-empresa').hidden = db.empresas.length < 2;
 }
 function rellenarSelectClientes() {
   const sel = id('f-cliente');
@@ -1175,15 +2007,31 @@ function ponerCliente(c) {
   id('f-cli-cp').value = c ? c.cp || '' : '';
   id('f-cli-pob').value = c ? c.poblacion || '' : '';
   id('f-cli-prov').value = c ? c.provincia || '' : '';
+  id('f-cli-tel').value = c ? c.telefono || '' : '';
+  id('f-cli-email').value = c ? c.email || '' : '';
   const guardado = c && clientePorId(c.id);
   id('f-cli-codigo').value = guardado ? guardado.codigo || codigoSugerido(guardado.nombre, guardado.id) : c && c.nombre ? codigoSugerido(c.nombre) : '';
   codigoManual = false;
+}
+function vencimientoPorDefecto() {
+  const emp = empresaSeleccionada() || {};
+  const fecha = id('f-fecha').value;
+  const plazo = parseInt(emp.plazoPago, 10);
+  return fecha && Number.isFinite(plazo) && plazo >= 0 ? sumarDias(fecha, plazo) : '';
+}
+function ponerImpuestosPorDefecto(emp) {
+  id('f-aplica-iva').checked = true;
+  id('f-iva').value = emp.iva ?? 21;
+  const irpf = leerPct(emp.irpf);
+  id('f-aplica-irpf').checked = irpf > 0;
+  id('f-irpf').value = irpf > 0 ? irpf : 15;
 }
 
 /** Prepara el formulario para una factura nueva (opcionalmente copiando otra). */
 function nuevaFactura(copiaDe, clienteId) {
   edicion = null;
   numeroManual = false;
+  vencManual = false;
   formF.reset();
   rellenarSelectEmpresas();
   rellenarSelectClientes();
@@ -1192,8 +2040,7 @@ function nuevaFactura(copiaDe, clienteId) {
   id('f-empresa').value = empId;
   const emp = empresaSeleccionada() || {};
   id('f-fecha').value = hoyISO();
-  id('f-aplica-iva').checked = true;
-  id('f-iva').value = emp.iva ?? 21;
+  ponerImpuestosPorDefecto(emp);
   id('f-pago').value = emp.formaPago || '';
   id('f-iban').value = emp.iban || '';
   id('f-incluir-firma').checked = true;
@@ -1205,8 +2052,10 @@ function nuevaFactura(copiaDe, clienteId) {
     id('f-concepto').value = copiaDe.concepto || '';
     id('f-base').value = fmtDec.format((copiaDe.baseCent || 0) / 100);
     id('f-aplica-iva').checked = !!copiaDe.aplicaIva;
-    id('f-iva').value = copiaDe.aplicaIva ? copiaDe.ivaPct : (emp.iva ?? 21);
+    if (copiaDe.aplicaIva) id('f-iva').value = copiaDe.ivaPct;
     id('f-exencion').value = copiaDe.motivoExencion || '';
+    id('f-aplica-irpf').checked = !!copiaDe.aplicaIrpf;
+    if (copiaDe.aplicaIrpf) id('f-irpf').value = copiaDe.irpfPct;
     id('f-pago').value = copiaDe.formaPago || '';
     id('f-iban').value = copiaDe.iban || '';
     id('f-obs').value = copiaDe.observaciones || '';
@@ -1215,6 +2064,8 @@ function nuevaFactura(copiaDe, clienteId) {
     id('f-cliente').value = clienteId;
     ponerCliente(clientePorId(clienteId));
   }
+  id('f-vencimiento').value = vencimientoPorDefecto();
+  modoEditor('datos');
   calcularNumero();
   refrescarEditor();
   cambiosSinGuardar = false;
@@ -1224,6 +2075,7 @@ function nuevaFactura(copiaDe, clienteId) {
 function abrirFactura(f) {
   edicion = f;
   numeroManual = false;
+  vencManual = true;
   formF.reset();
   rellenarSelectEmpresas();
   rellenarSelectClientes();
@@ -1231,20 +2083,30 @@ function abrirFactura(f) {
   const cli = clientePorId(f.clienteId);
   id('f-cliente').value = cli ? cli.id : '';
   ponerCliente(f.cliente);
-  if (cli) id('f-cli-codigo').value = cli.codigo || '';
+  if (cli) {
+    id('f-cli-codigo').value = cli.codigo || '';
+    if (!id('f-cli-tel').value) id('f-cli-tel').value = cli.telefono || '';
+    if (!id('f-cli-email').value) id('f-cli-email').value = cli.email || '';
+  }
   id('f-numero').value = f.numero;
   id('f-fecha').value = f.fecha;
+  id('f-vencimiento').value = f.vencimiento || '';
   id('f-concepto').value = f.concepto || '';
   id('f-base').value = fmtDec.format((f.baseCent || 0) / 100);
+  const emp = empresaPorId(f.empresaId) || {};
+  ponerImpuestosPorDefecto(emp);
   id('f-aplica-iva').checked = !!f.aplicaIva;
-  id('f-iva').value = f.aplicaIva ? f.ivaPct : ((empresaPorId(f.empresaId) || {}).iva ?? 21);
+  if (f.aplicaIva) id('f-iva').value = f.ivaPct;
   id('f-exencion').value = f.motivoExencion || '';
+  id('f-aplica-irpf').checked = !!f.aplicaIrpf;
+  if (f.aplicaIrpf) id('f-irpf').value = f.irpfPct;
   id('f-pago').value = f.formaPago || '';
   id('f-iban').value = f.iban || '';
   id('f-obs').value = f.observaciones || '';
   id('f-incluir-firma').checked = f.incluirFirma !== false;
   id('f-cobrada').checked = !!f.cobrada;
   id('f-fecha-cobro').value = f.fechaCobro || '';
+  modoEditor('datos');
   calcularNumero();
   refrescarEditor();
   cambiosSinGuardar = false;
@@ -1256,7 +2118,7 @@ function pedirNuevaFactura() {
     irA('factura');
     return;
   }
-  if (edicion) nuevaFactura();
+  if (edicion || !id('f-empresa').value) nuevaFactura();
   irA('factura');
 }
 id('btn-nueva-factura').addEventListener('click', () => {
@@ -1279,7 +2141,10 @@ function mantieneSerieDeEdicion() {
   if (!edicion) return false;
   const emp = empresaSeleccionada();
   if (!emp || emp.id !== edicion.empresaId) return false;
-  if (claveDeFactura(edicion).includes('|cliente|')) return (id('f-cliente').value || null) === edicion.clienteId;
+  const clave = claveDeFactura(edicion);
+  // Con el formato anual, si cambia el año de la fecha, la factura pasa a la serie de ese año.
+  if (/\|\d{4}$/.test(clave) && clave.slice(-4) !== (id('f-fecha').value || '').slice(0, 4)) return false;
+  if (clave.includes('|cliente|')) return (id('f-cliente').value || null) === edicion.clienteId;
   return true;
 }
 function serieEnUso() {
@@ -1293,11 +2158,11 @@ function calcularNumero() {
   if (!emp) return;
   id('lbl-codigo').hidden = !porCliente(emp);
   if (!numeroManual) {
-    id('f-numero').value = mantieneSerieDeEdicion() ? edicion.numero : siguienteNumero(emp, clienteDelFormulario());
+    id('f-numero').value = mantieneSerieDeEdicion() ? edicion.numero : siguienteNumero(emp, clienteDelFormulario(), id('f-fecha').value);
   }
   id('f-serie').textContent = serieEnUso();
   const n = parseInt(id('f-numero').value, 10);
-  let ayuda = n > 0 ? `Saldrá como: ${codigoFactura(serieEnUso(), n, emp.digitos)}` : '';
+  let ayuda = n > 0 ? `Saldrá como: ${codigoFactura(emp, serieEnUso(), n, id('f-fecha').value)}` : '';
   if (porCliente(emp) && !id('f-cliente').value && n > 0) ayuda += ' · Si a este cliente ya le habías hecho facturas, pon aquí el número que toca.';
   id('f-numero-ayuda').textContent = ayuda;
 }
@@ -1310,6 +2175,9 @@ function facturaDelFormulario() {
   const aplicaIva = id('f-aplica-iva').checked;
   const ivaPct = aplicaIva ? leerPct(id('f-iva').value) : 0;
   const cuotaCent = redondear((baseCent * ivaPct) / 100);
+  const aplicaIrpf = id('f-aplica-irpf').checked;
+  const irpfPct = aplicaIrpf ? leerPct(id('f-irpf').value) : 0;
+  const irpfCent = redondear((baseCent * irpfPct) / 100);
   const serie = serieEnUso();
   const numero = parseInt(id('f-numero').value, 10) || 0;
   const cobrada = id('f-cobrada').checked;
@@ -1322,13 +2190,16 @@ function facturaDelFormulario() {
       nombre: id('f-cli-nombre').value.trim(), cif: id('f-cli-cif').value.trim().toUpperCase(),
       direccion: id('f-cli-dir').value.trim(), cp: id('f-cli-cp').value.trim(),
       poblacion: id('f-cli-pob').value.trim(), provincia: id('f-cli-prov').value.trim(),
+      telefono: id('f-cli-tel').value.trim(), email: id('f-cli-email').value.trim(),
       codigo: limpiarCodigo(id('f-cli-codigo').value),
     },
     serie, numero,
-    codigo: numero ? codigoFactura(serie, numero, emp.digitos) : '',
+    codigo: numero ? codigoFactura(emp, serie, numero, id('f-fecha').value) : '',
     fecha: id('f-fecha').value,
+    vencimiento: id('f-vencimiento').value,
     concepto: id('f-concepto').value.replace(/\s+$/, ''),
-    baseCent, aplicaIva, ivaPct, cuotaCent, totalCent: baseCent + cuotaCent,
+    baseCent, aplicaIva, ivaPct, cuotaCent, aplicaIrpf, irpfPct, irpfCent,
+    totalCent: baseCent + cuotaCent - irpfCent,
     motivoExencion: aplicaIva ? '' : id('f-exencion').value.trim(),
     formaPago: id('f-pago').value.trim(),
     iban: id('f-iban').value.trim(),
@@ -1346,11 +2217,15 @@ function refrescarEditor() {
   const conIva = id('f-aplica-iva').checked;
   id('lbl-iva').style.visibility = conIva ? 'visible' : 'hidden';
   id('lbl-exencion').hidden = conIva;
+  id('lbl-irpf').style.visibility = id('f-aplica-irpf').checked ? 'visible' : 'hidden';
   id('f-fecha-cobro').disabled = !id('f-cobrada').checked;
   id('titulo-editor').innerHTML = edicion
-    ? `Factura ${esc(edicion.codigo)} <span class="etiqueta">guardada</span>`
+    ? `Factura ${esc(edicion.codigo)}<span class="etiqueta">${ico('check')}Guardada</span>`
     : 'Nueva factura';
   id('btn-borrar-factura').hidden = !edicion;
+  const v = id('f-vencimiento').value;
+  const f = id('f-fecha').value;
+  id('f-venc-ayuda').textContent = v && f ? (diasEntre(f, v) === 0 ? 'Al contado' : `${diasEntre(f, v)} días desde la fecha`) : 'Sin vencimiento';
   actualizarPrevia();
 }
 function actualizarPrevia() {
@@ -1359,6 +2234,9 @@ function actualizarPrevia() {
   id('r-base').textContent = euros(f.baseCent);
   id('r-iva-txt').textContent = f.aplicaIva ? `IVA ${porcentaje(f.ivaPct)}` : 'IVA (sin IVA)';
   id('r-iva').textContent = euros(f.cuotaCent);
+  id('r-irpf-fila').hidden = !f.aplicaIrpf;
+  id('r-irpf-txt').textContent = `Retención IRPF ${porcentaje(f.irpfPct)}`;
+  id('r-irpf').textContent = '-' + euros(f.irpfCent);
   id('r-total').textContent = euros(f.totalCent);
   id('previa-codigo').textContent = f.codigo;
   const cont = id('previa-factura');
@@ -1370,6 +2248,7 @@ formF.addEventListener('input', (ev) => {
   cambiosSinGuardar = true;
   const t = ev.target.id;
   if (t === 'f-numero') numeroManual = true;
+  if (t === 'f-vencimiento') vencManual = true;
   if (t === 'f-cli-codigo') {
     codigoManual = true;
     const limpio = limpiarCodigo(ev.target.value);
@@ -1389,9 +2268,14 @@ formF.addEventListener('change', (ev) => {
     if (emp && !edicion) {
       id('f-pago').value = emp.formaPago || '';
       id('f-iban').value = emp.iban || '';
-      if (id('f-aplica-iva').checked) id('f-iva').value = emp.iva ?? 21;
+      ponerImpuestosPorDefecto(emp);
     }
+    if (!vencManual) id('f-vencimiento').value = vencimientoPorDefecto();
     numeroManual = false;
+    calcularNumero();
+  }
+  if (t === 'f-fecha') {
+    if (!vencManual) id('f-vencimiento').value = vencimientoPorDefecto();
     calcularNumero();
   }
   if (t === 'f-cliente') {
@@ -1438,6 +2322,8 @@ function guardarClienteDeFactura(cli, datos) {
     db.clientes.push(cli);
   }
   ['nombre', 'cif', 'direccion', 'cp', 'poblacion', 'provincia'].forEach((k) => { cli[k] = datos[k] || ''; });
+  if (datos.telefono) cli.telefono = datos.telefono;
+  if (datos.email) cli.email = datos.email;
   if (datos.codigo) cli.codigo = datos.codigo;
   if (!cli.codigo) cli.codigo = codigoSugerido(cli.nombre, cli.id);
   return cli.id;
@@ -1445,15 +2331,21 @@ function guardarClienteDeFactura(cli, datos) {
 
 function guardarFactura() {
   const emp = empresaSeleccionada();
-  const fallo = (msg, campo) => { aviso(msg, 'error'); if (campo) id(campo).focus(); return null; };
+  const fallo = (msg, campo) => {
+    aviso(msg, 'error');
+    if (campo) { modoEditor('datos'); id(campo).focus(); }
+    return null;
+  };
   if (!emp) return fallo('Elige la empresa que hace la factura.', 'f-empresa');
   const f = facturaDelFormulario();
   if (!f.cliente.nombre) return fallo('Escribe el nombre del cliente.', 'f-cli-nombre');
   if (!(f.numero >= 1)) return fallo('El número de factura no es válido.', 'f-numero');
   if (!f.fecha) return fallo('Pon la fecha de la factura.', 'f-fecha');
+  if (f.vencimiento && f.vencimiento < f.fecha) return fallo('El vencimiento no puede ser anterior a la fecha de la factura.', 'f-vencimiento');
   if (!f.concepto.trim()) return fallo('Escribe el concepto de la factura.', 'f-concepto');
   if (!f._baseValida) return fallo('Escribe la base imponible (por ejemplo: 1.250,00).', 'f-base');
   if (f.aplicaIva && (f.ivaPct < 0 || f.ivaPct > 100)) return fallo('El % de IVA no es válido.', 'f-iva');
+  if (f.aplicaIrpf && (f.irpfPct < 0 || f.irpfPct > 100)) return fallo('El % de IRPF no es válido.', 'f-irpf');
 
   const modoCliente = porCliente(emp);
   const elegido = clientePorId(f.clienteId);
@@ -1473,14 +2365,14 @@ function guardarFactura() {
     if (otro) return fallo(`El código «${codigo}» ya es del cliente ${otro.nombre}. Pon otro código a este cliente.`, 'f-cli-codigo');
     f.cliente.codigo = codigo;
     f.serie = prefijoFactura(emp, codigo);
-    if (!numeroManual) f.numero = siguienteNumero(emp, cli || { id: null, numeroInicial: 1 });
-    clave = claveSerie(emp.id, true, cli && cli.id);
+    if (!numeroManual) f.numero = siguienteNumero(emp, cli || { id: null, numeroInicial: 1 }, f.fecha);
+    clave = claveDe(emp, cli && cli.id, f.fecha);
   } else {
-    f.serie = emp.serie || '';
-    if (!numeroManual) f.numero = siguienteNumero(emp);
-    clave = claveSerie(emp.id, false, null, f.serie);
+    f.serie = prefijoFactura(emp, '');
+    if (!numeroManual) f.numero = siguienteNumero(emp, null, f.fecha);
+    clave = claveDe(emp, null, f.fecha);
   }
-  f.codigo = codigoFactura(f.serie, f.numero, emp.digitos);
+  f.codigo = codigoFactura(emp, f.serie, f.numero, f.fecha);
 
   const mismaSerie = facturasDeSerie(clave, f.id);
   const repetida = mismaSerie.find((x) => x.numero === f.numero)
@@ -1494,8 +2386,8 @@ function guardarFactura() {
   if (anteriorPosterior) avisos.push(`• La factura ${anteriorPosterior.codigo} tiene un número menor pero una fecha posterior (${fechaCorta(anteriorPosterior.fecha)}). Las facturas deben ir en orden.`);
   if (posteriorAnterior) avisos.push(`• La factura ${posteriorAnterior.codigo} tiene un número mayor pero una fecha anterior (${fechaCorta(posteriorAnterior.fecha)}). Las facturas deben ir en orden.`);
   if (!mantiene && mismaSerie.length) {
-    const toca = modoCliente ? siguienteNumero(emp, cli) : siguienteNumero(emp);
-    if (f.numero > toca) avisos.push(`• El número que toca es el ${codigoFactura(f.serie, toca, emp.digitos)} y vas a usar el ${f.codigo}: quedará un hueco en la numeración.`);
+    const toca = siguienteNumero(emp, modoCliente ? cli : null, f.fecha);
+    if (f.numero > toca) avisos.push(`• El número que toca es el ${codigoFactura(emp, f.serie, toca, f.fecha)} y vas a usar el ${f.codigo}: quedará un hueco en la numeración.`);
   }
   if (avisos.length && !confirm('Revisa esto antes de guardar:\n\n' + avisos.join('\n') + '\n\n¿Guardar igualmente?')) return null;
 
@@ -1505,7 +2397,7 @@ function guardarFactura() {
   f.creada = f.creada || ahora;
   f.modificada = ahora;
   f.clienteId = guardarClienteDeFactura(cli, f.cliente);
-  f.serieClave = mantiene ? clave : claveSerie(emp.id, modoCliente, f.clienteId, f.serie);
+  f.serieClave = mantiene ? clave : claveDe(emp, modoCliente ? f.clienteId : null, f.fecha);
   const i = db.facturas.findIndex((x) => x.id === f.id);
   if (i >= 0) db.facturas[i] = f; else db.facturas.push(f);
   db.ajustes.ultimaEmpresa = f.empresaId;
@@ -1513,6 +2405,7 @@ function guardarFactura() {
 
   edicion = f;
   numeroManual = false;
+  vencManual = true;
   cambiosSinGuardar = false;
   rellenarSelectClientes();
   id('f-cliente').value = f.clienteId;
@@ -1525,13 +2418,15 @@ function guardarFactura() {
   return f;
 }
 formF.addEventListener('submit', (ev) => { ev.preventDefault(); guardarFactura(); });
+function guardarYHacerPDF() {
+  const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
+  if (f) prepararPDF(f);
+}
+id('btn-pdf').addEventListener('click', guardarYHacerPDF);
+id('btn-pdf-movil').addEventListener('click', guardarYHacerPDF);
 id('btn-imprimir').addEventListener('click', () => {
   const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
   if (f) imprimir(f);
-});
-id('btn-pdf').addEventListener('click', () => {
-  const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
-  if (f) prepararPDF(f);
 });
 id('btn-borrar-factura').addEventListener('click', () => {
   if (edicion && borrarFactura(edicion)) nuevaFactura();
@@ -1539,9 +2434,13 @@ id('btn-borrar-factura').addEventListener('click', () => {
 function borrarFactura(f) {
   const msg = `¿Borrar la factura ${f.codigo} de ${f.cliente.nombre}?\n\nOjo: borrar facturas ya enviadas deja un hueco en la numeración. Si la factura era errónea, lo correcto suele ser hacer una factura rectificativa.`;
   if (!confirm(msg)) return false;
+  const pos = db.facturas.findIndex((x) => x.id === f.id);
   db.facturas = db.facturas.filter((x) => x.id !== f.id);
   guardarDatos();
-  aviso(`Factura ${f.codigo} borrada`);
+  aviso(`Factura ${f.codigo} borrada`, {
+    accion: 'Deshacer',
+    fn: () => { db.facturas.splice(Math.max(0, pos), 0, f); guardarDatos(); renderVistaActual(); },
+  });
   return true;
 }
 
@@ -1557,14 +2456,16 @@ window.addEventListener('beforeunload', (ev) => {
 });
 
 /* =========================================================
-   Contabilidad
+   Facturas (contabilidad)
    ========================================================= */
+let filtroEstado = '';
 function rellenarFiltrosContabilidad() {
   const selE = id('c-empresa');
   const e = selE.value;
   selE.innerHTML = '<option value="">Todas las empresas</option>' + db.empresas.slice().sort(ordenarPorNombre)
     .map((x) => `<option value="${esc(x.id)}">${esc(x.nombre)}</option>`).join('');
   selE.value = empresaPorId(e) ? e : '';
+  selE.closest('label').hidden = db.empresas.length < 2;
   const selA = id('c-anio');
   const a = selA.value;
   const anios = new Set(db.facturas.map((f) => (f.fecha || '').slice(0, 4)).filter(Boolean));
@@ -1572,118 +2473,72 @@ function rellenarFiltrosContabilidad() {
   selA.innerHTML = '<option value="">Todos los años</option>' + Array.from(anios).sort().reverse()
     .map((x) => `<option value="${x}">${x}</option>`).join('');
   selA.value = anios.has(a) ? a : '';
+  $$('#c-estado button').forEach((b) => b.classList.toggle('activo', b.dataset.valor === filtroEstado));
 }
 function facturasFiltradas() {
   const emp = id('c-empresa').value;
-  const est = id('c-estado').value;
   const anio = id('c-anio').value;
   const tri = id('c-tri').value;
   const q = normaliza(id('c-buscar').value);
-  return db.facturas.filter((f) =>
-    (!emp || f.empresaId === emp) &&
-    (!est || (est === 'cobradas' ? f.cobrada : !f.cobrada)) &&
-    (!anio || (f.fecha || '').slice(0, 4) === anio) &&
-    (!tri || Math.ceil(Number((f.fecha || '').slice(5, 7)) / 3) === Number(tri)) &&
-    (!q || normaliza([f.codigo, f.cliente.nombre, f.cliente.cif, f.concepto, f.emisor.nombre].join(' ')).includes(q))
-  ).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.modificada || '').localeCompare(a.modificada || ''));
+  return db.facturas.filter((f) => {
+    const est = estadoDe(f);
+    return (!emp || f.empresaId === emp) &&
+      (!filtroEstado || (filtroEstado === 'cobradas' ? est === 'cobrada' : filtroEstado === 'vencidas' ? est === 'vencida' : est !== 'cobrada')) &&
+      (!anio || (f.fecha || '').slice(0, 4) === anio) &&
+      (!tri || Math.ceil(Number((f.fecha || '').slice(5, 7)) / 3) === Number(tri)) &&
+      (!q || normaliza([f.codigo, f.cliente.nombre, f.cliente.cif, f.concepto, f.emisor.nombre].join(' ')).includes(q));
+  }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.creada || '').localeCompare(a.creada || ''));
 }
 function renderContabilidad() {
   rellenarFiltrosContabilidad();
   const lista = facturasFiltradas();
-  const suma = (arr, k) => arr.reduce((s, f) => s + (f[k] || 0), 0);
   const cobradas = lista.filter((f) => f.cobrada);
   const pendientes = lista.filter((f) => !f.cobrada);
+  const irpf = sumar(lista, 'irpfCent');
   id('c-tarjetas').innerHTML = `
-    <div class="tarjeta ok"><span>Cobrado</span><strong>${euros(suma(cobradas, 'totalCent'))}</strong><small>${cobradas.length} factura(s)</small></div>
-    <div class="tarjeta pend"><span>Pendiente de cobro</span><strong>${euros(suma(pendientes, 'totalCent'))}</strong><small>${pendientes.length} factura(s)</small></div>
-    <div class="tarjeta"><span>Total facturado</span><strong>${euros(suma(lista, 'totalCent'))}</strong><small>${lista.length} factura(s)</small></div>
-    <div class="tarjeta"><span>IVA repercutido</span><strong>${euros(suma(lista, 'cuotaCent'))}</strong></div>
-    <div class="tarjeta ocultar-movil"><span>Base imponible</span><strong>${euros(suma(lista, 'baseCent'))}</strong></div>`;
-  id('c-lista').innerHTML = lista.length ? lista.map((f) => `
-    <tr>
-      <td class="td-num"><button type="button" class="enlace" data-abrir="${esc(f.id)}">${esc(f.codigo)}</button></td>
-      <td class="td-fecha">${fechaCorta(f.fecha)}</td>
-      <td class="td-emp">${esc(f.emisor.nombre)}</td>
-      <td class="td-cli">${esc(f.cliente.nombre)}${f.cliente.cif ? `<br><small>${esc(f.cliente.cif)}</small>` : ''}</td>
-      <td class="td-meta">${fechaCorta(f.fecha)} · ${esc(f.emisor.nombre)}</td>
-      <td class="num td-base">${euros(f.baseCent)}</td>
-      <td class="num td-iva">${euros(f.cuotaCent)}</td>
-      <td class="num td-total"><strong>${euros(f.totalCent)}</strong></td>
-      <td class="td-estado">${f.cobrada
-        ? `<button type="button" class="estado cobrada" data-estado="${esc(f.id)}" title="Pulsa para marcar como no cobrada">✓ Cobrada <small>${fechaCorta(f.fechaCobro)}</small></button>`
-        : `<button type="button" class="estado pendiente" data-estado="${esc(f.id)}" title="Pulsa para marcar como cobrada">● No cobrada</button>`}</td>
-      <td class="td-acc"><div class="acciones-fila">
-        <button type="button" class="btn peq" data-pdf="${esc(f.id)}">PDF</button>
-        <button type="button" class="btn peq solo-escritorio" data-imprimir="${esc(f.id)}">Imprimir</button>
-        <button type="button" class="btn peq" data-duplicar="${esc(f.id)}">Duplicar</button>
-        <button type="button" class="btn peq peligro" data-borrar="${esc(f.id)}">Borrar</button>
-      </div></td>
-    </tr>`).join('')
-    : `<tr><td colspan="10" class="vacia">${db.facturas.length ? 'No hay facturas con estos filtros.' : 'Todavía no hay facturas. Pulsa «+ Nueva factura» para hacer la primera.'}</td></tr>`;
+    <div class="tile bien"><span class="etq">${ico('check')}Cobrado</span><strong>${euros(sumar(cobradas, 'totalCent'))}</strong><small>${cobradas.length} factura(s)</small></div>
+    <div class="tile"><span class="etq">${ico('clock')}Pendiente de cobro</span><strong>${euros(sumar(pendientes, 'totalCent'))}</strong><small>${pendientes.length} factura(s)</small></div>
+    <div class="tile"><span class="etq">Total facturado</span><strong>${euros(sumar(lista, 'totalCent'))}</strong><small>${lista.length} factura(s)</small></div>
+    <div class="tile"><span class="etq">IVA repercutido</span><strong>${euros(sumar(lista, 'cuotaCent'))}</strong><small>Base: ${euros(sumar(lista, 'baseCent'))}</small></div>
+    ${irpf ? `<div class="tile"><span class="etq">IRPF retenido</span><strong>${euros(irpf)}</strong><small>Lo ingresa el cliente</small></div>` : ''}`;
+  id('c-lista').innerHTML = lista.length ? lista.map((f) => htmlItemFactura(f)).join('')
+    : `<div class="card vacio-lista">${db.facturas.length ? 'No hay facturas con estos filtros.' : 'Todavía no hay facturas. Pulsa «Nueva» para hacer la primera.'}</div>`;
 }
-['c-empresa', 'c-estado', 'c-anio', 'c-tri'].forEach((x) => id(x).addEventListener('change', renderContabilidad));
-id('c-buscar').addEventListener('input', renderContabilidad);
-id('c-nueva').addEventListener('click', pedirNuevaFactura);
-id('c-csv').addEventListener('click', () => exportarCSV(facturasFiltradas(), 'facturas-seleccion'));
-id('c-lista').addEventListener('click', (ev) => {
-  const b = ev.target.closest('button');
+id('c-estado').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-valor]');
   if (!b) return;
-  const d = b.dataset;
-  const f = facturaPorId(d.abrir || d.estado || d.pdf || d.imprimir || d.duplicar || d.borrar);
-  if (!f) return;
-  if (d.abrir) {
-    if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
-    abrirFactura(f);
-  } else if (d.estado) {
-    if (f.cobrada) {
-      if (!confirm(`¿Marcar la factura ${f.codigo} como NO cobrada?`)) return;
-      f.cobrada = false; f.fechaCobro = '';
-    } else {
-      f.cobrada = true; f.fechaCobro = hoyISO();
-    }
-    f.modificada = new Date().toISOString();
-    guardarDatos();
-    if (edicion && edicion.id === f.id) {
-      edicion = f;
-      id('f-cobrada').checked = f.cobrada;
-      id('f-fecha-cobro').value = f.fechaCobro;
-      refrescarEditor();
-    }
-    renderContabilidad();
-    aviso(f.cobrada ? `Factura ${f.codigo} marcada como cobrada` : `Factura ${f.codigo} marcada como no cobrada`);
-  } else if (d.pdf) {
-    prepararPDF(f);
-  } else if (d.imprimir) {
-    imprimir(f);
-  } else if (d.duplicar) {
-    if (cambiosSinGuardar && !confirm('Hay cambios sin guardar en la factura que estabas haciendo. ¿Descartarlos?')) return;
-    nuevaFactura(f);
-    cambiosSinGuardar = true;
-    irA('factura');
-    aviso('Copia preparada: revisa la fecha y el concepto y guárdala.');
-  } else if (d.borrar) {
-    if (borrarFactura(f)) {
-      if (edicion && edicion.id === f.id) nuevaFactura();
-      renderContabilidad();
-    }
-  }
+  filtroEstado = b.dataset.valor;
+  renderContabilidad();
 });
+['c-empresa', 'c-anio', 'c-tri'].forEach((x) => id(x).addEventListener('change', renderContabilidad));
+id('c-buscar').addEventListener('input', renderContabilidad);
+id('c-exportar').addEventListener('click', () => exportarCSV(facturasFiltradas(), 'facturas'));
 
-function exportarCSV(lista, nombre) {
+/** CSV para Excel: en el móvil se comparte (WhatsApp, correo…); en el ordenador se descarga. */
+async function exportarCSV(lista, nombre) {
   if (!lista.length) { aviso('No hay facturas que exportar.', 'error'); return; }
   const dec = (cent) => fmtDec.format((cent || 0) / 100).replace(/\./g, '');
   const celda = (v) => {
     const s = String(v ?? '');
     return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
-  const cab = ['Nº factura', 'Fecha', 'Empresa', 'CIF empresa', 'Cliente', 'CIF cliente', 'Población cliente', 'Concepto', 'Base imponible', '% IVA', 'Cuota IVA', 'Total', 'Estado', 'Fecha de cobro', 'Forma de pago'];
+  const cab = ['Nº factura', 'Fecha', 'Vencimiento', 'Empresa', 'CIF empresa', 'Cliente', 'CIF cliente', 'Población cliente', 'Concepto', 'Base imponible', '% IVA', 'Cuota IVA', '% IRPF', 'Retención IRPF', 'Total', 'Estado', 'Fecha de cobro', 'Forma de pago'];
   const filas = lista.slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || a.numero - b.numero).map((f) => [
-    f.codigo, fechaCorta(f.fecha), f.emisor.nombre, f.emisor.cif, f.cliente.nombre, f.cliente.cif, f.cliente.poblacion,
+    f.codigo, fechaCorta(f.fecha), fechaCorta(f.vencimiento), f.emisor.nombre, f.emisor.cif, f.cliente.nombre, f.cliente.cif, f.cliente.poblacion,
     (f.concepto || '').replace(/\s*\n\s*/g, ' / '), dec(f.baseCent), f.aplicaIva ? String(f.ivaPct).replace('.', ',') : '0',
-    dec(f.cuotaCent), dec(f.totalCent), f.cobrada ? 'Cobrada' : 'No cobrada', fechaCorta(f.fechaCobro), f.formaPago,
+    dec(f.cuotaCent), f.aplicaIrpf ? String(f.irpfPct).replace('.', ',') : '0', dec(f.irpfCent), dec(f.totalCent),
+    { cobrada: 'Cobrada', pendiente: 'Pendiente', vencida: 'Vencida' }[estadoDe(f)], fechaCorta(f.fechaCobro), f.formaPago,
   ]);
   const csv = '﻿' + [cab, ...filas].map((r) => r.map(celda).join(';')).join('\r\n');
-  descargar(`${nombre}-${hoyISO()}.csv`, csv, 'text/csv;charset=utf-8');
+  const archivo = `${nombre}-${hoyISO()}.csv`;
+  if (esTactil() && navigator.canShare) {
+    const file = new File([csv], archivo, { type: 'text/csv' });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Facturas para el gestor' }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+  }
+  descargar(archivo, csv, 'text/csv;charset=utf-8');
 }
 
 /* =========================================================
@@ -1691,21 +2546,25 @@ function exportarCSV(lista, nombre) {
    ========================================================= */
 let clienteEditando = null;
 const formC = id('form-cliente');
+function iniciales(c) {
+  if (c.codigo) return c.codigo.slice(0, 3);
+  return limpiarCodigo(c.nombre).slice(0, 2) || '?';
+}
 function renderClientes() {
   const q = normaliza(id('cl-buscar').value);
   const lista = db.clientes.filter((c) => !q || normaliza([c.nombre, c.cif, c.poblacion, c.codigo].join(' ')).includes(q)).sort(ordenarPorNombre);
   id('cl-lista').innerHTML = lista.length ? lista.map((c) => {
     const fs = db.facturas.filter((f) => f.clienteId === c.id);
-    const total = fs.reduce((s, f) => s + f.totalCent, 0);
-    const pend = fs.filter((f) => !f.cobrada).reduce((s, f) => s + f.totalCent, 0);
-    return `<tr data-cliente="${esc(c.id)}" style="cursor:pointer" class="${clienteEditando === c.id ? 'seleccionada' : ''}">
-      <td><strong>${esc(c.nombre)}</strong><br><small>${c.codigo ? `<span class="codigo-cliente">${esc(c.codigo)}</span>` : ''}${esc(c.cif || '')}</small></td>
-      <td class="ocultar-movil">${esc(c.poblacion || '')}</td>
-      <td class="num ocultar-movil">${fs.length}</td>
-      <td class="num">${euros(total)}</td>
-      <td class="num">${pend ? `<strong style="color:var(--pend)">${euros(pend)}</strong>` : euros(0)}</td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="5" class="vacia">${db.clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Aún no hay clientes. Se guardan solos al hacer una factura, o puedes añadirlos aquí.'}</td></tr>`;
+    const total = sumar(fs, 'totalCent');
+    const pend = sumar(fs.filter((f) => !f.cobrada), 'totalCent');
+    const meta = [c.codigo, c.cif, c.poblacion].filter(Boolean).map(esc).join(' · ');
+    return `<button type="button" class="item-cliente ${clienteEditando === c.id ? 'seleccionado' : ''}" data-cliente="${esc(c.id)}">
+      <span class="avatar">${esc(iniciales(c))}</span>
+      <span class="ic-texto"><strong>${esc(c.nombre)}</strong><small>${meta || '&nbsp;'}</small></span>
+      <span class="ic-cifras"><strong>${euros(total)}</strong><small class="${pend ? 'pend' : ''}">${pend ? `${euros(pend)} pendiente` : `${fs.length} factura${fs.length === 1 ? '' : 's'}`}</small></span>
+    </button>`;
+  }).join('') : `<div class="vacio-lista">${db.clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Aún no hay clientes. Se guardan solos al hacer una factura, o puedes añadirlos con «Nuevo cliente».'}</div>`;
+  if (!formC.dataset.cargado) editarCliente(null, true);
 }
 function actualizarAyudaCliente() {
   const emp = empresaPorId(db.ajustes.ultimaEmpresa) || db.empresas[0];
@@ -1716,11 +2575,12 @@ function actualizarAyudaCliente() {
     return;
   }
   const n = siguienteNumero(emp, { id: c && c.id, numeroInicial: parseInt(id('cl-inicio').value, 10) || 1 });
-  id('cl-numeracion-ayuda').textContent = `Su próxima factura de «${emp.nombre}» será la ${codigoFactura(prefijoFactura(emp, codigo), n, emp.digitos)}.`;
+  id('cl-numeracion-ayuda').textContent = `Su próxima factura de «${emp.nombre}» será la ${codigoFactura(emp, prefijoFactura(emp, codigo), n)}.`;
 }
-function editarCliente(c) {
+function editarCliente(c, sinAbrir) {
   clienteEditando = c ? c.id : null;
   formC.reset();
+  formC.dataset.cargado = '1';
   delete formC.dataset.codigoManual;
   if (c) {
     id('cl-nombre').value = c.nombre || ''; id('cl-cif').value = c.cif || ''; id('cl-dir').value = c.direccion || '';
@@ -1728,22 +2588,29 @@ function editarCliente(c) {
     id('cl-tel').value = c.telefono || ''; id('cl-email').value = c.email || '';
     id('cl-codigo').value = c.codigo || codigoSugerido(c.nombre, c.id);
     id('cl-inicio').value = parseInt(c.numeroInicial, 10) || 1;
+    const fs = db.facturas.filter((f) => f.clienteId === c.id);
+    id('cl-resumen').innerHTML = `
+      <div><span>Facturas</span><strong>${fs.length}</strong></div>
+      <div><span>Facturado</span><strong>${euros(sumar(fs, 'totalCent'))}</strong></div>
+      <div><span>Pendiente</span><strong>${euros(sumar(fs.filter((f) => !f.cobrada), 'totalCent'))}</strong></div>`;
   }
+  id('cl-resumen').hidden = !c;
   id('cl-titulo').textContent = c ? c.nombre : 'Nuevo cliente';
   id('cl-borrar').hidden = !c;
   id('cl-facturar').hidden = !c;
   actualizarAyudaCliente();
-  renderClientes();
+  $$('#cl-lista .item-cliente').forEach((b) => b.classList.toggle('seleccionado', b.dataset.cliente === clienteEditando));
+  if (!sinAbrir) id('vista-clientes').classList.add('editando');
 }
 id('cl-buscar').addEventListener('input', renderClientes);
 id('cl-lista').addEventListener('click', (ev) => {
-  const tr = ev.target.closest('tr[data-cliente]');
-  if (tr) {
-    editarCliente(clientePorId(tr.dataset.cliente));
-    if (window.matchMedia('(max-width:1050px)').matches) formC.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  const b = ev.target.closest('[data-cliente]');
+  if (!b) return;
+  editarCliente(clientePorId(b.dataset.cliente));
+  if (window.matchMedia('(max-width:1180px)').matches) window.scrollTo(0, 0);
 });
-id('cl-nuevo').addEventListener('click', () => { editarCliente(null); id('cl-nombre').focus(); });
+id('cl-nuevo').addEventListener('click', () => { editarCliente(null); if (!esTactil()) id('cl-nombre').focus(); });
+id('cl-volver').addEventListener('click', () => { id('vista-clientes').classList.remove('editando'); renderClientes(); });
 formC.addEventListener('input', (ev) => {
   if (ev.target.id === 'cl-nombre' && !clienteEditando && !formC.dataset.codigoManual) {
     id('cl-codigo').value = ev.target.value.trim() ? codigoSugerido(ev.target.value) : '';
@@ -1771,8 +2638,8 @@ formC.addEventListener('submit', (ev) => {
   if (!c) { c = { id: uid() }; db.clientes.push(c); }
   Object.assign(c, datos);
   if (!guardarDatos()) return;
-  delete formC.dataset.codigoManual;
   editarCliente(c);
+  renderClientes();
   rellenarSelectClientes();
   aviso('Cliente guardado');
 });
@@ -1783,7 +2650,9 @@ id('cl-borrar').addEventListener('click', () => {
   if (!confirm(`¿Borrar el cliente ${c.nombre}?` + (n ? `\n\nTiene ${n} factura(s): no se borran y conservan sus datos.` : ''))) return;
   db.clientes = db.clientes.filter((x) => x.id !== c.id);
   guardarDatos();
-  editarCliente(null);
+  editarCliente(null, true);
+  id('vista-clientes').classList.remove('editando');
+  renderClientes();
   rellenarSelectClientes();
   aviso('Cliente borrado');
 });
@@ -1794,29 +2663,43 @@ id('cl-facturar').addEventListener('click', () => {
 });
 
 /* =========================================================
-   Empresas (plantilla + numeración)
+   Ajustes y empresas (plantilla + numeración)
    ========================================================= */
+function renderAjustes() {
+  const lista = db.empresas.slice().sort(ordenarPorNombre);
+  id('aj-empresas').innerHTML = lista.length ? lista.map((e) => {
+    const n = db.facturas.filter((f) => f.empresaId === e.id).length;
+    const visual = e.logo ? `<img class="mini-logo" src="${esc(e.logo)}" alt="">` : `<span class="mini-color" style="background:${esc(e.color || '#1f4e79')}"></span>`;
+    const numeracion = porCliente(e) ? 'numeración por cliente' : `próxima: ${esc(codigoFactura(e, prefijoFactura(e, ''), siguienteNumero(e)))}`;
+    return `<button type="button" class="item-empresa" data-empresa="${esc(e.id)}">
+      ${visual}
+      <div><strong>${esc(e.nombre)}</strong><small>${esc(e.cif || '')} · ${n} factura(s) · ${numeracion}</small></div>
+      ${ico('chevron')}
+    </button>`;
+  }).join('') : '<p class="tenue" style="font-size:14px">Todavía no hay ninguna empresa.</p>';
+  renderCopias();
+  actualizarInstalar();
+  aplicarTema(temaElegido());
+}
+id('aj-empresas').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-empresa]');
+  if (b) abrirEmpresa(empresaPorId(b.dataset.empresa));
+});
+id('aj-nueva-empresa').addEventListener('click', () => abrirEmpresa(null));
+id('emp-volver').addEventListener('click', () => irA('ajustes'));
+
 let empresaEditando = null;
 let imagenes = { logo: '', firma: '' };
 const formE = id('form-empresa');
-
-function renderEmpresas() {
-  const lista = db.empresas.slice().sort(ordenarPorNombre);
-  id('emp-lista').innerHTML = lista.length ? lista.map((e) => {
-    const n = db.facturas.filter((f) => f.empresaId === e.id).length;
-    const visual = e.logo ? `<img class="mini-logo" src="${esc(e.logo)}" alt="">` : `<span class="mini-color" style="background:${esc(e.color || '#1f4e79')}"></span>`;
-    const numeracion = porCliente(e) ? 'numeración por cliente' : `próxima: ${esc(codigoFactura(e.serie, siguienteNumero(e), e.digitos))}`;
-    return `<button type="button" class="tarjeta-empresa ${empresaEditando === e.id ? 'seleccionada' : ''}" data-empresa="${esc(e.id)}">
-      ${visual}
-      <div><strong>${esc(e.nombre)}</strong><small>${esc(e.cif || '')} · ${n} factura(s) · ${numeracion}</small></div>
-    </button>`;
-  }).join('') : '<p class="suave">Todavía no hay ninguna empresa. Rellena los datos de abajo.</p>';
-  if (!formE.dataset.cargado) {
-    const primera = empresaPorId(empresaEditando) || lista[0] || null;
-    editarEmpresa(primera);
-  } else {
-    actualizarPreviaEmpresa();
-  }
+function abrirEmpresa(e) {
+  editarEmpresa(e);
+  irA('empresa');
+  // Cursor en «Nombre» al momento (sin retrasos: robaría el foco si ya se está escribiendo). En el móvil, sin abrir el teclado.
+  if (!e && !esTactil()) id('e-nombre').focus();
+}
+function renderEmpresaVista() {
+  if (!formE.dataset.cargado) editarEmpresa(db.empresas.slice().sort(ordenarPorNombre)[0] || null);
+  else actualizarPreviaEmpresa();
 }
 function cajaImagen(caja, src, textoVacio) {
   caja.innerHTML = src ? `<img src="${esc(src)}" alt="">` : esc(textoVacio);
@@ -1832,31 +2715,36 @@ function editarEmpresa(e) {
   id('e-prov').value = v('provincia', ''); id('e-email').value = v('email', ''); id('e-web').value = v('web', '');
   id('e-firmante').value = v('firmante', ''); id('e-color').value = v('color', '#1f4e79'); id('e-pie').value = v('pie', '');
   id('e-modo').value = v('numeracion', 'cliente');
+  id('e-plantilla').value = v('plantilla', 'clasica');
+  id('e-formato').value = v('formato', 'anual');
+  id('e-cargo').value = v('cargo', '');
+  id('e-nota').value = v('notaLegal', '');
+  id('e-letra').checked = e ? !!e.importeEnLetra : true;
   id('e-serie').value = v('serie', ''); id('e-digitos').value = String(v('digitos', 3));
   id('e-inicio').value = e && !porCliente(e) ? siguienteNumero(e) : v('numeroInicial', 1);
-  id('e-iva').value = v('iva', 21); id('e-pago').value = v('formaPago', 'Transferencia bancaria'); id('e-iban').value = v('iban', '');
+  id('e-iva').value = v('iva', 21); id('e-irpf').value = v('irpf', 0); id('e-plazo').value = v('plazoPago', 30);
+  id('e-pago').value = v('formaPago', 'Transferencia bancaria'); id('e-iban').value = v('iban', '');
   id('emp-titulo').textContent = e ? e.nombre : 'Nueva empresa';
   id('emp-borrar').hidden = !e;
   cajaImagen(id('e-logo-caja'), imagenes.logo, 'Sin logo');
   cajaImagen(id('e-firma-caja'), imagenes.firma, 'Sin firma');
-  $$('.tarjeta-empresa').forEach((b) => b.classList.toggle('seleccionada', b.dataset.empresa === empresaEditando));
   actualizarPreviaEmpresa();
 }
-function nuevaEmpresa() {
-  formE.dataset.cargado = '1';
-  editarEmpresa(null);
-  id('e-nombre').focus();
-}
 function empresaDelFormulario() {
+  const plazo = parseInt(id('e-plazo').value, 10);
   return {
     nombre: id('e-nombre').value.trim(), cif: id('e-cif').value.trim().toUpperCase(), telefono: id('e-tel').value.trim(),
     direccion: id('e-dir').value.trim(), cp: id('e-cp').value.trim(), poblacion: id('e-pob').value.trim(),
     provincia: id('e-prov').value.trim(), email: id('e-email').value.trim(), web: id('e-web').value.trim(),
     firmante: id('e-firmante').value.trim(), color: id('e-color').value, pie: id('e-pie').value.trim(),
     numeracion: id('e-modo').value === 'empresa' ? 'empresa' : 'cliente',
+    plantilla: id('e-plantilla').value === 'moderna' ? 'moderna' : 'clasica',
+    formato: id('e-formato').value === 'guion' ? 'guion' : 'anual',
+    cargo: id('e-cargo').value.trim(), notaLegal: id('e-nota').value.trim(), importeEnLetra: id('e-letra').checked,
     serie: id('e-serie').value.replace(/^\s+|\s+$/g, ''), digitos: parseInt(id('e-digitos').value, 10) || 3,
     numeroInicial: parseInt(id('e-inicio').value, 10) || 1,
-    iva: leerPct(id('e-iva').value), formaPago: id('e-pago').value.trim(), iban: id('e-iban').value.trim(),
+    iva: leerPct(id('e-iva').value), irpf: leerPct(id('e-irpf').value), plazoPago: Number.isFinite(plazo) && plazo >= 0 ? plazo : 30,
+    formaPago: id('e-pago').value.trim(), iban: id('e-iban').value.trim(),
     logo: imagenes.logo, firma: imagenes.firma,
   };
 }
@@ -1864,39 +2752,33 @@ function actualizarPreviaEmpresa() {
   const d = empresaDelFormulario();
   const modoCliente = d.numeracion === 'cliente';
   id('lbl-inicio').hidden = modoCliente;
+  id('lbl-digitos').hidden = d.formato === 'anual';
   const numeroEjemplo = modoCliente ? 4 : d.numeroInicial;
+  const base = 100000;
+  const cuota = redondear(base * d.iva / 100);
+  const irpf = redondear(base * d.irpf / 100);
   const f = {
     empresaId: null, emisor: datosEmisor(d),
     cliente: { nombre: 'Comunidad de Propietarios Calle Sol 8', cif: 'H28123456', direccion: 'Calle Sol, 8', cp: '28004', poblacion: 'Madrid', provincia: 'Madrid' },
-    codigo: codigoFactura(prefijoFactura(d, 'CPCS'), numeroEjemplo, d.digitos), fecha: hoyISO(),
-    concepto: 'Ejemplo de concepto de la factura.\nAquí se describe el trabajo realizado.',
-    baseCent: 100000, aplicaIva: d.iva > 0, ivaPct: d.iva, cuotaCent: redondear(100000 * d.iva / 100), totalCent: 100000 + redondear(100000 * d.iva / 100),
-    motivoExencion: '', formaPago: d.formaPago, iban: d.iban, observaciones: '', incluirFirma: true,
+    codigo: codigoFactura(d, prefijoFactura(d, 'CPCS'), numeroEjemplo), fecha: hoyISO(), vencimiento: d.plazoPago > 0 ? sumarDias(hoyISO(), d.plazoPago) : '',
+    concepto: 'Honorarios profesionales correspondientes a la dirección técnica de la obra (ejemplo de concepto)',
+    baseCent: base, aplicaIva: d.iva > 0, ivaPct: d.iva, cuotaCent: cuota, aplicaIrpf: d.irpf > 0, irpfPct: d.irpf, irpfCent: irpf,
+    totalCent: base + cuota - irpf, motivoExencion: '', formaPago: d.formaPago, iban: d.iban, observaciones: '', incluirFirma: true,
   };
   const cont = id('previa-empresa');
   cont.innerHTML = htmlFactura(f, { vistaPrevia: true, empresa: d });
   ajustarPrevia(cont);
   if (modoCliente) {
     id('e-numeracion-ayuda').textContent = `Cada cliente tiene un código y su propia numeración. Ejemplo: la 4.ª factura a «Comunidad Calle Sol 8» sería la ${f.codigo}. `
+      + (d.formato === 'anual' ? 'Cada año vuelve a empezar en el 1. ' : '')
       + 'El número por el que empieza cada cliente se pone en su ficha o al hacerle la primera factura.';
   } else {
     const e = empresaPorId(empresaEditando);
-    const usadas = e ? facturasDeSerie(claveSerie(e.id, false, null, d.serie)).length : 0;
-    id('e-numeracion-ayuda').textContent = `La próxima factura será la ${f.codigo}.`
+    const usadas = e ? facturasDeSerie(claveDe(Object.assign({}, d, { id: e.id }), null)).length : 0;
+    id('e-numeracion-ayuda').textContent = `La próxima factura será la ${f.codigo}.` + (d.formato === 'anual' ? ' Cada año la numeración vuelve a empezar en el 1.' : '')
       + (usadas ? ` (Ya hay ${usadas} factura(s) con esta serie: el número no puede ser menor que el siguiente libre.)` : ' Si ya llevabas facturas hechas, pon aquí el número que toca (por ejemplo, 4).');
   }
 }
-id('emp-lista').addEventListener('click', (ev) => {
-  const b = ev.target.closest('[data-empresa]');
-  if (b) {
-    editarEmpresa(empresaPorId(b.dataset.empresa));
-    if (window.matchMedia('(max-width:1050px)').matches) formE.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-});
-id('emp-nueva').addEventListener('click', () => {
-  nuevaEmpresa();
-  if (window.matchMedia('(max-width:1050px)').matches) formE.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
 formE.addEventListener('input', actualizarPreviaEmpresa);
 formE.addEventListener('change', actualizarPreviaEmpresa);
 formE.addEventListener('submit', (ev) => {
@@ -1907,22 +2789,21 @@ formE.addEventListener('submit', (ev) => {
   let e = empresaPorId(empresaEditando);
   let ajuste = '';
   if (e && d.numeracion === 'empresa') {
-    const libre = Math.max(0, ...facturasDeSerie(claveSerie(e.id, false, null, d.serie)).map((f) => f.numero)) + 1;
+    const libre = Math.max(0, ...facturasDeSerie(claveDe(Object.assign({}, d, { id: e.id }), null)).map((f) => f.numero)) + 1;
     if (d.numeroInicial < libre) {
-      ajuste = `Empresa guardada. Con esta serie ya hay facturas hasta la ${codigoFactura(d.serie, libre - 1, d.digitos)}, así que la próxima será la ${codigoFactura(d.serie, libre, d.digitos)}.`;
+      ajuste = `Empresa guardada. Con esta serie ya hay facturas hasta la ${codigoFactura(d, prefijoFactura(d, ''), libre - 1)}, así que la próxima será la ${codigoFactura(d, prefijoFactura(d, ''), libre)}.`;
       d.numeroInicial = libre;
     }
   }
+  const nueva = !e;
   if (!e) { e = { id: uid() }; db.empresas.push(e); }
   Object.assign(e, d);
   if (!db.ajustes.ultimaEmpresa) db.ajustes.ultimaEmpresa = e.id;
   if (!guardarDatos()) return;
-  empresaEditando = e.id;
-  renderEmpresas();
   editarEmpresa(e);
   rellenarSelectEmpresas();
   if (!edicion && !cambiosSinGuardar) nuevaFactura();
-  aviso(ajuste || 'Empresa guardada');
+  aviso(ajuste || (nueva ? 'Empresa guardada. ¡Ya puedes hacer facturas!' : 'Empresa guardada'));
 });
 id('emp-borrar').addEventListener('click', () => {
   const e = empresaPorId(empresaEditando);
@@ -1935,9 +2816,9 @@ id('emp-borrar').addEventListener('click', () => {
   guardarDatos();
   empresaEditando = null;
   delete formE.dataset.cargado;
-  renderEmpresas();
   rellenarSelectEmpresas();
   aviso('Empresa borrada');
+  irA('ajustes');
 });
 
 /* ---------- Imágenes: logo y firma ---------- */
@@ -2046,27 +2927,26 @@ function textoUltimaCopia() {
   const u = db.ajustes.ultimaCopia;
   if (!u) return 'Todavía no has descargado ninguna copia de seguridad.';
   const dias = Math.floor((Date.now() - new Date(u).getTime()) / 864e5);
-  return `Última copia descargada: ${fechaCorta(u.slice(0, 10))}` + (dias > 0 ? ` (hace ${dias} día${dias === 1 ? '' : 's'}).` : ' (hoy).');
+  return `Última copia: ${fechaCorta(u.slice(0, 10))}` + (dias > 0 ? ` (hace ${dias} día${dias === 1 ? '' : 's'}).` : ' (hoy).');
 }
 function renderCopias() {
   const tam = new Blob([JSON.stringify(db)]).size;
-  id('cp-estado').innerHTML = `${esc(textoUltimaCopia())}<br>Ahora mismo hay ${db.empresas.length} empresa(s), ${db.clientes.length} cliente(s) y ${db.facturas.length} factura(s) (${(tam / 1024).toFixed(0)} KB).`;
-  actualizarInstalar();
+  id('cp-estado').innerHTML = `${esc(textoUltimaCopia())}<br>${db.empresas.length} empresa(s), ${db.clientes.length} cliente(s) y ${db.facturas.length} factura(s) · ${(tam / 1024).toFixed(0)} KB`;
 }
 function revisarAvisoCopia() {
   const u = db.ajustes.ultimaCopia;
   const dias = u ? (Date.now() - new Date(u).getTime()) / 864e5 : Infinity;
   id('aviso-copia').hidden = !(db.facturas.length > 0 && dias > 7);
   id('aviso-copia-texto').textContent = u
-    ? `Hace ${Math.floor(dias)} días que no descargas una copia de seguridad de tus facturas.`
-    : 'Aún no has descargado ninguna copia de seguridad de tus facturas.';
+    ? `Hace ${Math.floor(dias)} días que no haces una copia de seguridad de tus facturas.`
+    : 'Aún no has hecho ninguna copia de seguridad de tus facturas.';
 }
 function descargarCopia() {
   db.ajustes.ultimaCopia = new Date().toISOString();
   guardarDatos();
   descargar(`facturacion-copia-${hoyISO()}.json`, JSON.stringify(Object.assign({ app: 'facturacion' }, db), null, 1), 'application/json');
   revisarAvisoCopia();
-  if (vistaActual === 'copias') renderCopias();
+  if (vistaActual === 'ajustes') renderCopias();
   aviso('Copia de seguridad descargada. Guárdala en un sitio seguro.');
 }
 id('cp-descargar').addEventListener('click', descargarCopia);
@@ -2086,8 +2966,9 @@ id('cp-archivo').addEventListener('change', async (ev) => {
     if (!guardarDatos()) { db = antes; return; }
     edicion = null; cambiosSinGuardar = false; empresaEditando = null; clienteEditando = null;
     delete formE.dataset.cargado;
+    delete formC.dataset.cargado;
     nuevaFactura();
-    renderCopias();
+    renderAjustes();
     revisarAvisoCopia();
     aviso('Copia restaurada correctamente.');
   } catch (e) {
@@ -2096,13 +2977,18 @@ id('cp-archivo').addEventListener('change', async (ev) => {
 });
 
 /* =========================================================
-   App instalable (PWA): service worker y aviso de instalación
+   App instalable (PWA): service worker, instalación y versiones nuevas
    ========================================================= */
 const enInternet = /^https?:$/.test(location.protocol);
 const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const esInstalada = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 let peticionInstalar = null;
 if ('serviceWorker' in navigator && enInternet) {
+  let teniaControlador = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (teniaControlador && !cambiosSinGuardar) aviso('Hay una versión nueva de la app', { accion: 'Actualizar', fn: () => location.reload() });
+    teniaControlador = true;
+  });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('Service worker:', e));
   });
@@ -2124,11 +3010,11 @@ function actualizarInstalar() {
   id('btn-instalar').hidden = !peticionInstalar;
   id('aviso-instalar-texto').textContent = peticionInstalar
     ? 'Instala la app para tenerla en la pantalla de inicio y usarla sin internet.'
-    : 'Para instalar la app: pulsa Compartir (cuadrado con flecha) y luego «Añadir a pantalla de inicio».';
+    : 'Para instalar la app: pulsa Compartir y luego «Añadir a pantalla de inicio».';
   id('btn-instalar-2').hidden = !peticionInstalar;
   id('instalar-estado').textContent = instalada
     ? 'Ya estás usando la app instalada ✔'
-    : enInternet ? 'Instálala para tenerla con su icono en la pantalla de inicio y usarla sin internet:' : 'Para instalarla, abre la app desde su enlace de internet:';
+    : enInternet ? 'Tenla con su icono en la pantalla de inicio y úsala sin internet' : 'Ábrela desde su enlace de internet para instalarla';
 }
 async function instalar() {
   if (!peticionInstalar) return;
@@ -2151,15 +3037,20 @@ window.addEventListener('storage', (ev) => {
   if (edicion) edicion = facturaPorId(edicion.id);
   rellenarSelectEmpresas();
   rellenarSelectClientes();
-  irA(vistaActual || 'factura');
+  mostrarVista(vistaActual || 'inicio');
   revisarAvisoCopia();
 });
 
 /* =========================================================
    Arranque
    ========================================================= */
+id('nav-pie').textContent = `Versión ${VERSION_APP}` + (navigator.onLine ? '' : ' · sin conexión');
+window.addEventListener('online', () => { id('nav-pie').textContent = `Versión ${VERSION_APP}`; });
+window.addEventListener('offline', () => { id('nav-pie').textContent = `Versión ${VERSION_APP} · sin conexión`; });
+aplicarTema(temaElegido());
 nuevaFactura();
-irA('factura');
+if (!location.hash) history.replaceState(null, '', '#inicio');
+mostrarVista(vistaDeHash());
 revisarAvisoCopia();
 actualizarInstalar();
 })();
