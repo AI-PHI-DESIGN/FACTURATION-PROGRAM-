@@ -55,3 +55,9 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
   - en las pruebas, Claude se simula con `context.route`.
 - La app la usan varias personas (Fran, la madre del usuario…). Que siga siendo genérica: nada con nombres o
   datos de una persona en el código.
+- **Cuentas (usuario y contraseña):**
+  - Firebase Auth + Firestore, con el SDK empaquetado en `vendor/firebase.mjs` (`herramientas/empaquetar-firebase.sh`);
+  - se activan con `config-nube.js` (si es `null`, la app funciona sin cuentas, como antes); guía en `docs/CUENTAS.md`;
+  - datos en `usuarios/{uid}/{empresas|clientes|facturas}/{id}`; las reglas están en `firestore.rules`;
+  - todo cambio pasa por `guardarDatos()`, que sube a la nube solo lo que ha cambiado;
+  - en las pruebas se usan los emuladores (`herramientas/emuladores-firebase.sh`); `SIN_NUBE=1` se salta esa parte.

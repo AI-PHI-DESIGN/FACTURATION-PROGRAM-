@@ -339,6 +339,19 @@ dialog h2{margin-bottom:6px}
 .toast.error{background:#b42318}
 .toast button{background:none;border:0;color:#a9c0ff;font:inherit;font-weight:800;cursor:pointer;padding:4px 2px;white-space:nowrap}
 
+/* Pantalla de acceso */
+.acceso{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:24px 16px;overflow:auto}
+.acceso-caja{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:30px 24px;box-shadow:var(--sombra-2);text-align:center}
+.acceso-caja form{text-align:left}
+.acceso-logo{width:64px;height:64px;border-radius:18px;margin-bottom:10px}
+.acceso-caja h1{font-size:26px;margin-bottom:4px}
+.btn-enlace{display:block;margin:12px auto 0;background:none;border:0;color:var(--primary-ink);font:inherit;font-size:14.5px;font-weight:600;padding:8px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+body.con-acceso{overflow:hidden}
+.cuenta-sync{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:650;padding:4px 10px;border-radius:99px;background:var(--ok-soft);color:var(--ok)}
+.cuenta-sync.guardando{background:var(--primary-soft);color:var(--primary-ink)}
+.cuenta-sync.sin-conexion{background:var(--warn-soft);color:var(--warn)}
+.cuenta-sync.error{background:var(--danger-soft);color:var(--danger)}
+
 /* Zona fuera de pantalla donde se pinta la factura para hacer el PDF */
 #zona-pdf{position:absolute;left:-12000px;top:0;width:210mm;pointer-events:none}
 
@@ -835,14 +848,29 @@ dialog h2{margin-bottom:6px}
   <section class="vista" id="vista-ajustes">
     <header class="cab-vista"><div><h1>Ajustes</h1></div></header>
     <div class="ajustes-grid">
+      <div class="card" id="panel-cuenta" hidden>
+        <div class="card-cab"><div><h2>Mi cuenta</h2><p>Has entrado como <strong id="cuenta-usuario"></strong></p></div><span class="cuenta-sync" id="cuenta-sync">Guardado en tu cuenta</span></div>
+        <p class="suave" style="font-size:14px">Tus empresas, clientes y facturas se guardan en tu cuenta: entra con tu usuario en cualquier móvil u ordenador y los tendrás. Sin internet se puede seguir trabajando; se sube todo al volver la conexión.</p>
+        <details id="cuenta-cambiar">
+          <summary class="btn peq" style="list-style:none;width:max-content">Cambiar contraseña</summary>
+          <div style="margin-top:12px">
+            <label>Contraseña actual <input id="cu-actual" type="password" autocomplete="current-password"></label>
+            <label>Contraseña nueva <input id="cu-nueva" type="password" autocomplete="new-password"></label>
+            <button type="button" class="btn primario" id="cu-guardar">Guardar contraseña</button>
+          </div>
+        </details>
+        <div class="acciones" style="margin-top:14px">
+          <button type="button" class="btn peligro" id="cuenta-salir">Cerrar sesión</button>
+        </div>
+      </div>
       <div class="card">
         <div class="card-cab"><div><h2>Mis empresas</h2><p>Plantilla, numeración y datos de cada empresa</p></div></div>
         <div id="aj-empresas"></div>
         <button type="button" class="btn suave" id="aj-nueva-empresa"><svg class="i"><use href="#i-plus"/></svg>Añadir empresa</button>
       </div>
       <div class="card">
-        <div class="card-cab"><div><h2>Copia de seguridad</h2><p>Los datos se guardan en este dispositivo</p></div></div>
-        <p class="suave" style="font-size:14px">Si se borra la app o cambias de móvil, solo se recuperan con una copia. Descárgala cada semana y guárdala fuera del móvil (correo, Google Drive, iCloud…).</p>
+        <div class="card-cab"><div><h2>Copia de seguridad</h2><p id="cp-sub">Los datos se guardan en este dispositivo</p></div></div>
+        <p class="suave" style="font-size:14px" id="cp-texto">Si se borra la app o cambias de móvil, solo se recuperan con una copia. Descárgala cada semana y guárdala fuera del móvil (correo, Google Drive, iCloud…).</p>
         <p id="cp-estado" class="tenue" style="font-size:13.5px"></p>
         <div class="acciones">
           <button type="button" class="btn primario" id="cp-descargar"><svg class="i"><use href="#i-download"/></svg>Descargar copia</button>
@@ -1090,6 +1118,33 @@ dialog h2{margin-bottom:6px}
 
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-texto"></span><button type="button" id="toast-accion" hidden></button></div>
 
+<!-- Pantalla de acceso (solo si las cuentas en la nube están activadas en config-nube.js) -->
+<div class="acceso" id="acceso" hidden>
+  <div class="acceso-caja">
+    <img src="iconos/icono.svg" class="acceso-logo" alt="">
+    <h1>Facturación</h1>
+    <div id="acceso-cargando"><div class="ia-cargando" style="justify-content:center"><span class="ia-giro"></span><span id="acceso-cargando-texto">Abriendo…</span></div></div>
+    <div id="acceso-formulario" hidden>
+      <p class="suave" style="font-size:14.5px;margin:6px 0 18px">Entra con tu usuario para tener tus empresas, clientes y facturas en cualquier móvil u ordenador.</p>
+      <div class="seg" id="acceso-modo" style="width:100%;margin-bottom:16px">
+        <button type="button" data-modo="entrar" class="activo" style="flex:1">Entrar</button>
+        <button type="button" data-modo="crear" style="flex:1">Crear cuenta</button>
+      </div>
+      <form id="form-acceso" novalidate>
+        <label>Usuario <input id="ac-usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Ej.: fran"></label>
+        <p class="tenue" id="ac-ayuda-usuario" style="font-size:13px;margin:-6px 0 12px" hidden>Un nombre (sin espacios) o tu correo. Con el correo podrás recuperar la contraseña si la olvidas.</p>
+        <label>Contraseña <input id="ac-clave" type="password" autocomplete="current-password"></label>
+        <label id="lbl-ac-clave2" hidden>Repite la contraseña <input id="ac-clave2" type="password" autocomplete="new-password"></label>
+        <p class="ia-error" id="ac-error" hidden></p>
+        <p class="suave" id="ac-info" style="font-size:14px" hidden></p>
+        <button type="submit" class="btn primario" id="ac-boton" style="width:100%">Entrar</button>
+        <button type="button" class="btn-enlace" id="ac-olvido">¿Has olvidado la contraseña?</button>
+      </form>
+      <p class="tenue" style="font-size:13px;margin:16px 0 0">Cada persona tiene su propio usuario y solo ve sus datos.</p>
+    </div>
+  </div>
+</div>
+
 <datalist id="notas-legales">
   <option value="Factura acogida al criterio de Caja del IVA">
   <option value="Régimen especial del criterio de caja">
@@ -1107,16 +1162,25 @@ dialog h2{margin-bottom:6px}
   <option value="Entrega intracomunitaria exenta (art. 25 Ley 37/1992)">
 </datalist>
 
+<script src="config-nube.js"></script>
 <script>
 (function () {
 'use strict';
 
-const VERSION_APP = '3.2';
+const VERSION_APP = '3.3';
 
 /* =========================================================
    Utilidades
    ========================================================= */
 const CLAVE = 'facturacion.datos.v1';
+/* Cuentas en la nube: config-nube.js (o, solo para las pruebas, localStorage «facturacion.nube.prueba»). */
+const NUBE = (() => {
+  try { const p = localStorage.getItem('facturacion.nube.prueba'); if (p) return JSON.parse(p); } catch (e) { /* nada */ }
+  return window.CONFIG_NUBE || null;
+})();
+// Sin cuentas, los datos van en CLAVE. Con cuentas, cada usuario tiene su copia local («facturacion.datos.u.<id>»).
+let claveDatos = NUBE ? null : CLAVE;
+let usuarioNube = null;   // el usuario que ha entrado (solo con cuentas)
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
 const id = (x) => document.getElementById(x);
@@ -1245,7 +1309,7 @@ function normalizarDatos(d) {
 }
 function cargarDatos() {
   try {
-    const t = localStorage.getItem(CLAVE);
+    const t = claveDatos && localStorage.getItem(claveDatos);
     if (t) return normalizarDatos(JSON.parse(t));
   } catch (e) { console.error(e); }
   return datosVacios();
@@ -1253,10 +1317,12 @@ function cargarDatos() {
 let db = cargarDatos();
 function guardarDatos() {
   try {
-    localStorage.setItem(CLAVE, JSON.stringify(db));
+    if (claveDatos) localStorage.setItem(claveDatos, JSON.stringify(db));
+    if (usuarioNube) subirCambios();
     return true;
   } catch (e) {
     console.error(e);
+    if (usuarioNube) { subirCambios(); return true; }   // con cuenta, la copia local es solo una caché
     alert('¡Atención! No se han podido guardar los datos (el almacenamiento está lleno o bloqueado).\n\nDescarga una copia de seguridad y prueba con un logo o una firma más pequeños.');
     db = cargarDatos();
     return false;
@@ -3092,7 +3158,7 @@ function renderCopias() {
 function revisarAvisoCopia() {
   const u = db.ajustes.ultimaCopia;
   const dias = u ? (Date.now() - new Date(u).getTime()) / 864e5 : Infinity;
-  id('aviso-copia').hidden = !(db.facturas.some((f) => !f.ejemplo) && dias > 7);
+  id('aviso-copia').hidden = !!usuarioNube || !(db.facturas.some((f) => !f.ejemplo) && dias > 7);
   id('aviso-copia-texto').textContent = u
     ? `Hace ${Math.floor(dias)} días que no haces una copia de seguridad de tus facturas.`
     : 'Aún no has hecho ninguna copia de seguridad de tus facturas.';
@@ -3398,7 +3464,7 @@ id('ia-quitar').addEventListener('click', () => {
 
 /* ---------- Cambios hechos en otra pestaña ---------- */
 window.addEventListener('storage', (ev) => {
-  if (ev.key !== CLAVE) return;
+  if (usuarioNube || ev.key !== claveDatos) return;
   db = cargarDatos();
   if (edicion) edicion = facturaPorId(edicion.id);
   rellenarSelectEmpresas();
@@ -3408,17 +3474,330 @@ window.addEventListener('storage', (ev) => {
 });
 
 /* =========================================================
+   Cuentas en la nube (Firebase): usuario y contraseña por persona.
+   Datos en Firestore: usuarios/{uid} (ajustes) y usuarios/{uid}/{empresas|clientes|facturas}/{id}.
+   Firestore guarda una copia en el dispositivo: se puede trabajar sin internet y se sincroniza solo.
+   ========================================================= */
+const DOMINIO_USUARIOS = 'usuarios.facturacion.app';   // «fran» → fran@usuarios.facturacion.app (no se envía ningún correo)
+const COLECCIONES = ['empresas', 'clientes', 'facturas'];
+let FB = null, fbAuth = null, fbDb = null;
+let modoAcceso = 'entrar';
+let desuscribir = [];
+let sincronizado = null;   // lo último que hay en la nube: { empresas: Map(id → json), …, ajustes: json }
+let primerasLecturas = null;
+let pintarPendiente = false;
+
+/** JSON con las claves ordenadas, para comparar sin que importe el orden de los campos. */
+function jsonEstable(v) {
+  if (Array.isArray(v)) return '[' + v.map(jsonEstable).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + jsonEstable(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+const limpiarParaNube = (v) => JSON.parse(JSON.stringify(v));   // Firestore no admite «undefined»
+const limpiarUsuario = (u) => normaliza(u).replace(/\s+/g, '.').replace(/[^a-z0-9._@+-]/g, '');
+const emailDeUsuario = (u) => (u.includes('@') ? u : `${u}@${DOMINIO_USUARIOS}`);
+const nombreUsuario = () => {
+  const e = (usuarioNube && usuarioNube.email) || '';
+  return e.endsWith('@' + DOMINIO_USUARIOS) ? e.slice(0, -(DOMINIO_USUARIOS.length + 1)) : e;
+};
+
+function mostrarAcceso(estado, texto) {
+  document.body.classList.add('con-acceso');
+  id('acceso').hidden = false;
+  id('acceso-cargando').hidden = estado !== 'cargando';
+  id('acceso-formulario').hidden = estado === 'cargando';
+  if (texto) id('acceso-cargando-texto').textContent = texto;
+  if (estado === 'error') { id('acceso-cargando').hidden = false; id('acceso-formulario').hidden = true; }
+}
+function ocultarAcceso() {
+  document.body.classList.remove('con-acceso');
+  id('acceso').hidden = true;
+}
+function ponerModoAcceso(modo) {
+  modoAcceso = modo;
+  $$('#acceso-modo button').forEach((b) => b.classList.toggle('activo', b.dataset.modo === modo));
+  id('lbl-ac-clave2').hidden = modo !== 'crear';
+  id('ac-ayuda-usuario').hidden = modo !== 'crear';
+  id('ac-olvido').hidden = modo === 'crear';
+  id('ac-info').hidden = true;
+  id('ac-clave').setAttribute('autocomplete', modo === 'crear' ? 'new-password' : 'current-password');
+  id('ac-boton').textContent = modo === 'crear' ? 'Crear mi cuenta' : 'Entrar';
+  id('ac-error').hidden = true;
+}
+id('acceso-modo').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-modo]');
+  if (b) ponerModoAcceso(b.dataset.modo);
+});
+function mensajeErrorCuenta(codigo) {
+  switch (codigo) {
+    case 'auth/invalid-credential': case 'auth/invalid-login-credentials': case 'auth/wrong-password': case 'auth/user-not-found':
+      return 'Usuario o contraseña incorrectos.';
+    case 'auth/email-already-in-use': return 'Ese usuario ya existe. Elige otro, o entra con él.';
+    case 'auth/weak-password': return 'La contraseña es demasiado corta (mínimo 6 caracteres).';
+    case 'auth/invalid-email': return 'Ese usuario no es válido.';
+    case 'auth/too-many-requests': return 'Demasiados intentos. Espera unos minutos y prueba otra vez.';
+    case 'auth/network-request-failed': return 'No hay conexión a internet. Para entrar la primera vez hace falta internet.';
+    case 'auth/requires-recent-login': return 'Por seguridad, cierra la sesión, vuelve a entrar y repite el cambio.';
+    case 'auth/admin-restricted-operation': return 'No se pueden crear cuentas nuevas desde la app. Pide a quien la gestiona que te dé de alta.';
+    case 'auth/operation-not-allowed': return 'El acceso con usuario y contraseña no está activado en Firebase (Authentication → Sign-in method → Email/Password).';
+    default: return `No se ha podido completar (${codigo || 'error desconocido'}).`;
+  }
+}
+id('form-acceso').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const error = (t) => { id('ac-error').textContent = t; id('ac-error').hidden = false; };
+  const usuario = limpiarUsuario(id('ac-usuario').value);
+  const clave = id('ac-clave').value;
+  if (!usuario) return error('Escribe tu usuario.');
+  if (!usuario.includes('@') && !/^[a-z0-9._-]{3,30}$/.test(usuario)) return error('El usuario debe tener entre 3 y 30 letras o números, sin espacios.');
+  if (clave.length < 6) return error('La contraseña debe tener al menos 6 caracteres.');
+  if (modoAcceso === 'crear' && clave !== id('ac-clave2').value) return error('Las dos contraseñas no coinciden.');
+  id('ac-error').hidden = true;
+  id('ac-info').hidden = true;
+  id('ac-boton').disabled = true;
+  try {
+    if (modoAcceso === 'crear') await FB.createUserWithEmailAndPassword(fbAuth, emailDeUsuario(usuario), clave);
+    else await FB.signInWithEmailAndPassword(fbAuth, emailDeUsuario(usuario), clave);
+    id('ac-clave').value = '';
+    id('ac-clave2').value = '';
+  } catch (e) {
+    console.warn(e);
+    error(mensajeErrorCuenta(e && e.code));
+  } finally {
+    id('ac-boton').disabled = false;
+  }
+});
+
+id('ac-olvido').addEventListener('click', async () => {
+  const usuario = limpiarUsuario(id('ac-usuario').value);
+  const info = (t) => { id('ac-error').hidden = true; id('ac-info').textContent = t; id('ac-info').hidden = false; };
+  if (!usuario.includes('@')) {
+    info(usuario
+      ? 'Tu usuario no es un correo, así que no se puede enviar un enlace. Pide a quien gestiona la app que te ponga una contraseña nueva (docs/CUENTAS.md).'
+      : 'Si tu usuario es tu correo, escríbelo arriba y vuelve a pulsar aquí: te llegará un enlace para poner una contraseña nueva.');
+    return;
+  }
+  try {
+    await FB.sendPasswordResetEmail(fbAuth, usuario);
+    info(`Si ${usuario} tiene cuenta, le llegará un correo con un enlace para poner una contraseña nueva. Mira también en «Spam».`);
+  } catch (e) {
+    id('ac-error').textContent = mensajeErrorCuenta(e && e.code);
+    id('ac-error').hidden = false;
+  }
+});
+
+async function iniciarNube() {
+  mostrarAcceso('cargando', 'Abriendo…');
+  try {
+    FB = await import('./vendor/firebase.mjs');
+    const app = FB.initializeApp(NUBE.firebase);
+    fbAuth = FB.initializeAuth(app, { persistence: [FB.indexedDBLocalPersistence, FB.browserLocalPersistence] });   // sin ventanas emergentes de Google
+    fbAuth.languageCode = 'es';   // el correo para recuperar la contraseña, en español
+    fbDb = FB.initializeFirestore(app, { localCache: FB.persistentLocalCache({ tabManager: FB.persistentMultipleTabManager() }) });
+    if (NUBE.emulador) {
+      FB.connectAuthEmulator(fbAuth, 'http://127.0.0.1:9099', { disableWarnings: true });
+      FB.connectFirestoreEmulator(fbDb, '127.0.0.1', 8080);
+    }
+  } catch (e) {
+    console.error(e);
+    mostrarAcceso('error', enInternet ? 'No se ha podido cargar el acceso. Comprueba la conexión y vuelve a abrir la app.' : 'Abre la app desde su enlace de internet para entrar con tu usuario.');
+    return;
+  }
+  if (NUBE.permitirRegistro === false) $('#acceso-modo [data-modo=crear]').hidden = true;
+  FB.onAuthStateChanged(fbAuth, (u) => {
+    if (u && !usuarioNube) entrarConUsuario(u);
+    else if (!u) { ponerModoAcceso(modoAcceso); mostrarAcceso('formulario'); }
+  });
+}
+
+function entrarConUsuario(u) {
+  usuarioNube = u;
+  claveDatos = 'facturacion.datos.u.' + u.uid;
+  db = cargarDatos();   // la copia de este usuario en el dispositivo: la app se ve al momento
+  sincronizado = { empresas: new Map(), clientes: new Map(), facturas: new Map(), ajustes: null };
+  primerasLecturas = { pendientes: new Set([...COLECCIONES, 'perfil']), servidor: new Set([...COLECCIONES, 'perfil']), revisada: false };
+  id('panel-cuenta').hidden = false;
+  id('cuenta-usuario').textContent = nombreUsuario();
+  id('cp-sub').textContent = 'Opcional: tus datos ya están en tu cuenta';
+  id('cp-texto').textContent = 'Con cuenta no hace falta, pero puedes descargar una copia para guardarla aparte o para dársela al gestor.';
+  ocultarAcceso();
+  arrancarApp();
+  escucharNube();
+}
+
+function escucharNube() {
+  const base = FB.doc(fbDb, 'usuarios', usuarioNube.uid);
+  COLECCIONES.forEach((col) => {
+    desuscribir.push(FB.onSnapshot(FB.collection(base, col), { includeMetadataChanges: true }, (snap) => {
+      const primera = primerasLecturas.pendientes.has(col);
+      let cambios = 0;
+      if (primera) {
+        // La primera lectura manda: es lo que hay en la cuenta (o en su copia del dispositivo, con los cambios sin subir).
+        const docs = snap.docs.map((d) => d.data());
+        snap.docs.forEach((d) => sincronizado[col].set(d.id, jsonEstable(d.data())));
+        if (jsonEstable(docs.slice().sort((a, b) => (a.id < b.id ? -1 : 1))) !== jsonEstable(db[col].slice().sort((a, b) => (a.id < b.id ? -1 : 1)))) { db[col] = docs; cambios++; }
+      } else {
+        snap.docChanges().forEach((ch) => {
+          const idDoc = ch.doc.id;
+          if (ch.type === 'removed') {
+            sincronizado[col].delete(idDoc);
+            if (db[col].some((x) => x.id === idDoc)) { db[col] = db[col].filter((x) => x.id !== idDoc); cambios++; }
+            return;
+          }
+          const datos = ch.doc.data();
+          const json = jsonEstable(datos);
+          sincronizado[col].set(idDoc, json);
+          const i = db[col].findIndex((x) => x.id === idDoc);
+          if (i < 0) { db[col].push(datos); cambios++; } else if (jsonEstable(db[col][i]) !== json) { db[col][i] = datos; cambios++; }
+        });
+      }
+      if (cambios) alCambiarDesdeNube();
+      lecturaHecha(col, snap.metadata.fromCache);
+    }, errorNube));
+  });
+  desuscribir.push(FB.onSnapshot(base, { includeMetadataChanges: true }, (snap) => {
+    const ajustes = snap.exists() ? (snap.data().ajustes || {}) : null;
+    if (ajustes) {
+      sincronizado.ajustes = jsonEstable(ajustes);
+      if (jsonEstable(db.ajustes) !== sincronizado.ajustes) { db.ajustes = Object.assign(datosVacios().ajustes, ajustes); alCambiarDesdeNube(); }
+    }
+    lecturaHecha('perfil', snap.metadata.fromCache);
+  }, errorNube));
+  estadoSync();
+}
+function lecturaHecha(nombre, desdeCache) {
+  primerasLecturas.pendientes.delete(nombre);
+  if (!desdeCache) primerasLecturas.servidor.delete(nombre);
+  if (primerasLecturas.servidor.size || primerasLecturas.revisada) return;
+  // El servidor ya ha contestado. Si la cuenta está vacía: ¿había datos en este dispositivo de antes de tener cuenta?
+  primerasLecturas.revisada = true;
+  const vacia = COLECCIONES.every((c) => !sincronizado[c].size && !db[c].length) && sincronizado.ajustes === null;
+  if (vacia) ofrecerSubirDatosLocales();
+}
+function ofrecerSubirDatosLocales() {
+  let locales = null;
+  try { const t = localStorage.getItem(CLAVE); if (t) locales = normalizarDatos(JSON.parse(t)); } catch (e) { /* nada */ }
+  if (!locales || !(locales.empresas.length || locales.facturas.length)) return;
+  const n = locales.facturas.length;
+  if (!confirm(`En este dispositivo hay datos de antes de tener cuenta (${locales.empresas.length} empresa(s) y ${n} factura(s)).\n\n¿Quieres pasarlos a tu cuenta para tenerlos en todos tus dispositivos?`)) return;
+  db = locales;
+  guardarDatos();
+  try { localStorage.setItem(CLAVE + '.subido', localStorage.getItem(CLAVE)); localStorage.removeItem(CLAVE); } catch (e) { /* nada */ }
+  nuevaFactura();
+  alCambiarDesdeNube();
+  aviso('Datos pasados a tu cuenta ✔');
+}
+/** Sube a la nube lo que ha cambiado desde la última vez (añadidos, cambios y borrados). */
+function subirCambios() {
+  if (!usuarioNube || !fbDb || !sincronizado) return;
+  const base = FB.doc(fbDb, 'usuarios', usuarioNube.uid);
+  const ops = [];
+  COLECCIONES.forEach((col) => {
+    const vistos = new Set();
+    db[col].forEach((rec) => {
+      if (!rec || !rec.id) return;
+      vistos.add(rec.id);
+      const limpio = limpiarParaNube(rec);
+      const json = jsonEstable(limpio);
+      if (sincronizado[col].get(rec.id) !== json) { ops.push({ ref: FB.doc(base, col, rec.id), datos: limpio }); sincronizado[col].set(rec.id, json); }
+    });
+    Array.from(sincronizado[col].keys()).forEach((k) => {
+      if (!vistos.has(k)) { ops.push({ ref: FB.doc(base, col, k), borrar: true }); sincronizado[col].delete(k); }
+    });
+  });
+  const ajustes = limpiarParaNube(db.ajustes || {});
+  if (sincronizado.ajustes !== jsonEstable(ajustes)) {
+    ops.push({ ref: base, datos: { ajustes, usuario: nombreUsuario(), actualizado: new Date().toISOString() } });
+    sincronizado.ajustes = jsonEstable(ajustes);
+  }
+  for (let i = 0; i < ops.length; i += 400) {
+    const lote = FB.writeBatch(fbDb);
+    ops.slice(i, i + 400).forEach((op) => (op.borrar ? lote.delete(op.ref) : lote.set(op.ref, op.datos)));
+    estadoSync('guardando');
+    lote.commit().then(() => estadoSync()).catch(errorNube);
+  }
+}
+function alCambiarDesdeNube() {
+  try { if (claveDatos) localStorage.setItem(claveDatos, JSON.stringify(db)); } catch (e) { /* solo es una caché */ }
+  if (pintarPendiente) return;
+  pintarPendiente = true;
+  requestAnimationFrame(() => {
+    pintarPendiente = false;
+    if (edicion) edicion = facturaPorId(edicion.id) || edicion;
+    rellenarSelectEmpresas();
+    rellenarSelectClientes();
+    revisarAvisoCopia();
+    // No se tocan los formularios a medio rellenar (factura o empresa).
+    if (vistaActual === 'factura') {
+      if (!id('editor-vacio').hidden || id('editor-factura').hidden) mostrarEditorOBienvenida();
+      else if (!edicion && !cambiosSinGuardar && !formF.contains(document.activeElement)) nuevaFactura();   // factura nueva sin tocar: número al día
+      return;
+    }
+    if (vistaActual === 'empresa') return;
+    if (vistaActual === 'ajustes') renderAjustes();
+    else renderVistaActual();
+  });
+}
+let ultimoErrorNube = 0;
+function errorNube(e) {
+  console.error(e);
+  estadoSync('error');
+  if (Date.now() - ultimoErrorNube < 10000) return;
+  ultimoErrorNube = Date.now();
+  aviso(e && e.code === 'permission-denied' ? 'No se han podido guardar los datos en tu cuenta (permiso denegado).' : 'No se ha podido sincronizar con tu cuenta. Se reintentará.', 'error');
+}
+function estadoSync(estado) {
+  const el = id('cuenta-sync');
+  const e = estado === 'error' ? 'error' : !navigator.onLine ? 'sin-conexion' : estado === 'guardando' ? 'guardando' : 'ok';
+  el.className = 'cuenta-sync' + (e === 'ok' ? '' : ' ' + e);
+  el.textContent = { ok: '✔ Guardado en tu cuenta', guardando: 'Guardando…', 'sin-conexion': 'Sin conexión: se subirá luego', error: 'Error al sincronizar' }[e];
+  pintarPie();
+}
+function pintarPie() {
+  id('nav-pie').textContent = `Versión ${VERSION_APP}` + (usuarioNube ? ` · ${nombreUsuario()}` : '') + (navigator.onLine ? '' : ' · sin conexión');
+}
+id('cu-guardar').addEventListener('click', async () => {
+  const actual = id('cu-actual').value, nueva = id('cu-nueva').value;
+  if (nueva.length < 6) { aviso('La contraseña nueva debe tener al menos 6 caracteres.', 'error'); return; }
+  try {
+    await FB.reauthenticateWithCredential(usuarioNube, FB.EmailAuthProvider.credential(usuarioNube.email, actual));
+    await FB.updatePassword(usuarioNube, nueva);
+    id('cu-actual').value = ''; id('cu-nueva').value = '';
+    id('cuenta-cambiar').open = false;
+    aviso('Contraseña cambiada ✔');
+  } catch (e) {
+    aviso(mensajeErrorCuenta(e && e.code), 'error');
+  }
+});
+id('cuenta-salir').addEventListener('click', async () => {
+  if (cambiosSinGuardar && !confirm('Hay una factura con cambios sin guardar. ¿Cerrar la sesión igualmente?')) return;
+  if (!confirm('¿Cerrar la sesión en este dispositivo?\n\nTus datos siguen guardados en tu cuenta.')) return;
+  // Antes de borrar la copia del dispositivo, se espera (un poco) a que se suba lo pendiente.
+  const subido = await Promise.race([FB.waitForPendingWrites(fbDb).then(() => true), new Promise((r) => setTimeout(() => r(false), 6000))]);
+  if (!subido && !confirm('Todavía no se han podido subir los últimos cambios (¿sin internet?). Si cierras la sesión ahora, se perderán.\n\n¿Cerrar igualmente?')) return;
+  desuscribir.forEach((f) => f());
+  try { localStorage.removeItem(claveDatos); } catch (e) { /* nada */ }
+  cambiosSinGuardar = false;
+  try { await FB.signOut(fbAuth); await FB.terminate(fbDb); await FB.clearIndexedDbPersistence(fbDb); } catch (e) { console.warn(e); }
+  location.reload();
+});
+
+/* =========================================================
    Arranque
    ========================================================= */
-id('nav-pie').textContent = `Versión ${VERSION_APP}` + (navigator.onLine ? '' : ' · sin conexión');
-window.addEventListener('online', () => { id('nav-pie').textContent = `Versión ${VERSION_APP}`; });
-window.addEventListener('offline', () => { id('nav-pie').textContent = `Versión ${VERSION_APP} · sin conexión`; });
+function arrancarApp() {
+  nuevaFactura();
+  if (!location.hash) history.replaceState(null, '', '#inicio');
+  mostrarVista(vistaDeHash());
+  revisarAvisoCopia();
+  actualizarInstalar();
+  pintarPie();
+}
+window.addEventListener('online', () => { pintarPie(); if (usuarioNube) estadoSync(); });
+window.addEventListener('offline', () => { pintarPie(); if (usuarioNube) estadoSync(); });
 aplicarTema(temaElegido());
-nuevaFactura();
-if (!location.hash) history.replaceState(null, '', '#inicio');
-mostrarVista(vistaDeHash());
-revisarAvisoCopia();
-actualizarInstalar();
+pintarPie();
+if (NUBE) iniciarNube(); else arrancarApp();
 })();
 </script>
 </body>

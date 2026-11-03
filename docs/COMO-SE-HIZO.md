@@ -6,7 +6,8 @@ facturación”, “que sea una app” o, en general, una app a partir de notas 
 ## Resumen en una línea
 
 **Audios → requisitos → app web instalable (PWA) en un `index.html` sin compilación → prueba de punta a punta
-con Playwright (ordenador + móvil + sin internet) → GitHub Pages → enlace para reenviar.**
+con Playwright (ordenador + móvil + sin internet) → GitHub Pages → enlace para reenviar.** Si se piden cuentas
+con usuario y contraseña: **Firebase (Auth + Firestore) activable con `config-nube.js`, probado con los emuladores**.
 
 ## 1. Entender el encargo a partir de los audios
 
@@ -51,7 +52,8 @@ Piezas:
 | `manifest.json` | Nombre, iconos, colores y `display: standalone`. Las rutas son **relativas** (`./`) para que funcione dentro de `/<repo>/` en GitHub Pages. |
 | `sw.js` | Caché para usarla sin internet. La página se pide primero a la red (con un límite de 4 s) y, si no hay conexión, se usa la copia guardada. El resto se sirve de la caché y se actualiza en segundo plano. **Sube `VERSION` en cada cambio.** |
 | `iconos/` | Iconos de 192 y 512 px, *maskable* y `apple-touch-icon`, generados con `node herramientas/generar-iconos.cjs`. |
-| `vendor/` | `jspdf.umd.min.js` y `html2canvas.min.js` (MIT), descargados del registro de npm con `curl`. Se cargan solo al crear un PDF. |
+| `vendor/` | `jspdf.umd.min.js` y `html2canvas.min.js` (MIT), descargados del registro de npm con `curl`. Se cargan solo al crear un PDF. Además, `anthropic-sdk.mjs` (IA) y `firebase.mjs` (cuentas), empaquetados con esbuild. |
+| `config-nube.js`, `firestore.rules`, `firebase.json` | Cuentas en la nube (fase 7): la configuración de Firebase (`null` = sin cuentas), las reglas de seguridad y los emuladores para las pruebas. |
 | `.nojekyll` | Para que GitHub Pages sirva los archivos tal cual. |
 
 En `index.html` hay además:
@@ -65,7 +67,7 @@ En `index.html` hay además:
 
 | Decisión | Motivo |
 |---|---|
-| Datos en **`localStorage`** + **copia de seguridad JSON** + aviso si pasan más de 7 días sin copia + `navigator.storage.persist()` | Sin servidor y sin cuentas. Las apps instaladas en iPhone no sufren el borrado a los 7 días de Safari. |
+| Datos en **`localStorage`** + **copia de seguridad JSON** + aviso si pasan más de 7 días sin copia + `navigator.storage.persist()` | Sin servidor y sin cuentas. Las apps instaladas en iPhone no sufren el borrado a los 7 días de Safari. Desde la fase 7, si se activan las cuentas, los datos van además a Firestore (ver sección 11). |
 | **Móvil primero**: menú abajo con iconos, contabilidad en **tarjetas**, letra de 16 px en los campos | Con la letra de 16 px el iPhone no hace zoom al escribir. Fran la usa en el móvil. |
 | **PDF con html2canvas + jsPDF** (A4; varias páginas si el concepto es muy largo) y botón **Enviar** con `navigator.share({ files })` | En el móvil lo normal es mandar la factura por WhatsApp o correo. `window.print()` se deja para el ordenador. |
 | El PDF se prepara primero en un diálogo, y luego el usuario pulsa **Enviar** | `navigator.share` necesita que el usuario acabe de pulsar algo. Si se llama tras generar el PDF (más de 1 s), Safari lo bloquea. |
@@ -90,7 +92,10 @@ README.md                     ← manual para el usuario, enlace y aviso legal
 docs/requisitos-audios.md     ← lo que pidió Fran y dónde está cada cosa
 docs/COMO-SE-HIZO.md          ← este documento
 docs/capturas/, docs/factura-ejemplo.pdf
-herramientas/transcribir-audios.sh, transcribir.py, generar-iconos.cjs
+herramientas/transcribir-audios.sh, transcribir.py, generar-iconos.cjs, generar-capturas.cjs
+herramientas/empaquetar-sdk-claude.sh, empaquetar-firebase.sh, emuladores-firebase.sh, cambiar-clave.py
+config-nube.js, firestore.rules, firebase.json   ← cuentas (Firebase)
+docs/CUENTAS.md               ← cómo activar las cuentas
 pruebas/prueba-completa.cjs   ← prueba de punta a punta
 CLAUDE.md                     ← instrucciones para Claude en este repositorio
 ```
@@ -121,6 +126,10 @@ La prueba levanta `python3 -m http.server` y usa Chromium (Playwright).
 - manifest sin errores;
 - **sin conexión** la app abre, hace una factura y crea el PDF;
 - menú abajo, tarjetas y ningún scroll horizontal.
+
+**Cuentas (con los emuladores de Firebase):** dos dispositivos con el mismo usuario, tiempo real, sin internet,
+contraseña incorrecta, usuario repetido, datos antiguos que pasan a la cuenta, reglas de seguridad (403 al leer los
+datos de otro), cerrar sesión, cambiar la contraseña y `cambiar-clave.py`.
 
 **Además:** que abra con `file://` y que no haya ningún error de JavaScript.
 
@@ -255,10 +264,45 @@ Cuando el usuario pasa una **factura de ejemplo**:
   `OPTIONS` (CORS). Se comprueban la petición, el relleno, la clave incorrecta (401) y que la clave no está en la
   copia. Con una clave real hay que probarlo a mano.
 
-## 11. Posibles mejoras (no pedidas todavía)
+## 11. Fase 7: cuentas con usuario y contraseña (datos en la nube)
+
+Petición: «que la app tenga un usuario y contraseña por persona y que, una vez dentro, tengan todos sus proyectos».
+
+- **Elección: Firebase** (Authentication con correo y contraseña + Cloud Firestore).
+  - GitHub Pages solo sirve archivos: hace falta un servicio de cuentas y datos. Firebase es gratis para este uso,
+    sin servidor propio, con **modo sin conexión** y **tiempo real** de serie.
+  - El SDK se empaqueta en `vendor/firebase.mjs` (como el de Claude) y se carga con `import()` solo si hay cuentas.
+    Se usa `initializeAuth` (no `getAuth`), porque `getAuth` carga scripts de `apis.google.com` para ventanas
+    emergentes de Google.
+- **Sin romper lo anterior:** con `window.CONFIG_NUBE = null` (en `config-nube.js`) la app funciona igual que antes.
+  Activarlo es solo pegar la configuración del proyecto de Firebase (`docs/CUENTAS.md`). Esa configuración **no es
+  secreta**; la protección está en `firestore.rules` (cada `uid` solo lee y escribe `usuarios/{uid}/…`).
+- **Usuario sin correo:** `fran` → `fran@usuarios.facturacion.app` por dentro. También se puede usar un correo real,
+  para poder recuperar la contraseña. Para los nombres, `herramientas/cambiar-clave.py` (en Cloud Shell) pone una
+  nueva. Los errores de Firebase se traducen a frases claras.
+- **Cómo se guardan los datos:**
+  - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
+    `usuarios/{uid}`;
+  - `guardarDatos()` sigue siendo el único punto de guardado: compara con lo último sincronizado (JSON con las
+    claves ordenadas) y sube solo los cambios con `writeBatch`;
+  - la app no cambió por dentro: sigue trabajando con el objeto `db`.
+- **Lectura:** `onSnapshot` por colección. La primera lectura sustituye la colección; después se aplican los
+  cambios. Se repinta con `requestAnimationFrame` y **no se tocan los formularios a medio rellenar**.
+- **Sin internet:** `persistentLocalCache` de Firestore + copia en `localStorage` por usuario. El *service worker*
+  guarda `firebase.mjs` y `config-nube.js`, así que la app abre sin conexión con la sesión iniciada.
+- **Datos de antes:** si la cuenta está vacía (confirmado por el servidor, con `includeMetadataChanges`) y el
+  dispositivo tenía datos sin cuenta, se pregunta si se pasan.
+- **Cerrar sesión:** `waitForPendingWrites` (máx. 6 s; si no, avisa de que se perderían cambios), borrar la copia
+  local, `signOut`, `terminate` + `clearIndexedDbPersistence` y recargar.
+- **Pruebas:** emuladores de Firebase (`firebase-tools`, Java 21 en el entorno), que la prueba arranca si no están en
+  marcha. Se borran los datos del emulador al empezar. La configuración de prueba entra por
+  `localStorage['facturacion.nube.prueba']` con `addInitScript`, y las reglas se comprueban con la API REST del
+  emulador (`Bearer owner` para leer como administrador). Los errores de red provocados a propósito (contraseña
+  incorrecta, sin internet) no cuentan como errores de JavaScript.
+
+## 12. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
 - Facturas rectificativas.
 - Requisitos Veri\*factu: hash encadenado, QR y envío a la AEAT.
-- Sincronizar datos entre el móvil y el ordenador. Ahora cada dispositivo tiene sus datos y se pasan con la
-  copia de seguridad.
+- Compartir una cuenta entre varias personas (por ejemplo, Fran y su gestor), con permisos de solo lectura.

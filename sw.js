@@ -5,7 +5,7 @@
  * - El resto de archivos se sirven de la copia guardada y se actualizan en segundo plano.
  * Al publicar cambios en los archivos, sube VERSION para limpiar la caché antigua.
  */
-const VERSION = 'facturacion-v5';
+const VERSION = 'facturacion-v6';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -18,6 +18,8 @@ const ARCHIVOS = [
   './vendor/jspdf.umd.min.js',
   './vendor/html2canvas.min.js',
   './vendor/anthropic-sdk.mjs',
+  './vendor/firebase.mjs',
+  './config-nube.js',
 ];
 
 self.addEventListener('install', (ev) => {

@@ -7,9 +7,10 @@ está **vencido**.
 - **Se instala en el móvil** (Android o iPhone) desde un enlace, con su icono.
 - **Funciona sin internet** una vez instalada.
 - **Envía la factura en PDF** por WhatsApp o correo, y **recuerda el cobro** con un toque.
-- **Los datos se guardan en el propio dispositivo**. No se envían a ningún servidor.
-- **Cualquiera puede usarla** (Fran, tu madre…) con el mismo enlace. Cada móvil guarda sus propios datos, sin
-  mezclarse con los de otros.
+- **Cuentas con usuario y contraseña**: cada persona (Fran, tu madre…) entra con lo suyo y tiene **todas sus
+  empresas, clientes y facturas** en cualquier móvil u ordenador, al momento. Nadie ve los datos de otro. Se
+  activan con un proyecto gratuito de Firebase: [`docs/CUENTAS.md`](docs/CUENTAS.md). Mientras no se activen, los
+  datos se quedan en cada dispositivo y no se envían a ningún servidor.
 - **Lector con IA:** al hacer una factura o dar de alta un cliente, el botón **«Rellenar con IA desde un PDF o
   una foto»** lee el documento con **Claude** (la IA de Anthropic) y rellena el nombre, el CIF, la dirección, el
   teléfono y el email del cliente. Antes de usarlos se pueden revisar. Necesita internet y una clave de la API
@@ -19,9 +20,9 @@ está **vencido**.
 
 **Enlace de la app:** https://ai-phi-design.github.io/FACTURATION-PROGRAM-/
 
-| Inicio | Nueva factura | Facturas | Modo oscuro |
-|---|---|---|---|
-| ![Inicio](docs/capturas/movil-1-inicio.png) | ![Nueva factura](docs/capturas/movil-2-nueva-factura.png) | ![Facturas](docs/capturas/movil-4-facturas.png) | ![Modo oscuro](docs/capturas/movil-6-oscuro.png) |
+| Acceso | Inicio | Nueva factura | Facturas | Modo oscuro |
+|---|---|---|---|---|
+| ![Acceso](docs/capturas/movil-0-acceso.png) | ![Inicio](docs/capturas/movil-1-inicio.png) | ![Nueva factura](docs/capturas/movil-2-nueva-factura.png) | ![Facturas](docs/capturas/movil-4-facturas.png) | ![Modo oscuro](docs/capturas/movil-6-oscuro.png) |
 
 ## Instalarla en el móvil
 
@@ -35,6 +36,9 @@ está **vencido**.
 
 ## Cómo se usa
 
+- **Entrar:** con las cuentas activadas, la primera vez se pulsa **Crear cuenta** (usuario y contraseña). En otro
+  móvil u ordenador se pulsa **Entrar** con los mismos datos y aparece todo. En **Ajustes → Mi cuenta** se cambia la
+  contraseña o se cierra la sesión.
 - **Ajustes → Mis empresas → Añadir empresa.** Se rellenan una vez:
   - los datos de la empresa;
   - el **logo**;
@@ -86,12 +90,14 @@ Las capturas y este PDF se rehacen con `node herramientas/generar-capturas.cjs`,
 4. **Privacidad:**
    - el documento se envía a Anthropic para leerlo;
    - la clave se guarda solo en ese dispositivo y **no va en las copias de seguridad**;
-   - el resto de la app sigue sin enviar nada a ningún sitio.
+   - aparte de esto (y de la cuenta, si está activada), la app no envía nada a ningún sitio.
 
 ## ⚠️ Copias de seguridad
 
-Los datos viven en el dispositivo. **Si se borra la app o se cambia de móvil, solo se recuperan con una copia.**
-Cuando lleva más de 7 días sin copia, Inicio lo avisa.
+**Con cuenta**, los datos están en la nube: si se pierde el móvil, basta con entrar en otro. La copia es opcional.
+
+**Sin cuentas**, los datos viven en el dispositivo. **Si se borra la app o se cambia de móvil, solo se recuperan con
+una copia.** Cuando lleva más de 7 días sin copia, Inicio lo avisa.
 
 - **Hacer una copia:** Ajustes → **Descargar copia**. Guárdala fuera del móvil.
 - **Pasar los datos a otro móvil:** instala la app y usa **Restaurar…**.
@@ -118,8 +124,11 @@ visto bueno.
   - `index.html`: todo el programa;
   - `manifest.json` y `sw.js`: lo que la hace instalable y le permite funcionar sin conexión;
   - `iconos/`;
-  - `vendor/`: jsPDF y html2canvas, para el PDF, y `anthropic-sdk.mjs`, el SDK oficial de Claude empaquetado.
-    Se rehace con `herramientas/empaquetar-sdk-claude.sh`.
+  - `vendor/`: jsPDF y html2canvas, para el PDF; `anthropic-sdk.mjs`, el SDK oficial de Claude empaquetado
+    (`herramientas/empaquetar-sdk-claude.sh`); y `firebase.mjs`, el SDK de Firebase para las cuentas
+    (`herramientas/empaquetar-firebase.sh`);
+  - `config-nube.js` y `firestore.rules`: la configuración de las cuentas y sus reglas de seguridad
+    ([`docs/CUENTAS.md`](docs/CUENTAS.md)).
 - **Publicación:** GitHub Pages desde la rama de trabajo, carpeta raíz. Al cambiar archivos, sube `VERSION` en `sw.js`.
 - Prueba de punta a punta, en ordenador y en móvil:
 
@@ -132,5 +141,8 @@ visto bueno.
   - Comprueba la numeración, los vencimientos, el IRPF, el importe en letra, la opción de deshacer, el
     recordatorio, el gráfico, el PDF, la impresión, el CSV, las copias de seguridad, el botón «atrás», el modo
     oscuro y el diseño móvil.
+  - Comprueba las **cuentas** con los emuladores de Firebase (los arranca solos; necesitan Java 11+): dos
+    dispositivos con el mismo usuario, tiempo real, sin internet, contraseña incorrecta, datos antiguos que pasan a
+    la cuenta, reglas de seguridad, cerrar sesión y cambiar la contraseña. `SIN_NUBE=1` se salta esta parte.
 - Requisitos: [`docs/requisitos-audios.md`](docs/requisitos-audios.md).
 - Cómo se hizo, paso a paso: [`docs/COMO-SE-HIZO.md`](docs/COMO-SE-HIZO.md).

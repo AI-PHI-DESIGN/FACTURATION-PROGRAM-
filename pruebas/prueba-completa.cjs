@@ -10,6 +10,8 @@
  *     copia de seguridad, botón «atrás» y modo oscuro.
  *   · Móvil (Pixel 7): instalable (manifest + service worker), SIN INTERNET, menú abajo con botón +,
  *     barra de acciones del editor, «Ver factura», PDF, tarjetas, ficha de cliente, sin scroll horizontal.
+ *   · Cuentas (con los emuladores de Firebase): usuario y contraseña, dos dispositivos, tiempo real, sin internet,
+ *     pasar datos antiguos a la cuenta, reglas de seguridad, cerrar sesión y cambiar la contraseña.
  * Deja capturas, PDFs y un CSV en la carpeta de salida (por defecto: pruebas/salida).
  */
 const path = require('path');
@@ -47,9 +49,49 @@ function esperarServidor() {
     probar();
   });
 }
-function vigilarErrores(page, errores) {
+/* ---- Cuentas en la nube: emuladores de Firebase (herramientas/emuladores-firebase.sh) ---- */
+const PROYECTO = 'demo-facturacion';
+const AUTH_EMU = 'http://127.0.0.1:9099';
+const FS_EMU = 'http://127.0.0.1:8080';
+const CONFIG_NUBE_PRUEBA = { firebase: { apiKey: 'demo-clave', authDomain: `${PROYECTO}.firebaseapp.com`, projectId: PROYECTO, appId: 'demo' }, emulador: true, permitirRegistro: true };
+const responde = (url) => new Promise((ok) => http.get(url, (r) => { r.resume(); ok(true); }).on('error', () => ok(false)));
+async function emuladoresListos() {
+  if (await responde(AUTH_EMU) && await responde(FS_EMU)) return true;
+  console.log('    · arrancando los emuladores de Firebase (la primera vez tarda)…');
+  const emu = spawn(path.join(RAIZ, 'herramientas', 'emuladores-firebase.sh'), [], { stdio: 'ignore', detached: true });
+  emu.unref();
+  for (let i = 0; i < 180; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    if (await responde(AUTH_EMU) && await responde(FS_EMU)) return true;
+  }
+  return false;
+}
+/** Documentos de una colección leídos «como administrador» (el emulador acepta «Bearer owner»). */
+async function docsNube(uid, col) {
+  const r = await fetch(`${FS_EMU}/v1/projects/${PROYECTO}/databases/(default)/documents/usuarios/${uid}/${col}?pageSize=300`, { headers: { Authorization: 'Bearer owner' } });
+  const j = await r.json();
+  return (j.documents || []).map((d) => d.fields);
+}
+async function esperarNube(cond, ms = 15000) {
+  const fin = Date.now() + ms;
+  while (Date.now() < fin) { if (await cond()) return true; await new Promise((r) => setTimeout(r, 250)); }
+  return false;
+}
+async function uidDe(page) {
+  const h = await page.waitForFunction(() => Object.keys(localStorage).find((k) => k.startsWith('facturacion.datos.u.')), null, { timeout: 20000 });
+  return (await h.jsonValue()).slice('facturacion.datos.u.'.length);
+}
+
+function vigilarErrores(page, errores, nube = false) {
   page.on('pageerror', (e) => errores.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    // En la prueba de cuentas, las contraseñas incorrectas y el modo sin internet fallan a propósito.
+    const url = (m.location() && m.location().url) || '';
+    if (nube && m.text().startsWith('Failed to load resource') && (url.startsWith(AUTH_EMU) || url.startsWith(FS_EMU) || m.text().includes('ERR_INTERNET_DISCONNECTED'))) return;
+    if (nube && m.text().includes('Could not reach Cloud Firestore backend')) return;
+    errores.push(m.text() + (url ? ` [${url}]` : ''));
+  });
   page.on('dialog', async (d) => { console.log('    · diálogo: ' + d.message().split('\n')[0]); await d.accept(); });
 }
 
@@ -550,6 +592,146 @@ function vigilarErrores(page, errores) {
     await l.goto('file://' + path.join(RAIZ, 'index.html'));
     comprobar(await l.isVisible('#ini-vacio') && erroresLocal.length === 0, 'abre desde el archivo sin errores');
     await local.close();
+
+    console.log('17. Cuentas: usuario y contraseña por persona, datos en la nube (emuladores de Firebase)');
+    if (!(await emuladoresListos())) {
+      if (process.env.SIN_NUBE) console.log('    · emuladores no disponibles: se salta (SIN_NUBE=1)');
+      else comprobar(false, 'los emuladores de Firebase no arrancan (Java 11+ y npx). Para saltar esta parte: SIN_NUBE=1');
+    } else {
+      await fetch(`${AUTH_EMU}/emulator/v1/projects/${PROYECTO}/accounts`, { method: 'DELETE' });
+      await fetch(`${FS_EMU}/emulator/v1/projects/${PROYECTO}/databases/(default)/documents`, { method: 'DELETE' });
+      const contextoNube = async (opciones, activarNube = true) => {
+        const c = await browser.newContext({ locale: 'es-ES', ...opciones });
+        await c.addInitScript(([conf, activar]) => {
+          try {
+            localStorage.setItem('facturacion.instalar.cerrado', '1');
+            if (activar) localStorage.setItem('facturacion.nube.prueba', conf);
+          } catch (e) { /* nada */ }
+        }, [JSON.stringify(CONFIG_NUBE_PRUEBA), activarNube]);
+        await c.clock.setFixedTime(HOY);
+        const pg = await c.newPage();
+        vigilarErrores(pg, errores, true);
+        return [c, pg];
+      };
+      const entrar = async (pg, usuario, clave, crear = false) => {
+        await pg.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });
+        await pg.click(`#acceso-modo [data-modo=${crear ? 'crear' : 'entrar'}]`);
+        await pg.fill('#ac-usuario', usuario);
+        await pg.fill('#ac-clave', clave);
+        if (crear) await pg.fill('#ac-clave2', clave);
+        await pg.click('#ac-boton');
+      };
+
+      // Dispositivo A (ordenador): crea la cuenta «fran»
+      const [ctxA, a] = await contextoNube({ viewport: { width: 1440, height: 1000 } });
+      await a.goto(URL_APP);
+      await a.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });
+      comprobar(await a.isVisible('#ac-usuario') && await a.isVisible('#ac-clave'), 'al abrir la app pide usuario y contraseña');
+      await a.screenshot({ path: path.join(SALIDA, 'escritorio-cuenta-acceso.png') });
+      await entrar(a, 'Fran', 'corta', true);
+      comprobar((await a.textContent('#ac-error')).includes('al menos 6'), 'contraseña demasiado corta: lo dice');
+      await entrar(a, 'Fran', 'clave-de-fran', true);
+      await a.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      comprobar(await a.isVisible('#ini-vacio') && (await a.textContent('#nav-pie')).includes('fran'), 'cuenta «fran» creada: entra con la app vacía');
+      await a.click('#btn-ejemplo');
+      const uidFran = await uidDe(a);
+      comprobar(await esperarNube(async () => (await docsNube(uidFran, 'facturas')).length === 3 && (await docsNube(uidFran, 'empresas')).length === 1),
+        'las empresas y facturas se guardan en la cuenta (en la nube)');
+
+      // Dispositivo B (móvil): la misma cuenta en otro dispositivo
+      const [ctxB, b] = await contextoNube({ ...devices['Pixel 7'] });
+      await b.goto(URL_APP);
+      await b.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });
+      await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-acceso.png') });
+      await entrar(b, 'fran', 'otra-clave');
+      await b.waitForSelector('#ac-error:not([hidden])', { timeout: 20000 });
+      comprobar((await b.textContent('#ac-error')).includes('Usuario o contraseña incorrectos'), 'contraseña incorrecta: no entra y lo explica');
+      await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-error.png') });
+      await entrar(b, 'fran', 'clave-de-fran');
+      await b.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      await b.waitForFunction(() => document.querySelector('#ini-pendiente').textContent.replace(/\s/g, ' ') === '4.416,50 €', null, { timeout: 20000 }).catch(() => {});
+      comprobar(sinEspacios(await b.textContent('#ini-pendiente')) === '4.416,50 €', 'en el móvil, con el mismo usuario, salen todos sus datos');
+      await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-inicio.png') });
+
+      // B marca una factura como cobrada → A lo ve al momento, sin recargar
+      await b.click('.nav-item[data-ir=facturas]');
+      await b.click('#c-lista .item-factura:has-text("A 15/26") [data-estado]');
+      await a.waitForFunction(() => document.querySelector('#ini-pendiente').textContent.replace(/\s/g, ' ') === '1.452,00 €', null, { timeout: 20000 }).catch(() => {});
+      comprobar(sinEspacios(await a.textContent('#ini-pendiente')) === '1.452,00 €', 'lo que se cambia en el móvil aparece solo en el ordenador (tiempo real)');
+
+      // A, SIN INTERNET: sigue funcionando y lo sube al volver la conexión
+      await a.click('.nav-item[data-ir=facturas]');
+      await ctxA.setOffline(true);
+      await a.click('#c-lista .item-factura:has-text("CP 3/26") [data-estado]');
+      await a.click('.nav-item[data-ir=ajustes]');
+      comprobar((await a.textContent('#cuenta-sync')).includes('Sin conexión'), 'sin internet: avisa de que se subirá luego');
+      await a.reload();
+      await a.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      comprobar(await a.isVisible('#vista-ajustes') && (await a.textContent('#nav-pie')).includes('fran'), 'sin internet, la app vuelve a abrir con la sesión y los datos');
+      await ctxA.setOffline(false);
+      comprobar(await esperarNube(async () => (await docsNube(uidFran, 'facturas')).filter((f) => f.cobrada && f.cobrada.booleanValue).length === 2, 25000),
+        'al volver internet, el cambio hecho sin conexión se sube a la cuenta');
+      await b.waitForFunction(() => !document.querySelector('#c-lista').textContent.includes('Pendiente'), null, { timeout: 20000 }).catch(() => {});
+      comprobar(!(await b.textContent('#c-lista')).includes('Pendiente'), 'y llega también al móvil');
+
+      // Otra persona («mama»): tenía datos en su móvil de antes de las cuentas → los pasa a su cuenta
+      const [ctxC, c] = await contextoNube({ viewport: { width: 1280, height: 900 } }, false);
+      await c.goto(URL_APP);
+      await c.click('#btn-ejemplo');
+      await c.click('.nav-item[data-ir=facturas]');
+      await c.click('#c-lista .item-factura:has-text("A 14/26") [data-abrir]');
+      await c.fill('#f-concepto', 'Factura de antes de tener cuenta');
+      await c.click('#form-factura button[type=submit]');
+      await c.evaluate((conf) => localStorage.setItem('facturacion.nube.prueba', conf), JSON.stringify(CONFIG_NUBE_PRUEBA));
+      await c.reload();
+      await entrar(c, 'fran', 'lo-que-sea', true);
+      await c.waitForSelector('#ac-error:not([hidden])', { timeout: 20000 });
+      comprobar((await c.textContent('#ac-error')).includes('ya existe'), 'no deja crear un usuario que ya existe');
+      await entrar(c, 'mama', 'clave-de-mama', true);
+      await c.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      const uidMama = await uidDe(c);
+      comprobar(await esperarNube(async () => (await docsNube(uidMama, 'facturas')).some((f) => f.concepto && f.concepto.stringValue === 'Factura de antes de tener cuenta')),
+        'los datos que ya tenía en el dispositivo pasan a su cuenta (lo pregunta antes)');
+      comprobar(uidMama !== uidFran && (await docsNube(uidFran, 'facturas')).every((f) => f.concepto.stringValue !== 'Factura de antes de tener cuenta'), 'cada persona tiene sus datos: lo de «mama» no aparece en la cuenta de «fran»');
+
+      // Las reglas de seguridad: con la sesión de «mama» no se pueden leer ni escribir los datos de «fran»
+      const sesion = await (await fetch(`${AUTH_EMU}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-clave`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'mama@usuarios.facturacion.app', password: 'clave-de-mama', returnSecureToken: true }),
+      })).json();
+      const urlDocs = (uid) => `${FS_EMU}/v1/projects/${PROYECTO}/databases/(default)/documents/usuarios/${uid}/facturas`;
+      const leerAjeno = await fetch(urlDocs(uidFran), { headers: { Authorization: 'Bearer ' + sesion.idToken } });
+      const escribirAjeno = await fetch(urlDocs(uidFran) + '?documentId=intruso', { method: 'POST', headers: { Authorization: 'Bearer ' + sesion.idToken, 'content-type': 'application/json' }, body: JSON.stringify({ fields: { id: { stringValue: 'intruso' } } }) });
+      const leerPropio = await fetch(urlDocs(uidMama), { headers: { Authorization: 'Bearer ' + sesion.idToken } });
+      const sinSesion = await fetch(urlDocs(uidMama));
+      comprobar(leerAjeno.status === 403 && escribirAjeno.status === 403 && leerPropio.status === 200 && sinSesion.status === 403,
+        `reglas: nadie puede leer ni escribir los datos de otro, ni entrar sin sesión (${leerAjeno.status}/${escribirAjeno.status}/${leerPropio.status}/${sinSesion.status})`);
+
+      // Cerrar sesión en el móvil: vuelve a pedir usuario y no deja sus datos en el dispositivo
+      await b.click('.nav-item[data-ir=ajustes]');
+      comprobar((await b.textContent('#panel-cuenta')).includes('fran'), 'Ajustes → «Mi cuenta» muestra el usuario');
+      await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-ajustes.png'), fullPage: false });
+      await Promise.all([b.waitForEvent('load', { timeout: 20000 }), b.click('#cuenta-salir')]);
+      await b.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });
+      comprobar(await b.evaluate(() => !Object.keys(localStorage).some((k) => k.startsWith('facturacion.datos'))), 'al cerrar la sesión vuelve a pedir el usuario y borra la copia del dispositivo');
+      // ¿Ha olvidado la contraseña? Con un nombre de usuario (no un correo), la cambia quien gestiona la app
+      await b.fill('#ac-usuario', 'fran');
+      await b.click('#ac-olvido');
+      comprobar((await b.textContent('#ac-info')).includes('no es un correo'), '«¿Has olvidado la contraseña?» explica qué hacer');
+      const salidaClave = execFileSync('python3', [path.join(RAIZ, 'herramientas', 'cambiar-clave.py'), PROYECTO, 'fran', 'clave-nueva-fran'], { env: { ...process.env, EMULADOR: '1' } }).toString();
+      await entrar(b, 'fran', 'clave-nueva-fran');
+      await b.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      comprobar(salidaClave.includes('Contraseña cambiada') && (await b.textContent('#nav-pie')).includes('fran'), 'herramientas/cambiar-clave.py le pone una contraseña nueva y ya puede entrar');
+      // Y la contraseña se puede cambiar
+      await c.click('.nav-item[data-ir=ajustes]');
+      await c.click('#cuenta-cambiar summary');
+      await c.fill('#cu-actual', 'clave-de-mama');
+      await c.fill('#cu-nueva', 'nueva-clave-mama');
+      await c.click('#cu-guardar');
+      await c.waitForFunction(() => document.querySelector('#toast').textContent.includes('Contraseña cambiada'), null, { timeout: 15000 }).catch(() => {});
+      comprobar((await c.textContent('#toast')).includes('Contraseña cambiada'), 'se puede cambiar la contraseña');
+      await Promise.all([ctxA.close(), ctxB.close(), ctxC.close()]);
+    }
   } finally {
     await browser.close();
     servidor.kill();
