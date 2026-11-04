@@ -287,6 +287,17 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
 - **Si el usuario quiere que otro asistente (Gemini…) cree el proyecto de Firebase:** se le pasa el texto de la
   sección «Hacerlo con un asistente» de `docs/CUENTAS.md` (pasos exactos, plan gratuito, reglas incluidas, y que
   devuelva el `firebaseConfig`). Con ese bloque se rellena `config-nube.js` y se publica.
+- **Activación (04/11/2026):** el usuario creó el proyecto siguiendo los pasos con capturas, uno a uno (ojo: al crear
+  Firestore sale «Copias de seguridad programadas», que pide el plan de pago: se deja sin marcar). Con el
+  `firebaseConfig`:
+  1. se pega en `config-nube.js`;
+  2. se comprueba el proyecto real con `herramientas/comprobar-firebase.sh` (alta, guardar, leer, reglas y limpieza
+     de la cuenta de prueba);
+  3. las pruebas sin cuentas fuerzan `localStorage['facturacion.nube.prueba'] = 'null'`, y una comprobación nueva
+     mira que la app real pide correo y contraseña;
+  4. el *service worker* pide `config-nube.js` primero a internet y llena la caché con `cache: 'reload'`. Así, al
+     activar o cambiar la configuración, los móviles la cogen enseguida (como mucho, hay que abrir la app dos veces
+     o pulsar «Actualizar»).
 - **Cómo se guardan los datos:**
   - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
     `usuarios/{uid}`;

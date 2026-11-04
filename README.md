@@ -8,9 +8,8 @@ está **vencido**.
 - **Funciona sin internet** una vez instalada.
 - **Envía la factura en PDF** por WhatsApp o correo, y **recuerda el cobro** con un toque.
 - **Cuentas con correo y contraseña**: cada persona (Fran, tu madre…) entra con lo suyo y tiene **todas sus
-  empresas, clientes y facturas** en cualquier móvil u ordenador, al momento. Nadie ve los datos de otro. Se
-  activan con un proyecto gratuito de Firebase: [`docs/CUENTAS.md`](docs/CUENTAS.md). Mientras no se activen, los
-  datos se quedan en cada dispositivo y no se envían a ningún servidor.
+  empresas, clientes y facturas** en cualquier móvil u ordenador, al momento. Nadie ve los datos de otro. Funcionan
+  con un proyecto gratuito de Firebase (de Google), ya activado: [`docs/CUENTAS.md`](docs/CUENTAS.md).
 - **Lector con IA:** al hacer una factura o dar de alta un cliente, el botón **«Rellenar con IA desde un PDF o
   una foto»** lee el documento con **Claude** (la IA de Anthropic) y rellena el nombre, el CIF, la dirección, el
   teléfono y el email del cliente. Antes de usarlos se pueden revisar. Necesita internet y una clave de la API
@@ -36,7 +35,7 @@ está **vencido**.
 
 ## Cómo se usa
 
-- **Entrar:** con las cuentas activadas, la primera vez se pulsa **Crear cuenta** (correo y contraseña). En otro
+- **Entrar:** la primera vez se pulsa **Crear cuenta** (correo y contraseña). En otro
   móvil u ordenador se pulsa **Entrar** con los mismos datos y aparece todo. En **Ajustes → Mi cuenta** se cambia la
   contraseña o se cierra la sesión.
 - **Ajustes → Mis empresas → Añadir empresa.** Se rellenan una vez:

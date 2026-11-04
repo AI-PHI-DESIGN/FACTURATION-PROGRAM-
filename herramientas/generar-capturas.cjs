@@ -15,7 +15,8 @@ const HOY = new Date('2026-11-02T10:00:00');
 
 async function contexto(browser, opciones, oscuro) {
   const ctx = await browser.newContext({ ...opciones, acceptDownloads: true, locale: 'es-ES', colorScheme: oscuro ? 'dark' : 'light' });
-  await ctx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+  // Capturas con datos de ejemplo y SIN cuentas ('null' desactiva config-nube.js en este navegador).
+  await ctx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); localStorage.setItem('facturacion.nube.prueba', 'null'); } catch (e) { /* nada */ } });
   await ctx.clock.setFixedTime(HOY);
   const p = await ctx.newPage();
   p.on('dialog', (d) => d.accept());

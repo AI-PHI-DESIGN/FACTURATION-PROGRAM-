@@ -5,7 +5,7 @@
  * - El resto de archivos se sirven de la copia guardada y se actualizan en segundo plano.
  * Al publicar cambios en los archivos, sube VERSION para limpiar la caché antigua.
  */
-const VERSION = 'facturacion-v7';
+const VERSION = 'facturacion-v8';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -23,7 +23,8 @@ const ARCHIVOS = [
 ];
 
 self.addEventListener('install', (ev) => {
-  ev.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  // «reload»: que no use la caché HTTP del navegador (GitHub Pages la guarda 10 min) y coja los archivos nuevos.
+  ev.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (ev) => {
@@ -56,6 +57,22 @@ self.addEventListener('fetch', (ev) => {
           return resp;
         })
         .catch(() => caches.match('./index.html').then((r) => r || fetch(req)))
+    );
+    return;
+  }
+
+  // La configuración de las cuentas también se pide primero a internet: si cambia, se aplica al momento.
+  if (new URL(req.url).pathname.endsWith('/config-nube.js')) {
+    ev.respondWith(
+      conLimite(fetch(req, { cache: 'no-cache' }), 4000)
+        .then((resp) => {
+          if (resp.ok) {
+            const copia = resp.clone();
+            caches.open(VERSION).then((c) => c.put('./config-nube.js', copia));
+          }
+          return resp;
+        })
+        .catch(() => caches.match('./config-nube.js', { ignoreSearch: true }).then((r) => r || fetch(req)))
     );
     return;
   }

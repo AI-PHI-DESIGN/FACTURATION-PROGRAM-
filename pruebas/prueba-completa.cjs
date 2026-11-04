@@ -82,6 +82,11 @@ async function uidDe(page) {
   return (await h.jsonValue()).slice('facturacion.datos.u.'.length);
 }
 
+/** Para las pruebas sin cuentas: «facturacion.nube.prueba» = 'null' desactiva config-nube.js en ese navegador. */
+const sinNube = (ctx) => ctx.addInitScript(() => {
+  try { if (!localStorage.getItem('facturacion.nube.prueba')) localStorage.setItem('facturacion.nube.prueba', 'null'); } catch (e) { /* nada */ }
+});
+
 function vigilarErrores(page, errores, nube = false) {
   page.on('pageerror', (e) => errores.push(e.message));
   page.on('console', (m) => {
@@ -106,6 +111,7 @@ function vigilarErrores(page, errores, nube = false) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true, locale: 'es-ES' });
     // El aviso «Instalar» sale cuando Chrome decide; en el ordenador lo damos por cerrado para que no mueva nada.
     await ctx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+    await sinNube(ctx);
     await ctx.clock.setFixedTime(HOY);
     const page = await ctx.newPage();
     vigilarErrores(page, errores);
@@ -416,6 +422,7 @@ function vigilarErrores(page, errores, nube = false) {
     /* =================== MÓVIL =================== */
     console.log('12. Móvil: app instalable y sin internet');
     const movil = await browser.newContext({ ...devices['Pixel 7'], acceptDownloads: true, locale: 'es-ES' });
+    await sinNube(movil);
     await movil.clock.setFixedTime(HOY);
     const m = await movil.newPage();
     vigilarErrores(m, errores);
@@ -503,6 +510,7 @@ function vigilarErrores(page, errores, nube = false) {
     console.log('14. «Ver un ejemplo» con datos inventados');
     const ejCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES' });
     await ejCtx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+    await sinNube(ejCtx);
     await ejCtx.clock.setFixedTime(HOY);
     const ej = await ejCtx.newPage();
     vigilarErrores(ej, errores);
@@ -524,6 +532,7 @@ function vigilarErrores(page, errores, nube = false) {
     console.log('15. Lector con IA (respuestas de Claude simuladas)');
     const iaCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES', acceptDownloads: true });
     await iaCtx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+    await sinNube(iaCtx);
     await iaCtx.clock.setFixedTime(HOY);
     const peticiones = [];
     let respuestaIA = 'ok';
@@ -586,6 +595,7 @@ function vigilarErrores(page, errores, nube = false) {
 
     console.log('16. Abrir con doble clic (file://) sigue funcionando');
     const local = await browser.newContext();
+    await sinNube(local);
     const l = await local.newPage();
     const erroresLocal = [];
     l.on('pageerror', (e) => erroresLocal.push(e.message));
@@ -594,6 +604,17 @@ function vigilarErrores(page, errores, nube = false) {
     await local.close();
 
     console.log('17. Cuentas: correo y contraseña por persona, datos en la nube (emuladores de Firebase)');
+    {
+      // Con config-nube.js tal cual (el proyecto real), la app pide correo y contraseña. No se entra: solo se mira.
+      const real = await browser.newContext({ locale: 'es-ES' });
+      const r = await real.newPage();
+      vigilarErrores(r, errores, true);
+      await r.goto(URL_APP);
+      await r.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });
+      const conf = await r.evaluate(() => window.CONFIG_NUBE && window.CONFIG_NUBE.firebase.projectId);
+      comprobar(!!conf && await r.isVisible('#ac-usuario'), `con config-nube.js (proyecto «${conf}»), al abrir pide correo y contraseña`);
+      await real.close();
+    }
     if (!(await emuladoresListos())) {
       if (process.env.SIN_NUBE) console.log('    · emuladores no disponibles: se salta (SIN_NUBE=1)');
       else comprobar(false, 'los emuladores de Firebase no arrancan (Java 11+ y npx). Para saltar esta parte: SIN_NUBE=1');
@@ -606,6 +627,7 @@ function vigilarErrores(page, errores, nube = false) {
           try {
             localStorage.setItem('facturacion.instalar.cerrado', '1');
             if (activar) localStorage.setItem('facturacion.nube.prueba', conf);
+            else if (!localStorage.getItem('facturacion.nube.prueba')) localStorage.setItem('facturacion.nube.prueba', 'null');
           } catch (e) { /* nada */ }
         }, [JSON.stringify(CONFIG_NUBE_PRUEBA), activarNube]);
         await c.clock.setFixedTime(HOY);

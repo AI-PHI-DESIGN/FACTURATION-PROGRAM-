@@ -7,7 +7,10 @@ en el ordenador. Sin internet se puede seguir trabajando: los cambios se suben a
 Los datos se guardan en **Firebase** (de Google): el acceso con contraseña es *Firebase Authentication* y los datos
 van en *Cloud Firestore*. Para el uso de esta app, el plan gratuito (**Spark**) sobra y no pide tarjeta.
 
-Mientras no se haga lo de abajo, la app sigue **sin cuentas**, como hasta ahora (los datos en cada dispositivo).
+**Estado: activadas** desde el 04/11/2026, con el proyecto de Firebase `facturacion-536fc` (plan gratuito Spark).
+Para comprobar el proyecto real: `herramientas/comprobar-firebase.sh` (crea una cuenta de prueba, guarda, lee,
+comprueba las reglas y lo borra todo). Con `window.CONFIG_NUBE = null` en `config-nube.js`, la app vuelve a
+funcionar **sin cuentas** (los datos en cada dispositivo).
 
 ![Pantalla de acceso](capturas/movil-0-acceso.png)
 
@@ -20,6 +23,8 @@ Mientras no se haga lo de abajo, la app sigue **sin cuentas**, como hasta ahora 
 3. **Firestore Database** → **Crear base de datos**:
    - Ubicación: una de Europa, por ejemplo `europe-southwest1` (Madrid). **No se puede cambiar después.**
    - Modo: **producción**.
+   - «Copias de seguridad programadas (opcional)» pide el plan Blaze: **no se marcan** y no se pulsa
+     «Actualizar proyecto». Se pulsa **Crear**.
 4. En Firestore, pestaña **Reglas**: borra lo que hay, pega el contenido de [`firestore.rules`](../firestore.rules) y
    pulsa **Publicar**. Estas reglas hacen que **cada usuario solo pueda leer y escribir sus propios datos**.
 5. **⚙ Configuración del proyecto** → **Tus apps** → icono **`</>`** (Web) → nombre `Facturación` → **Registrar app**
@@ -127,4 +132,9 @@ tarjeta, para y avísame. Al terminar, confírmame uno por uno los pasos hechos.
   `initializeAuth` y no `getAuth`, para no cargar scripts de Google que no hacen falta.
 - **Pruebas:** la sección 17 de `pruebas/prueba-completa.cjs` usa los **emuladores** de Firebase
   (`herramientas/emuladores-firebase.sh`, necesita Java 11+). La configuración de prueba se pone en
-  `localStorage['facturacion.nube.prueba']`.
+  `localStorage['facturacion.nube.prueba']`; con el valor `'null'` se desactivan las cuentas en ese navegador (así
+  se prueban las partes 1–16 y se hacen las capturas sin cuentas). Al proyecto real no se le hace nada desde las
+  pruebas: solo se comprueba que, con `config-nube.js` tal cual, la app pide correo y contraseña.
+- **Service worker:** `config-nube.js` se pide primero a internet (como la página), para que un cambio de
+  configuración se aplique al momento. Al instalarse, la caché se llena con `cache: 'reload'` para no coger copias
+  viejas de la caché HTTP de GitHub Pages (10 minutos).
