@@ -277,9 +277,13 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
 - **Sin romper lo anterior:** con `window.CONFIG_NUBE = null` (en `config-nube.js`) la app funciona igual que antes.
   Activarlo es solo pegar la configuración del proyecto de Firebase (`docs/CUENTAS.md`). Esa configuración **no es
   secreta**; la protección está en `firestore.rules` (cada `uid` solo lee y escribe `usuarios/{uid}/…`).
-- **Usuario sin correo:** `fran` → `fran@usuarios.facturacion.app` por dentro. También se puede usar un correo real,
-  para poder recuperar la contraseña. Para los nombres, `herramientas/cambiar-clave.py` (en Cloud Shell) pone una
-  nueva. Los errores de Firebase se traducen a frases claras.
+- **Se entra con correo y contraseña** (lo pidió así el usuario). El correo permite recuperar la contraseña con
+  `sendPasswordResetEmail` (en español: `auth.languageCode = 'es'`). Se sigue admitiendo un nombre sin correo
+  (`fran` → `fran@usuarios.facturacion.app`); para esos, `herramientas/cambiar-clave.py` (en Cloud Shell) pone una
+  contraseña nueva. Los errores de Firebase se traducen a frases claras.
+- **Lección:** las cuentas quedan **apagadas** hasta tener el proyecto de Firebase (solo lo puede crear el usuario,
+  con su cuenta de Google). Hay que decirlo muy claro y pedir la configuración en el mismo mensaje: el usuario
+  creyó que no estaban hechas porque la app seguía sin pedir contraseña.
 - **Cómo se guardan los datos:**
   - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
     `usuarios/{uid}`;

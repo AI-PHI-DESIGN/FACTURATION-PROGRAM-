@@ -1125,14 +1125,14 @@ body.con-acceso{overflow:hidden}
     <h1>Facturación</h1>
     <div id="acceso-cargando"><div class="ia-cargando" style="justify-content:center"><span class="ia-giro"></span><span id="acceso-cargando-texto">Abriendo…</span></div></div>
     <div id="acceso-formulario" hidden>
-      <p class="suave" style="font-size:14.5px;margin:6px 0 18px">Entra con tu usuario para tener tus empresas, clientes y facturas en cualquier móvil u ordenador.</p>
+      <p class="suave" style="font-size:14.5px;margin:6px 0 18px">Entra con tu correo y tu contraseña para tener tus empresas, clientes y facturas en cualquier móvil u ordenador.</p>
       <div class="seg" id="acceso-modo" style="width:100%;margin-bottom:16px">
         <button type="button" data-modo="entrar" class="activo" style="flex:1">Entrar</button>
         <button type="button" data-modo="crear" style="flex:1">Crear cuenta</button>
       </div>
       <form id="form-acceso" novalidate>
-        <label>Usuario <input id="ac-usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Ej.: fran"></label>
-        <p class="tenue" id="ac-ayuda-usuario" style="font-size:13px;margin:-6px 0 12px" hidden>Un nombre (sin espacios) o tu correo. Con el correo podrás recuperar la contraseña si la olvidas.</p>
+        <label>Correo electrónico <input id="ac-usuario" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="nombre@gmail.com"></label>
+        <p class="tenue" id="ac-ayuda-usuario" style="font-size:13px;margin:-6px 0 12px" hidden>Usa un correo tuyo de verdad: si olvidas la contraseña, te llegará ahí un enlace para cambiarla.</p>
         <label>Contraseña <input id="ac-clave" type="password" autocomplete="current-password"></label>
         <label id="lbl-ac-clave2" hidden>Repite la contraseña <input id="ac-clave2" type="password" autocomplete="new-password"></label>
         <p class="ia-error" id="ac-error" hidden></p>
@@ -1140,7 +1140,7 @@ body.con-acceso{overflow:hidden}
         <button type="submit" class="btn primario" id="ac-boton" style="width:100%">Entrar</button>
         <button type="button" class="btn-enlace" id="ac-olvido">¿Has olvidado la contraseña?</button>
       </form>
-      <p class="tenue" style="font-size:13px;margin:16px 0 0">Cada persona tiene su propio usuario y solo ve sus datos.</p>
+      <p class="tenue" style="font-size:13px;margin:16px 0 0">Cada persona tiene su propia cuenta y solo ve sus datos.</p>
     </div>
   </div>
 </div>
@@ -1167,7 +1167,7 @@ body.con-acceso{overflow:hidden}
 (function () {
 'use strict';
 
-const VERSION_APP = '3.3';
+const VERSION_APP = '3.4';
 
 /* =========================================================
    Utilidades
@@ -3531,10 +3531,10 @@ id('acceso-modo').addEventListener('click', (ev) => {
 function mensajeErrorCuenta(codigo) {
   switch (codigo) {
     case 'auth/invalid-credential': case 'auth/invalid-login-credentials': case 'auth/wrong-password': case 'auth/user-not-found':
-      return 'Usuario o contraseña incorrectos.';
-    case 'auth/email-already-in-use': return 'Ese usuario ya existe. Elige otro, o entra con él.';
+      return 'Correo o contraseña incorrectos.';
+    case 'auth/email-already-in-use': return 'Ya hay una cuenta con ese correo. Pulsa «Entrar» (o «¿Has olvidado la contraseña?»).';
     case 'auth/weak-password': return 'La contraseña es demasiado corta (mínimo 6 caracteres).';
-    case 'auth/invalid-email': return 'Ese usuario no es válido.';
+    case 'auth/invalid-email': return 'Ese correo no es válido.';
     case 'auth/too-many-requests': return 'Demasiados intentos. Espera unos minutos y prueba otra vez.';
     case 'auth/network-request-failed': return 'No hay conexión a internet. Para entrar la primera vez hace falta internet.';
     case 'auth/requires-recent-login': return 'Por seguridad, cierra la sesión, vuelve a entrar y repite el cambio.';
@@ -3548,8 +3548,9 @@ id('form-acceso').addEventListener('submit', async (ev) => {
   const error = (t) => { id('ac-error').textContent = t; id('ac-error').hidden = false; };
   const usuario = limpiarUsuario(id('ac-usuario').value);
   const clave = id('ac-clave').value;
-  if (!usuario) return error('Escribe tu usuario.');
-  if (!usuario.includes('@') && !/^[a-z0-9._-]{3,30}$/.test(usuario)) return error('El usuario debe tener entre 3 y 30 letras o números, sin espacios.');
+  if (!usuario) return error('Escribe tu correo.');
+  // Además del correo, se admite un nombre de usuario sin espacios (cuentas creadas así antes).
+  if (usuario.includes('@') ? !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(usuario) : !/^[a-z0-9._-]{3,30}$/.test(usuario)) return error('Escribe un correo válido (por ejemplo, nombre@gmail.com).');
   if (clave.length < 6) return error('La contraseña debe tener al menos 6 caracteres.');
   if (modoAcceso === 'crear' && clave !== id('ac-clave2').value) return error('Las dos contraseñas no coinciden.');
   id('ac-error').hidden = true;
@@ -3574,7 +3575,7 @@ id('ac-olvido').addEventListener('click', async () => {
   if (!usuario.includes('@')) {
     info(usuario
       ? 'Tu usuario no es un correo, así que no se puede enviar un enlace. Pide a quien gestiona la app que te ponga una contraseña nueva (docs/CUENTAS.md).'
-      : 'Si tu usuario es tu correo, escríbelo arriba y vuelve a pulsar aquí: te llegará un enlace para poner una contraseña nueva.');
+      : 'Escribe arriba tu correo y vuelve a pulsar aquí: te llegará un enlace para poner una contraseña nueva.');
     return;
   }
   try {

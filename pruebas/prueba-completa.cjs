@@ -593,7 +593,7 @@ function vigilarErrores(page, errores, nube = false) {
     comprobar(await l.isVisible('#ini-vacio') && erroresLocal.length === 0, 'abre desde el archivo sin errores');
     await local.close();
 
-    console.log('17. Cuentas: usuario y contraseña por persona, datos en la nube (emuladores de Firebase)');
+    console.log('17. Cuentas: correo y contraseña por persona, datos en la nube (emuladores de Firebase)');
     if (!(await emuladoresListos())) {
       if (process.env.SIN_NUBE) console.log('    · emuladores no disponibles: se salta (SIN_NUBE=1)');
       else comprobar(false, 'los emuladores de Firebase no arrancan (Java 11+ y npx). Para saltar esta parte: SIN_NUBE=1');
@@ -645,7 +645,7 @@ function vigilarErrores(page, errores, nube = false) {
       await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-acceso.png') });
       await entrar(b, 'fran', 'otra-clave');
       await b.waitForSelector('#ac-error:not([hidden])', { timeout: 20000 });
-      comprobar((await b.textContent('#ac-error')).includes('Usuario o contraseña incorrectos'), 'contraseña incorrecta: no entra y lo explica');
+      comprobar((await b.textContent('#ac-error')).includes('Correo o contraseña incorrectos'), 'contraseña incorrecta: no entra y lo explica');
       await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-error.png') });
       await entrar(b, 'fran', 'clave-de-fran');
       await b.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
@@ -686,8 +686,10 @@ function vigilarErrores(page, errores, nube = false) {
       await c.reload();
       await entrar(c, 'fran', 'lo-que-sea', true);
       await c.waitForSelector('#ac-error:not([hidden])', { timeout: 20000 });
-      comprobar((await c.textContent('#ac-error')).includes('ya existe'), 'no deja crear un usuario que ya existe');
-      await entrar(c, 'mama', 'clave-de-mama', true);
+      comprobar((await c.textContent('#ac-error')).includes('Ya hay una cuenta'), 'no deja crear una cuenta que ya existe');
+      await entrar(c, 'mama@ejemplo', 'clave-de-mama', true);
+      comprobar((await c.textContent('#ac-error')).includes('correo válido'), 'pide un correo válido');
+      await entrar(c, 'Mama@Ejemplo.es ', 'clave-de-mama', true);
       await c.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
       const uidMama = await uidDe(c);
       comprobar(await esperarNube(async () => (await docsNube(uidMama, 'facturas')).some((f) => f.concepto && f.concepto.stringValue === 'Factura de antes de tener cuenta')),
@@ -697,7 +699,7 @@ function vigilarErrores(page, errores, nube = false) {
       // Las reglas de seguridad: con la sesión de «mama» no se pueden leer ni escribir los datos de «fran»
       const sesion = await (await fetch(`${AUTH_EMU}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-clave`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: 'mama@usuarios.facturacion.app', password: 'clave-de-mama', returnSecureToken: true }),
+        body: JSON.stringify({ email: 'mama@ejemplo.es', password: 'clave-de-mama', returnSecureToken: true }),
       })).json();
       const urlDocs = (uid) => `${FS_EMU}/v1/projects/${PROYECTO}/databases/(default)/documents/usuarios/${uid}/facturas`;
       const leerAjeno = await fetch(urlDocs(uidFran), { headers: { Authorization: 'Bearer ' + sesion.idToken } });
@@ -717,7 +719,13 @@ function vigilarErrores(page, errores, nube = false) {
       // ¿Ha olvidado la contraseña? Con un nombre de usuario (no un correo), la cambia quien gestiona la app
       await b.fill('#ac-usuario', 'fran');
       await b.click('#ac-olvido');
-      comprobar((await b.textContent('#ac-info')).includes('no es un correo'), '«¿Has olvidado la contraseña?» explica qué hacer');
+      comprobar((await b.textContent('#ac-info')).includes('no es un correo'), '«¿Has olvidado la contraseña?» con un nombre de usuario: explica qué hacer');
+      await b.fill('#ac-usuario', 'mama@ejemplo.es');
+      await b.click('#ac-olvido');
+      await b.waitForFunction(() => document.querySelector('#ac-info').textContent.includes('le llegará un correo'), null, { timeout: 15000 }).catch(() => {});
+      const codigos = await (await fetch(`${AUTH_EMU}/emulator/v1/projects/${PROYECTO}/oobCodes`)).json();
+      comprobar((await b.textContent('#ac-info')).includes('le llegará un correo') && (codigos.oobCodes || []).some((o) => o.email === 'mama@ejemplo.es' && o.requestType === 'PASSWORD_RESET'),
+        '«¿Has olvidado la contraseña?» con un correo: envía el enlace para cambiarla');
       const salidaClave = execFileSync('python3', [path.join(RAIZ, 'herramientas', 'cambiar-clave.py'), PROYECTO, 'fran', 'clave-nueva-fran'], { env: { ...process.env, EMULADOR: '1' } }).toString();
       await entrar(b, 'fran', 'clave-nueva-fran');
       await b.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });

@@ -7,7 +7,7 @@ está **vencido**.
 - **Se instala en el móvil** (Android o iPhone) desde un enlace, con su icono.
 - **Funciona sin internet** una vez instalada.
 - **Envía la factura en PDF** por WhatsApp o correo, y **recuerda el cobro** con un toque.
-- **Cuentas con usuario y contraseña**: cada persona (Fran, tu madre…) entra con lo suyo y tiene **todas sus
+- **Cuentas con correo y contraseña**: cada persona (Fran, tu madre…) entra con lo suyo y tiene **todas sus
   empresas, clientes y facturas** en cualquier móvil u ordenador, al momento. Nadie ve los datos de otro. Se
   activan con un proyecto gratuito de Firebase: [`docs/CUENTAS.md`](docs/CUENTAS.md). Mientras no se activen, los
   datos se quedan en cada dispositivo y no se envían a ningún servidor.
@@ -36,7 +36,7 @@ está **vencido**.
 
 ## Cómo se usa
 
-- **Entrar:** con las cuentas activadas, la primera vez se pulsa **Crear cuenta** (usuario y contraseña). En otro
+- **Entrar:** con las cuentas activadas, la primera vez se pulsa **Crear cuenta** (correo y contraseña). En otro
   móvil u ordenador se pulsa **Entrar** con los mismos datos y aparece todo. En **Ajustes → Mi cuenta** se cambia la
   contraseña o se cierra la sesión.
 - **Ajustes → Mis empresas → Añadir empresa.** Se rellenan una vez:

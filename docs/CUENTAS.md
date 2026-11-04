@@ -1,6 +1,6 @@
-# Cuentas: usuario y contraseña por persona
+# Cuentas: correo y contraseña por persona
 
-Con las cuentas activadas, cada persona (Fran, tu madre…) entra con **su usuario y su contraseña** y tiene
+Con las cuentas activadas, cada persona (Fran, tu madre…) entra con **su correo y su contraseña** y tiene
 **todas sus empresas, clientes y facturas** en cualquier móvil u ordenador. Si cambia algo en el móvil, aparece solo
 en el ordenador. Sin internet se puede seguir trabajando: los cambios se suben al volver la conexión.
 
@@ -40,7 +40,7 @@ Mientras no se haga lo de abajo, la app sigue **sin cuentas**, como hasta ahora 
 
    Estos datos **no son secretos** (van dentro de cualquier app web de Firebase) y se pueden subir al repositorio
    público. Lo que protege la información son las reglas del paso 4 y las contraseñas.
-7. Al publicarlo, la app pide usuario y contraseña. Cada persona pulsa **Crear cuenta** la primera vez.
+7. Al publicarlo, la app pide correo y contraseña. Cada persona pulsa **Crear cuenta** la primera vez.
    - Si en ese móvil ya había facturas de antes, la app pregunta si se pasan a la cuenta.
 8. **Recomendado:** cuando ya estén creadas las cuentas de todos, cierra la puerta a cuentas nuevas:
    - en `config-nube.js`, `permitirRegistro: false` (quita el botón «Crear cuenta»);
@@ -48,17 +48,18 @@ Mientras no se haga lo de abajo, la app sigue **sin cuentas**, como hasta ahora 
      (registro)**. Esto es lo que lo impide de verdad. Las cuentas nuevas se crean entonces en
      **Authentication → Usuarios → Agregar usuario**, con el correo `nombre@usuarios.facturacion.app`.
 
-## El usuario
+## El correo
 
-- Puede ser **un nombre** (`fran`, `mama`…): letras y números, sin espacios. Por dentro se convierte en
-  `fran@usuarios.facturacion.app`; ese correo no existe y no se envía nada.
-- O **un correo de verdad**. Así, si se olvida la contraseña, el botón **«¿Has olvidado la contraseña?»** manda un
-  enlace para poner otra.
+- Se entra con **un correo de verdad** y una contraseña (mínimo 6 caracteres). Si se olvida la contraseña, el botón
+  **«¿Has olvidado la contraseña?»** manda a ese correo un enlace para poner otra.
+- También se admite **un nombre** sin espacios (`fran`, `mama`…). Por dentro se convierte en
+  `fran@usuarios.facturacion.app`, un correo que no existe, así que con un nombre no se puede recuperar la
+  contraseña por correo.
 
 ## Si alguien olvida la contraseña
 
-- **Si su usuario es un correo:** pantalla de acceso → **¿Has olvidado la contraseña?**
-- **Si su usuario es un nombre:** quien gestiona el proyecto de Firebase le pone una nueva:
+- **Si entra con su correo:** pantalla de acceso → escribe el correo → **¿Has olvidado la contraseña?**
+- **Si entra con un nombre:** quien gestiona el proyecto de Firebase le pone una nueva:
   1. Abre **https://shell.cloud.google.com** con la cuenta de Google dueña del proyecto.
   2. Sube [`herramientas/cambiar-clave.py`](../herramientas/cambiar-clave.py) (menú ⋮ → Subir) y ejecuta:
 
