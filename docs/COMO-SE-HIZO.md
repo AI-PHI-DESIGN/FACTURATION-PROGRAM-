@@ -284,6 +284,9 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
 - **Lección:** las cuentas quedan **apagadas** hasta tener el proyecto de Firebase (solo lo puede crear el usuario,
   con su cuenta de Google). Hay que decirlo muy claro y pedir la configuración en el mismo mensaje: el usuario
   creyó que no estaban hechas porque la app seguía sin pedir contraseña.
+- **Si el usuario quiere que otro asistente (Gemini…) cree el proyecto de Firebase:** se le pasa el texto de la
+  sección «Hacerlo con un asistente» de `docs/CUENTAS.md` (pasos exactos, plan gratuito, reglas incluidas, y que
+  devuelva el `firebaseConfig`). Con ese bloque se rellena `config-nube.js` y se publica.
 - **Cómo se guardan los datos:**
   - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
     `usuarios/{uid}`;

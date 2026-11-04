@@ -48,6 +48,48 @@ Mientras no se haga lo de abajo, la app sigue **sin cuentas**, como hasta ahora 
      (registro)**. Esto es lo que lo impide de verdad. Las cuentas nuevas se crean entonces en
      **Authentication → Usuarios → Agregar usuario**, con el correo `nombre@usuarios.facturacion.app`.
 
+## Hacerlo con un asistente (Gemini u otro)
+
+Si prefieres que lo haga (o te guíe) un asistente con IA, pégale este texto. Si el asistente puede manejar el
+navegador, lo hace él; si no, te lleva paso a paso. Al final te da el bloque `firebaseConfig` para el paso 6.
+
+```text
+Necesito que me configures un proyecto de Firebase para una app web de facturación que ya está hecha
+(https://ai-phi-design.github.io/FACTURATION-PROGRAM-/). Si puedes usar mi navegador, hazlo tú en
+https://console.firebase.google.com con mi cuenta de Google. Si no puedes, guíame paso a paso: dime solo un
+paso cada vez y espera a que te diga que está hecho.
+
+1. Crea un proyecto nuevo llamado "facturacion". Sin Google Analytics. Debe quedarse en el plan gratuito
+   (Spark): no actives la facturación ni el plan Blaze, y no metas ninguna tarjeta.
+2. Authentication → Comenzar → Método de inicio de sesión → activa SOLO "Correo electrónico/contraseña"
+   (no actives "Vínculo de correo electrónico"). Guardar.
+3. Firestore Database → Crear base de datos. Si pregunta la edición, "Standard". ID de la base de datos:
+   (default). Ubicación: europe-southwest1 (Madrid). Modo: producción.
+4. Firestore Database → pestaña Reglas → borra todo, pega exactamente este texto y pulsa Publicar:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /{coleccion}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid
+          && coleccion in ['empresas', 'clientes', 'facturas'];
+      }
+    }
+  }
+}
+
+5. Configuración del proyecto (rueda dentada) → General → Tus apps → icono Web (</>) → apodo "Facturación".
+   NO marques Firebase Hosting. Registrar app.
+6. Dame el bloque firebaseConfig completo, tal cual (apiKey, authDomain, projectId, storageBucket,
+   messagingSenderId, appId).
+
+Importante: no actives ningún otro servicio, no cambies nada más y no me hagas instalar nada en el ordenador
+(no hace falta npm ni la herramienta de línea de comandos de Firebase). Si algún paso pide pagar o una
+tarjeta, para y avísame. Al terminar, confírmame uno por uno los pasos hechos.
+```
+
 ## El correo
 
 - Se entra con **un correo de verdad** y una contraseña (mínimo 6 caracteres). Si se olvida la contraseña, el botón
