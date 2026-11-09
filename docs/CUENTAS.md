@@ -14,6 +14,32 @@ funcionar **sin cuentas** (los datos en cada dispositivo).
 
 ![Pantalla de acceso](capturas/movil-0-acceso.png)
 
+## ¿Dónde se guardan los datos y quién los ve?
+
+| Dónde | Qué hay | Quién lo ve |
+|---|---|---|
+| **Cloud Firestore** (Google), en el proyecto de Firebase `facturacion-536fc`, que es de la cuenta de Google que lo creó | Todo: empresas (con logo y firma), clientes, facturas y ajustes de cada persona | Cada persona, **solo lo suyo** (lo imponen las reglas de `firestore.rules`). El **dueño del proyecto** puede verlo todo desde la consola de Firebase (Firestore Database → Datos). Google lo guarda cifrado como proveedor. |
+| **Cada móvil u ordenador** donde alguien ha entrado | Una copia de sus datos, para trabajar sin internet | Quien use ese dispositivo. Se borra al **cerrar la sesión**. |
+| **GitHub** (repositorio público) | Solo el **código** de la app, nunca datos | Cualquiera |
+| **Anthropic** (solo con el lector con IA) | El PDF o la foto que se le pasa para leer los datos del cliente | Se envía solo para leerlo; la app no lo guarda allí |
+
+- **Las contraseñas** se guardan cifradas (*hash*) en Firebase Authentication: nadie puede verlas, ni el dueño del
+  proyecto.
+- **La ubicación** (por ejemplo, `europe-southwest1`, Madrid) se elige al crear la base de datos y no se puede
+  cambiar. Se ve en Firestore Database o en Configuración del proyecto → General.
+- **Plan gratuito (Spark):** 1 GB de datos y miles de lecturas y escrituras al día, mucho más de lo que usa la app.
+  Si un día se pasara, dejaría de guardar en la nube hasta el día siguiente, pero **nunca cobra** (no hay tarjeta).
+- **Tamaño:** cada empresa, cliente o factura es un documento de Firestore (máximo 1 MB). Por eso el logo y la firma
+  se reducen a 300 KB como mucho. Si algo no cabe, la app avisa y no lo sube.
+
+**Recomendaciones:**
+
+1. Activar la **verificación en dos pasos** en la cuenta de Google dueña del proyecto: quien entre en esa cuenta
+   puede ver y borrar todos los datos.
+2. **Descargar una copia** de vez en cuando (Ajustes → Descargar copia). En el plan gratuito no hay copias
+   automáticas, y lo que se borra en un dispositivo se borra en todos.
+3. Cuando todos tengan cuenta, **cerrar el registro** de cuentas nuevas (paso 8 de abajo).
+
 ## Activarlas (una sola vez, unos 10 minutos)
 
 1. Entra en **https://console.firebase.google.com** con tu cuenta de Google → **Crear un proyecto**.

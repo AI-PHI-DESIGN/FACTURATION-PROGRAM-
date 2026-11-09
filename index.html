@@ -1167,7 +1167,7 @@ body.con-acceso{overflow:hidden}
 (function () {
 'use strict';
 
-const VERSION_APP = '3.5';
+const VERSION_APP = '3.6';
 
 /* =========================================================
    Utilidades
@@ -3050,21 +3050,35 @@ function leerArchivo(file) {
 function cargarImagen(src) {
   return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 }
-/** Reduce la imagen para que no ocupe demasiado. */
+// Cada empresa se guarda en la cuenta como un documento de Firestore (máximo 1 MB): logo y firma, como mucho 300 KB cada uno.
+const MAX_IMAGEN = 300 * 1024;
+const MAX_DOCUMENTO = 950 * 1000;
+/** Reduce la imagen para que no ocupe demasiado (si hace falta, la hace más pequeña hasta que quepa). */
 async function prepararImagen(file, maxAncho, maxAlto) {
   if (!file || !/^image\//.test(file.type)) throw new Error('El archivo no es una imagen.');
   const img = await cargarImagen(await leerArchivo(file));
   const w = img.naturalWidth || maxAncho, h = img.naturalHeight || maxAlto;
   const s = Math.min(1, maxAncho / w, maxAlto / h);
-  const c = document.createElement('canvas');
-  c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
-  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-  const png = c.toDataURL('image/png');
-  if (file.type === 'image/jpeg' || file.type === 'image/heic') {
+  const lienzo = (fuente, ancho, alto) => {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(ancho)); c.height = Math.max(1, Math.round(alto));
+    c.getContext('2d').drawImage(fuente, 0, 0, c.width, c.height);
+    return c;
+  };
+  const esFoto = file.type === 'image/jpeg' || file.type === 'image/heic';
+  const codificar = (c) => {
+    const png = c.toDataURL('image/png');
+    if (!esFoto) return png;
     const jpg = c.toDataURL('image/jpeg', 0.9);
     return jpg.length < png.length ? jpg : png;
+  };
+  let c = lienzo(img, w * s, h * s);
+  let url = codificar(c);
+  while (url.length > MAX_IMAGEN && c.width > 150) {
+    c = lienzo(c, c.width * 0.8, c.height * 0.8);
+    url = codificar(c);
   }
-  return png;
+  return url;
 }
 id('e-logo-archivo').addEventListener('change', async (ev) => {
   const file = ev.target.files[0];
@@ -3700,7 +3714,14 @@ function subirCambios() {
       vistos.add(rec.id);
       const limpio = limpiarParaNube(rec);
       const json = jsonEstable(limpio);
-      if (sincronizado[col].get(rec.id) !== json) { ops.push({ ref: FB.doc(base, col, rec.id), datos: limpio }); sincronizado[col].set(rec.id, json); }
+      if (sincronizado[col].get(rec.id) === json) return;
+      if (json.length > MAX_DOCUMENTO) {
+        // No cabe en la cuenta: no se sube (si fuera en el lote, fallaría todo el lote) y se avisa.
+        aviso(`«${rec.nombre || rec.codigo || 'Un registro'}» es demasiado grande para guardarlo en tu cuenta. Pon un logo o una firma más pequeños.`, 'error');
+        return;
+      }
+      ops.push({ ref: FB.doc(base, col, rec.id), datos: limpio });
+      sincronizado[col].set(rec.id, json);
     });
     Array.from(sincronizado[col].keys()).forEach((k) => {
       if (!vistos.has(k)) { ops.push({ ref: FB.doc(base, col, k), borrar: true }); sincronizado[col].delete(k); }

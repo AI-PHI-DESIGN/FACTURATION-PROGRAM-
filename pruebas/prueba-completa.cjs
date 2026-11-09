@@ -718,6 +718,25 @@ function vigilarErrores(page, errores, nube = false) {
         'los datos que ya tenía en el dispositivo pasan a su cuenta (lo pregunta antes)');
       comprobar(uidMama !== uidFran && (await docsNube(uidFran, 'facturas')).every((f) => f.concepto.stringValue !== 'Factura de antes de tener cuenta'), 'cada persona tiene sus datos: lo de «mama» no aparece en la cuenta de «fran»');
 
+      // Un logo enorme (2.400 × 1.600 px con ruido, varios MB en PNG) se reduce para que la empresa quepa en la cuenta
+      const logoEnorme = Buffer.from(await c.evaluate(() => {
+        const cv = document.createElement('canvas'); cv.width = 2400; cv.height = 1600;
+        const x = cv.getContext('2d'); const im = x.createImageData(cv.width, cv.height);
+        for (let i = 0; i < im.data.length; i++) im.data[i] = (i % 4 === 3) ? 255 : Math.floor(Math.random() * 256);
+        x.putImageData(im, 0, 0);
+        return cv.toDataURL('image/png').split(',')[1];
+      }), 'base64');
+      const logoNube = async () => { const e = (await docsNube(uidMama, 'empresas'))[0]; return e && e.logo ? e.logo.stringValue : ''; };
+      const logoAntes = await logoNube();
+      await c.click('.nav-item[data-ir=ajustes]');
+      await c.click('#aj-empresas .item-empresa');
+      await c.setInputFiles('#e-logo-archivo', { name: 'logo-enorme.png', mimeType: 'image/png', buffer: logoEnorme });
+      await c.waitForSelector('#e-logo-caja img');
+      await c.click('#form-empresa button[type=submit]');
+      comprobar(logoEnorme.length > 3e6 && await esperarNube(async () => { const l = await logoNube(); return l !== logoAntes && l.length > 100 * 1024 && l.length <= 300 * 1024; }),
+        `un logo enorme (${Math.round(logoEnorme.length / 1e6)} MB) se reduce y la empresa se guarda en la cuenta (${Math.round((await logoNube()).length / 1024)} KB)`);
+      await c.click('#emp-volver');
+
       // Las reglas de seguridad: con la sesión de «mama» no se pueden leer ni escribir los datos de «fran»
       const sesion = await (await fetch(`${AUTH_EMU}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-clave`, {
         method: 'POST', headers: { 'content-type': 'application/json' },

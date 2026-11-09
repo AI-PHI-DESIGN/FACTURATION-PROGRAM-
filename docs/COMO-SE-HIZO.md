@@ -298,6 +298,12 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
   4. el *service worker* pide `config-nube.js` primero a internet y llena la caché con `cache: 'reload'`. Así, al
      activar o cambiar la configuración, los móviles la cogen enseguida (como mucho, hay que abrir la app dos veces
      o pulsar «Actualizar»).
+- **Lección: límite de 1 MB por documento de Firestore.** El logo y la firma van dentro de la empresa como imagen en
+  base64. Una foto o captura grande no cabía: el lote entero de escrituras fallaba y Firestore deshacía también los
+  otros cambios. Ahora `prepararImagen()` reduce cada imagen hasta 300 KB como mucho, y `subirCambios()` no mete en el
+  lote un registro de más de 950 KB (avisa). La prueba sube un logo de 13 MB.
+- **Dónde están los datos** (lo preguntó el usuario): tabla en `docs/CUENTAS.md` → «¿Dónde se guardan los datos y
+  quién los ve?». Hay que decir con claridad que el dueño del proyecto de Firebase puede verlo todo desde la consola.
 - **Cómo se guardan los datos:**
   - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
     `usuarios/{uid}`;
