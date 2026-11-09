@@ -342,9 +342,48 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
   emulador (`Bearer owner` para leer como administrador). Los errores de red provocados a propósito (contraseña
   incorrecta, sin internet) no cuentan como errores de JavaScript.
 
-## 12. Posibles mejoras (no pedidas todavía)
+## 12. Fase 8: Gastos con su color y gráficas de ingresos y gastos
+
+Petición: «un apartado de gastos, de la misma manera que tenemos los ingresos controlados, que al entrar cambie todo a
+otro color que se pueda elegir, y gráficas de dónde se ha ingresado, meses y demás».
+
+- **Datos:** `db.gastos` (un documento por gasto en `usuarios/{uid}/gastos`). Cada gasto guarda el **total con IVA**,
+  el % de IVA y la base y la cuota ya calculadas (`desgloseGasto()`, en céntimos), el proveedor (`{nombre, cif}`),
+  la categoría, si está pagado y la fecha de pago. `normalizarDatos()` añade `gastos: []` a las copias antiguas.
+- **Se apunta por el total:** en los tickets lo que se ve es el total; la app saca la base y el IVA. Al escribir un
+  proveedor que ya se usó, se ponen solos su CIF, su categoría y su IVA.
+- **Navegación:** sexto botón abajo («Gastos»), entre Facturas y Clientes. Cabe sin scroll horizontal en 360 px (se
+  prueba). En Gastos, el «+» apunta un gasto (`aplicarModo()` cambia también su texto).
+- **El color:** `aplicarModo()` pone en `<html>` las variables `--primary*`, `--foco` y las del recuadro grande
+  (`--hero-a`, `--hero-b`, `--sombra-primaria`) a partir del color elegido (`db.ajustes.colorGastos`, se sincroniza con
+  la cuenta). Calcula el contraste: en claro oscurece hasta 4,5:1 con texto blanco; en oscuro aclara hasta 4,5:1 sobre
+  el fondo. Al salir de Gastos se quitan y vuelve el azul. Lo que antes era azul fijo en el CSS (degradado y sombras)
+  ahora usa variables.
+- **Gráficas (skill *dataviz*):**
+  - **ingresos = azul** (`--serie-1`) y **gastos = naranja** (`--serie-2`, `#eb6834` / `#d95926` en oscuro), validados
+    con `validate_palette.js` en claro y oscuro. En las gráficas los gastos son siempre naranja, aunque el color del
+    apartado se cambie: el color de una serie no depende del tema;
+  - `pintarColumnas()` (una o dos series, barras de 24 px como mucho y 2 px de hueco entre las de un mes, detalle al
+    pasar o con el teclado, tabla aparte) sustituye al gráfico de una serie;
+  - `pintarBarrasH()`: barras horizontales ordenadas, valor y % en la punta, «Otros» para el resto (`agruparTop()`);
+  - leyenda siempre que hay dos series; los textos con `textContent`.
+- **Inicio:** gastos del año, **beneficio sin IVA** (base facturada − base de gastos) e **IVA del trimestre** =
+  repercutido − soportado (el del modelo 303, aproximado).
+- **Reglas de Firebase:** las primeras solo permitían `empresas`, `clientes` y `facturas`, así que los gastos daban
+  «permiso denegado». Ahora son **genéricas** (todo lo que cuelga de `usuarios/{uid}`), para no tener que tocarlas en
+  cada función nueva. Mientras el usuario no las vuelva a publicar, la app **no se rompe**: `errorColeccion()` marca
+  `gastosSinPermiso`, no sube gastos, avisa en Gastos y deja entrar al resto. La prueba 17 lo comprueba cargando en el
+  emulador las reglas antiguas (`PUT /emulator/v1/projects/{p}:securityRules`).
+- **Lección:** antes de dar por buena una función con cuentas, hay que preguntarse si las reglas de Firebase la dejan
+  guardar. Y si no, que la app lo explique en vez de fallar.
+- **Datos de ejemplo:** 10 gastos inventados (alquiler, gestoría, seguro sin IVA, uno por pagar…) para ver las
+  gráficas llenas. «Borrar el ejemplo» también los quita.
+
+## 13. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
 - Facturas rectificativas.
 - Requisitos Veri\*factu: hash encadenado, QR y envío a la AEAT.
 - Compartir una cuenta entre varias personas (por ejemplo, Fran y su gestor), con permisos de solo lectura.
+- Lector con IA también para los gastos: foto del ticket → proveedor, fecha, total, IVA y categoría.
+- Gastos que se repiten cada mes (alquiler, gestoría): apuntarlos solos.

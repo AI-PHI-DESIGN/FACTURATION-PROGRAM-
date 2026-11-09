@@ -344,7 +344,8 @@ function vigilarErrores(page, errores, nube = false) {
     const zona = page.locator('#ini-grafico .g-hit').nth(HOY.getMonth());
     await zona.hover();
     await page.waitForTimeout(100);
-    comprobar((await page.isVisible('#ini-grafico .tooltip')) && (await page.textContent('#ini-grafico .tooltip')).includes('Facturado en'), 'al pasar por encima sale el detalle del mes');
+    const detalleMes = (await page.isVisible('#ini-grafico .tooltip')) ? await page.textContent('#ini-grafico .tooltip') : '';
+    comprobar(detalleMes.includes('Ingresos') && detalleMes.includes('Gastos') && detalleMes.includes('Diferencia'), 'al pasar por encima sale el detalle del mes (ingresos, gastos y diferencia)');
     comprobar(await page.locator('#ini-tabla tr').count() === 12, 'los datos del gráfico también están en tabla (12 meses)');
     comprobar(await page.locator('#ini-por-cobrar .item-factura').count() === 3, '«Por cobrar»: 3 facturas');
     await page.mouse.move(5, 5);
@@ -659,6 +660,7 @@ function vigilarErrores(page, errores, nube = false) {
       const uidFran = await uidDe(a);
       comprobar(await esperarNube(async () => (await docsNube(uidFran, 'facturas')).length === 3 && (await docsNube(uidFran, 'empresas')).length === 1),
         'las empresas y facturas se guardan en la cuenta (en la nube)');
+      comprobar(await esperarNube(async () => (await docsNube(uidFran, 'gastos')).length === 10), 'los gastos también se guardan en la cuenta');
 
       // Dispositivo B (móvil): la misma cuenta en otro dispositivo
       const [ctxB, b] = await contextoNube({ ...devices['Pixel 7'] });
@@ -675,6 +677,9 @@ function vigilarErrores(page, errores, nube = false) {
       comprobar(sinEspacios(await b.textContent('#ini-pendiente')) === '4.416,50 €', 'en el móvil, con el mismo usuario, salen todos sus datos');
       await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-inicio.png') });
 
+      await b.click('.nav-item[data-ir=gastos]');
+      await b.waitForFunction(() => document.querySelectorAll('#g-lista .item-gasto').length === 10, null, { timeout: 20000 }).catch(() => {});
+      comprobar(await b.locator('#g-lista .item-gasto').count() === 10, 'en el móvil salen también los 10 gastos');
       // B marca una factura como cobrada → A lo ve al momento, sin recargar
       await b.click('.nav-item[data-ir=facturas]');
       await b.click('#c-lista .item-factura:has-text("A 15/26") [data-estado]');
@@ -793,6 +798,21 @@ function vigilarErrores(page, errores, nube = false) {
       await entrar(b, 'fran', 'clave-nueva-fran');
       await b.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
       comprobar(salidaClave.includes('Contraseña cambiada') && (await b.textContent('#nav-pie')).includes('fran'), 'herramientas/cambiar-clave.py le pone una contraseña nueva y ya puede entrar');
+      // Una cuenta con las reglas ANTIGUAS de Firebase (sin gastos): la app sigue funcionando y lo explica en Gastos
+      const reglas = (texto) => fetch(`${FS_EMU}/emulator/v1/projects/${PROYECTO}:securityRules`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { files: [{ name: 'firestore.rules', content: texto }] } }) });
+      await reglas(fs.readFileSync(path.join(RAIZ, 'firestore.rules'), 'utf8').replace(
+        /match \/\{coleccion\}\/\{docId\} \{\s*allow read, write: if request\.auth != null && request\.auth\.uid == uid;/,
+        "match /{coleccion}/{docId} { allow read, write: if request.auth != null && request.auth.uid == uid && coleccion in ['empresas', 'clientes', 'facturas'];"));
+      await c.reload();
+      await c.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      await c.click('.nav-item[data-ir=gastos]');
+      await c.waitForSelector('#g-sin-permiso:not([hidden])', { timeout: 15000 }).catch(() => {});
+      comprobar(await c.isVisible('#g-sin-permiso'), 'con las reglas antiguas de Firebase, Gastos avisa de que falta actualizarlas');
+      await c.click('.nav-item[data-ir=inicio]');
+      comprobar(await c.isVisible('#ini-panel'), '… y el resto de la app sigue funcionando');
+      await reglas(fs.readFileSync(path.join(RAIZ, 'firestore.rules'), 'utf8'));
+      await c.reload();
+      await c.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
       // Y la contraseña se puede cambiar
       await c.click('.nav-item[data-ir=ajustes]');
       await c.click('#cuenta-cambiar summary');
@@ -863,6 +883,138 @@ function vigilarErrores(page, errores, nube = false) {
       await act.close();
       pages.close();
       fs.rmSync(tmp, { recursive: true, force: true });
+    }
+
+    console.log('19. Gastos: apartado propio, con su color, gráficas y CSV');
+    {
+      const gCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES', acceptDownloads: true });
+      await gCtx.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+      await sinNube(gCtx);
+      await gCtx.clock.setFixedTime(HOY);
+      const g = await gCtx.newPage();
+      vigilarErrores(g, errores);
+      const irG = async (vista) => { await g.click(`.nav-item[data-ir=${vista}]`); await g.waitForTimeout(120); };
+      const varCSS = (n) => g.evaluate((x) => getComputedStyle(document.documentElement).getPropertyValue(x).trim(), n);
+      await g.goto(URL_APP);
+      await g.click('#btn-ejemplo');
+      await g.waitForTimeout(150);
+      const tilesG = sinEspacios(await g.textContent('#ini-tiles'));
+      comprobar(/Gastos en 2026\s*3\.354,05/.test(tilesG), 'Inicio: gastos del año (3.354,05 €)');
+      comprobar(/Beneficio en 2026\s*3\.256,47/.test(tilesG), 'Inicio: beneficio sin IVA = 6.100,00 − 2.843,53 = 3.256,47 €');
+      comprobar(/IVA del 4\.º trimestre\s*155,18/.test(tilesG) && tilesG.includes('514,50 € repercutido − 359,32 € soportado'), 'Inicio: IVA del trimestre a pagar = repercutido − soportado (155,18 €)');
+      comprobar(await g.locator('#ini-grafico .g-barra.s2').count() >= 1 && await g.isVisible('#vista-inicio .leyenda'), 'el gráfico por meses tiene ingresos y gastos, con leyenda');
+      const origen = sinEspacios(await g.textContent('#ini-origen'));
+      comprobar(await g.locator('#ini-origen .bh-fila').count() === 2 && /INMOBILIARIA LEVANTE GESTIÓN SL\s*5\.929 €\s*80 %/.test(origen), 'de dónde vienen los ingresos: por cliente, de más a menos, con % (80 % el primero)');
+      await g.locator('#ini-origen .bh-fila').first().hover();
+      comprobar((await g.textContent('#ini-origen .tooltip')).includes('2 facturas'), 'al pasar por encima, el detalle (importe, % y nº de facturas)');
+      comprobar(/^Alquiler\s*2\.178 €\s*65 %/.test(sinEspacios(await g.textContent('#ini-gastos-cat'))), 'en qué se va el dinero: Alquiler primero (65 %)');
+      const primarioIngresos = await varCSS('--primary');
+
+      await irG('gastos');
+      const primarioGastos = await varCSS('--primary');
+      comprobar(primarioGastos === '#c2410c' && primarioGastos !== primarioIngresos && await g.evaluate(() => document.documentElement.dataset.modo === 'gastos'),
+        `al entrar en Gastos toda la app cambia de color (${primarioIngresos} → ${primarioGastos})`);
+      comprobar(await g.getAttribute('.nav-nueva', 'aria-label') === 'Nuevo gasto' && (await g.textContent('.nav-nueva')).includes('Nuevo gasto'), 'en Gastos, el botón «+» es «Nuevo gasto»');
+      const tarjetasG = sinEspacios(await g.textContent('#g-tarjetas'));
+      comprobar(/Total gastado\s*3\.354,05/.test(tarjetasG) && /IVA soportado\s*510,52/.test(tarjetasG) && /Por pagar\s*726,00/.test(tarjetasG), 'Gastos: total 3.354,05 €, IVA soportado 510,52 €, por pagar 726,00 €');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 10 && await g.locator('#g-grafico .g-barra.s2').count() === 3, '10 gastos en la lista y gráfico por meses (sep, oct, nov)');
+      await g.click('#g-estado [data-valor=pendientes]');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 1, 'filtro «Por pagar»: 1 gasto');
+      await g.click('#g-lista .item-gasto [data-pagado]');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 0 && (await g.textContent('#toast')).includes('pagado'), 'un toque en «Por pagar» lo marca como pagado');
+      await g.click('#toast-accion');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 1, '«Deshacer» lo deja como estaba');
+      await g.click('#g-estado [data-valor=""]');
+
+      // Gasto nuevo de un proveedor que ya existe: se rellenan su CIF y su categoría
+      await g.click('.nav-nueva');
+      comprobar(await g.isVisible('#form-gasto') && await varCSS('--primary') === '#c2410c', 'el «+» abre un gasto nuevo (con el color de Gastos)');
+      await g.click('#form-gasto button[type=submit]');
+      comprobar((await g.textContent('#toast')).includes('importe'), 'sin importe no se guarda (y lo dice)');
+      await g.fill('#gs-prov', 'ASESORÍA CONTABLE NORTE SL');
+      await g.dispatchEvent('#gs-prov', 'change');
+      comprobar(await g.inputValue('#gs-prov-cif') === 'B22222222' && await g.inputValue('#gs-categoria') === 'Gestoría y asesoría', 'al elegir un proveedor ya usado se ponen su CIF y su categoría');
+      await g.fill('#gs-total', '145,20');
+      comprobar(sinEspacios(await g.textContent('#gs-desglose')).includes('Base imponible 120,00 €') && sinEspacios(await g.textContent('#gs-desglose')).includes('25,20 €'), 'del total con IVA saca la base (120,00 €) y el IVA (25,20 €)');
+      await g.click('#form-gasto button[type=submit]');
+      comprobar(await g.isVisible('#vista-gastos') && await g.locator('#g-lista .item-gasto').count() === 11 && (await g.textContent('#toast')).includes('Gasto apuntado'), 'gasto guardado: vuelve a la lista (11 gastos)');
+      // Otra categoría, sin IVA y sin pagar
+      await g.click('.nav-nueva');
+      await g.fill('#gs-prov', 'LIMPIEZAS DEL PUERTO');
+      await g.selectOption('#gs-categoria', '__otra');
+      await g.fill('#gs-cat-otra', 'Limpieza');
+      await g.fill('#gs-total', '30');
+      await g.selectOption('#gs-iva', '0');
+      await g.click('#gs-pagado');
+      await g.click('#form-gasto button[type=submit]');
+      comprobar((await g.locator('#g-cat option').allTextContents()).includes('Limpieza') && sinEspacios(await g.textContent('#g-tarjetas')).includes('756,00'), 'categoría propia («Limpieza»), sin IVA y por pagar (por pagar: 756,00 €)');
+      // Editar y borrar
+      await g.click('#g-lista .item-gasto:has-text("LIMPIEZAS DEL PUERTO") [data-abrir]');
+      comprobar(await g.inputValue('#gs-cat-otra') === '' && await g.inputValue('#gs-categoria') === 'Limpieza' && !(await g.isChecked('#gs-pagado')), 'al abrir un gasto salen sus datos');
+      await g.fill('#gs-total', '45');
+      await g.click('#form-gasto button[type=submit]');
+      comprobar((await g.textContent('#g-lista .item-gasto:has-text("LIMPIEZAS DEL PUERTO")')).includes('45,00'), 'gasto modificado');
+      await g.click('#g-lista .item-gasto:has-text("LIMPIEZAS DEL PUERTO") [data-borrar]');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 11, 'gasto borrado');
+      await g.click('#toast-accion');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 12, '«Deshacer» lo recupera');
+      // CSV para el gestor
+      const [csvG] = await Promise.all([g.waitForEvent('download'), g.click('#g-exportar')]);
+      const textoCSV = fs.readFileSync(await csvG.path(), 'utf8');
+      fs.writeFileSync(path.join(SALIDA, 'gastos.csv'), textoCSV);
+      comprobar(textoCSV.split('\r\n')[0].includes('Proveedor;CIF proveedor') && textoCSV.includes('ASESORÍA CONTABLE NORTE SL;B22222222') && textoCSV.includes(';120,00;21;25,20;145,20;'), 'CSV de gastos para el gestor (base, IVA y total)');
+      await g.screenshot({ path: path.join(SALIDA, 'escritorio-gastos.png'), fullPage: true });
+
+      // Al salir de Gastos, vuelve el color normal
+      await irG('inicio');
+      comprobar(await varCSS('--primary') === primarioIngresos && await g.evaluate(() => !document.documentElement.dataset.modo), 'al salir de Gastos vuelve el color de siempre');
+      // El color se elige en Ajustes
+      await irG('ajustes');
+      await g.click('#aj-color-gastos [data-color="#7c3aed"]');
+      await irG('gastos');
+      comprobar(await varCSS('--primary') === '#7c3aed', 'el color de Gastos se elige en Ajustes (morado)');
+      await irG('ajustes');
+      await g.click('#aj-tema [data-tema=oscuro]');
+      await irG('gastos');
+      const oscuroG = await varCSS('--primary');
+      comprobar(oscuroG !== '#7c3aed' && oscuroG.startsWith('#'), `en modo oscuro se usa una versión más clara del mismo color (${oscuroG})`);
+      await g.screenshot({ path: path.join(SALIDA, 'escritorio-gastos-oscuro.png') });
+      await irG('ajustes');
+      await g.click('#aj-tema [data-tema=claro]');
+      // La copia de seguridad lleva los gastos; una copia de antes (sin gastos) se puede restaurar
+      const [copiaG] = await Promise.all([g.waitForEvent('download'), g.click('#cp-descargar')]);
+      const jsonG = JSON.parse(fs.readFileSync(await copiaG.path(), 'utf8'));
+      comprobar(jsonG.gastos.length === 12 && jsonG.ajustes.colorGastos === '#7c3aed', 'la copia de seguridad lleva los gastos y el color elegido');
+      delete jsonG.gastos;
+      await g.setInputFiles('#cp-archivo', { name: 'copia-antigua.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(jsonG)) });
+      await irG('gastos');
+      comprobar(await g.locator('#g-lista .item-gasto').count() === 0 && (await g.textContent('#g-lista')).includes('Todavía no has apuntado'), 'una copia de antes de Gastos se restaura sin problemas (sin gastos)');
+      await gCtx.close();
+
+      // Móvil: seis botones abajo, sin scroll horizontal (Pixel 7 y un móvil estrecho de 360 px)
+      for (const opc of [devices['Pixel 7'], { ...devices['Pixel 7'], viewport: { width: 360, height: 740 } }]) {
+        const mc = await browser.newContext({ ...opc, locale: 'es-ES' });
+        await sinNube(mc);
+        await mc.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+        await mc.clock.setFixedTime(HOY);
+        const mg = await mc.newPage();
+        vigilarErrores(mg, errores);
+        await mg.goto(URL_APP);
+        await mg.click('#btn-ejemplo');
+        const anchoV = mc._options.viewport.width;
+        const anchos = [];
+        for (const v of ['inicio', 'gastos']) { await mg.click(`.nav-item[data-ir=${v}]`); await mg.waitForTimeout(150); anchos.push(await mg.evaluate(() => document.documentElement.scrollWidth)); }
+        await mg.click('.nav-nueva');
+        anchos.push(await mg.evaluate(() => document.documentElement.scrollWidth));
+        const botones = await mg.locator('.nav .nav-item:visible').count();
+        comprobar(botones === 6 && anchos.every((a) => a <= anchoV + 1), `móvil de ${anchoV} px: 6 botones abajo y sin scroll horizontal (${anchos.join(' / ')} px)`);
+        if (anchoV === 412) {
+          await mg.click('.nav-item[data-ir=gastos]');
+          await mg.waitForTimeout(200);
+          await mg.screenshot({ path: path.join(SALIDA, 'movil-gastos.png') });
+        }
+        await mc.close();
+      }
     }
   } finally {
     await browser.close();

@@ -14,14 +14,19 @@ está **vencido**.
   una foto»** lee el documento con **Claude** (la IA de Anthropic) y rellena el nombre, el CIF, la dirección, el
   teléfono y el email del cliente. Antes de usarlos se pueden revisar. Necesita internet y una clave de la API
   de Claude (ver más abajo).
+- **Gastos:** un apartado propio (abajo, «Gastos») para apuntar lo que se paga: proveedor, categoría, total con IVA
+  (la app saca la base y el IVA) y si está pagado. Al entrar, **toda la app cambia de color** (se elige en Ajustes).
+  Tiene filtros, totales, gráficas y CSV para el gestor.
+- **Gráficas:** ingresos y gastos de cada mes, de dónde vienen los ingresos (por cliente o empresa) y en qué se va el
+  dinero (por categoría). En Inicio también salen el **beneficio** del año y el **IVA del trimestre** a pagar.
 - **«Ver un ejemplo»**: en la pantalla de bienvenida se carga una empresa con facturas **inventadas** para
   probarla. Luego se borra con «Borrar el ejemplo».
 
 **Enlace de la app:** https://ai-phi-design.github.io/FACTURATION-PROGRAM-/
 
-| Acceso | Inicio | Nueva factura | Facturas | Modo oscuro |
-|---|---|---|---|---|
-| ![Acceso](docs/capturas/movil-0-acceso.png) | ![Inicio](docs/capturas/movil-1-inicio.png) | ![Nueva factura](docs/capturas/movil-2-nueva-factura.png) | ![Facturas](docs/capturas/movil-4-facturas.png) | ![Modo oscuro](docs/capturas/movil-6-oscuro.png) |
+| Acceso | Inicio | Nueva factura | Facturas | Gastos | Modo oscuro |
+|---|---|---|---|---|---|
+| ![Acceso](docs/capturas/movil-0-acceso.png) | ![Inicio](docs/capturas/movil-1-inicio.png) | ![Nueva factura](docs/capturas/movil-2-nueva-factura.png) | ![Facturas](docs/capturas/movil-4-facturas.png) | ![Gastos](docs/capturas/movil-7-gastos.png) | ![Modo oscuro](docs/capturas/movil-6-oscuro.png) |
 
 ## Instalarla en el móvil
 
@@ -72,9 +77,9 @@ está **vencido**.
   - **instalar la app**;
   - **modo claro u oscuro**.
 
-| Ordenador: Inicio | Factura impresa / PDF |
-|---|---|
-| ![Inicio](docs/capturas/inicio.png) | ![Factura](docs/capturas/factura-impresa.png) |
+| Ordenador: Inicio | Ordenador: Gastos | Factura impresa / PDF |
+|---|---|---|
+| ![Inicio](docs/capturas/inicio.png) | ![Gastos](docs/capturas/gastos.png) | ![Factura](docs/capturas/factura-impresa.png) |
 
 Ejemplo de factura en PDF, con la plantilla clásica y datos inventados: [`docs/factura-ejemplo.pdf`](docs/factura-ejemplo.pdf).
 Las capturas y este PDF se rehacen con `node herramientas/generar-capturas.cjs`, que usa los datos de ejemplo.

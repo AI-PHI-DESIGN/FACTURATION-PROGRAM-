@@ -7,8 +7,11 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
   - **Moderna:** con color;
 - **numeración por cliente** con el formato `A 15/26` (empieza cada año) o, opcionalmente, una numeración única
   por empresa o con guion (`CPCS-004`);
-- facturas **cobradas, pendientes y vencidas**, panel de Inicio con gráfico, PDF para WhatsApp o correo,
-  recordatorios de cobro, IRPF y modo oscuro.
+- facturas **cobradas, pendientes y vencidas**, panel de Inicio con gráficas, PDF para WhatsApp o correo,
+  recordatorios de cobro, IRPF y modo oscuro;
+- **Gastos** (`db.gastos`): apartado propio que cambia el color de toda la app (`aplicarModo()`, color en
+  `db.ajustes.colorGastos`). En las gráficas, ingresos = azul (`--serie-1`) y gastos = naranja (`--serie-2`),
+  validados con la skill *dataviz*: no los cambies sin volver a validarlos.
 
 **Antes de cambiar nada**
 
@@ -60,7 +63,8 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
   - **activadas** con el proyecto `facturacion-536fc` en `CONFIG_NUBE`, **dentro de `index.html`** (nunca en un archivo
     aparte: los service workers viejos servirían la copia antigua). Si fuera `null`, la app funcionaría sin
     cuentas); guía en `docs/CUENTAS.md`; para comprobar el proyecto real: `herramientas/comprobar-firebase.sh`;
-  - datos en `usuarios/{uid}/{empresas|clientes|facturas}/{id}`; las reglas están en `firestore.rules`;
+  - datos en `usuarios/{uid}/{empresas|clientes|facturas|gastos}/{id}`; las reglas (`firestore.rules`) son genéricas
+    para todo lo que cuelga de `usuarios/{uid}`: una colección nueva no necesita reglas nuevas;
   - todo cambio pasa por `guardarDatos()`, que sube a la nube solo lo que ha cambiado;
   - en las pruebas se usan los emuladores (`herramientas/emuladores-firebase.sh`); `SIN_NUBE=1` se salta esa parte;
     las partes sin cuentas ponen `localStorage['facturacion.nube.prueba'] = 'null'`. Nunca se prueba contra los datos

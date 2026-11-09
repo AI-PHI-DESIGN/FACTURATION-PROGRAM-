@@ -53,6 +53,10 @@ funcionar **sin cuentas** (los datos en cada dispositivo).
      «Actualizar proyecto». Se pulsa **Crear**.
 4. En Firestore, pestaña **Reglas**: borra lo que hay, pega el contenido de [`firestore.rules`](../firestore.rules) y
    pulsa **Publicar**. Estas reglas hacen que **cada usuario solo pueda leer y escribir sus propios datos**.
+   - **Actualización de noviembre de 2026 (Gastos):** las primeras reglas solo dejaban guardar empresas, clientes y
+     facturas. Las de ahora valen para todo lo que cuelga de cada usuario (también los gastos y lo que se añada
+     después). Si en Gastos sale «falta actualizar las reglas», hay que volver a pegar `firestore.rules` y publicar.
+     `herramientas/comprobar-firebase.sh` lo comprueba («guardar un gasto»).
 5. **⚙ Configuración del proyecto** → **Tus apps** → icono **`</>`** (Web) → nombre `Facturación` → **Registrar app**
    (sin Firebase Hosting). Sale un bloque `firebaseConfig` con `apiKey`, `authDomain`, `projectId`, `appId`…
 6. **Pásale ese bloque a Claude**, o pégalo tú en `index.html`, dentro de `<script id="config-nube">`:

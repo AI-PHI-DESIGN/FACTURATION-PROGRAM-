@@ -33,7 +33,7 @@
   --text:#0f172a; --text-2:#4a5568; --muted:#7c879b;
   --primary:#2f5bd8; --primary-hover:#2449b8; --primary-soft:#eaf0ff; --primary-ink:#2447b0; --on-primary:#ffffff;
   --ok:#11743c; --ok-soft:#e3f5ea; --warn:#8f5600; --warn-soft:#fff1d6; --danger:#c0322f; --danger-soft:#fdebea;
-  --serie-1:#2a78d6; --grid:#e8eaf0; --eje:#c3c9d4;
+  --serie-1:#2a78d6; --serie-2:#eb6834; --grid:#e8eaf0; --eje:#c3c9d4;
   --r-lg:18px; --r:14px; --r-sm:10px;
   --sombra-1:0 1px 2px rgba(15,23,42,.04),0 2px 6px rgba(15,23,42,.05);
   --sombra-2:0 12px 32px rgba(15,23,42,.14);
@@ -48,7 +48,7 @@
     --text:#e8edf7; --text-2:#b3bdd0; --muted:#8792aa;
     --primary:#7b96ff; --primary-hover:#93a9ff; --primary-soft:#1d2850; --primary-ink:#a9baff; --on-primary:#0b1020;
     --ok:#4fd38d; --ok-soft:#10301f; --warn:#f5b84f; --warn-soft:#33260c; --danger:#ff8a8a; --danger-soft:#3b1818;
-    --serie-1:#3987e5; --grid:#232d44; --eje:#3a4662;
+    --serie-1:#3987e5; --serie-2:#d95926; --grid:#232d44; --eje:#3a4662;
     --sombra-1:0 1px 2px rgba(0,0,0,.35); --sombra-2:0 12px 32px rgba(0,0,0,.5);
     --foco:0 0 0 3px rgba(123,150,255,.3);
   }
@@ -60,7 +60,7 @@
   --text:#e8edf7; --text-2:#b3bdd0; --muted:#8792aa;
   --primary:#7b96ff; --primary-hover:#93a9ff; --primary-soft:#1d2850; --primary-ink:#a9baff; --on-primary:#0b1020;
   --ok:#4fd38d; --ok-soft:#10301f; --warn:#f5b84f; --warn-soft:#33260c; --danger:#ff8a8a; --danger-soft:#3b1818;
-  --serie-1:#3987e5; --grid:#232d44; --eje:#3a4662;
+  --serie-1:#3987e5; --serie-2:#d95926; --grid:#232d44; --eje:#3a4662;
   --sombra-1:0 1px 2px rgba(0,0,0,.35); --sombra-2:0 12px 32px rgba(0,0,0,.5);
   --foco:0 0 0 3px rgba(123,150,255,.3);
 }
@@ -89,7 +89,7 @@ p{margin:0 0 12px}
 .nav-item:hover{background:var(--surface-3);color:var(--text)}
 .nav-item.activa{background:var(--primary-soft);color:var(--primary-ink)}
 .nav-item:focus-visible{outline:none;box-shadow:var(--foco)}
-.nav-nueva{background:var(--primary);color:var(--on-primary);margin-bottom:14px;justify-content:center;box-shadow:0 6px 16px rgba(47,91,216,.25)}
+.nav-nueva{background:var(--primary);color:var(--on-primary);margin-bottom:14px;justify-content:center;box-shadow:0 6px 16px var(--sombra-primaria,rgba(47,91,216,.25))}
 .nav-nueva:hover,.nav-nueva.activa{background:var(--primary-hover);color:var(--on-primary)}
 .nav-nueva .fab{display:inline-grid;place-items:center}
 .corto{display:none}
@@ -208,7 +208,7 @@ button{font:inherit}
 
 /* ---------- Inicio: cifras y gráfico ---------- */
 .panel-cifras{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:16px}
-.hero-card{display:flex;flex-direction:column;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#2f5bd8 0%,#4b3fc6 100%);color:#fff;border-radius:var(--r-lg);padding:22px;box-shadow:0 14px 34px rgba(47,91,216,.28)}
+.hero-card{display:flex;flex-direction:column;justify-content:space-between;gap:10px;background:linear-gradient(135deg,var(--hero-a,#2f5bd8) 0%,var(--hero-b,#4b3fc6) 100%);color:#fff;border-radius:var(--r-lg);padding:22px;box-shadow:0 14px 34px var(--sombra-primaria,rgba(47,91,216,.28))}
 .hero-card .etq{font-size:14px;font-weight:650;color:rgba(255,255,255,.85)}
 .hero{font-size:clamp(40px,11vw,52px);line-height:1.05;font-weight:780;letter-spacing:-.03em;margin:6px 0 4px;word-break:break-word}
 .hero-sub{font-size:14px;color:rgba(255,255,255,.85);margin:0}
@@ -216,6 +216,7 @@ button{font:inherit}
 .hero-card .btn:hover{background:rgba(255,255,255,.26)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .tiles.fila-tiles{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px}
+@media (min-width:1181px){ .panel-cifras .tiles{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sombra-1);min-width:0}
 .tile .etq{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;color:var(--text-2)}
 .tile .etq svg.i{width:16px;height:16px}
@@ -244,6 +245,43 @@ details.tabla-datos summary{cursor:pointer;color:var(--primary-ink);font-weight:
 .tabla th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);padding:8px 10px}
 .tabla td{border-bottom:1px solid var(--border);padding:8px 10px}
 .tabla .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Gráficas: segunda serie, leyenda y claves */
+.g-barra.s2{fill:var(--serie-2)}
+.leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--text-2);margin:-4px 0 6px}
+.leyenda span{display:inline-flex;align-items:center;gap:7px}
+.leyenda i{width:10px;height:10px;border-radius:3px;background:var(--serie-1);flex:none}
+.leyenda i.s2{background:var(--serie-2)}
+.tooltip .tt-clave{display:inline-block;width:12px;height:3px;border-radius:2px;background:var(--serie-1);margin-right:7px;vertical-align:middle}
+.tooltip .tt-clave.s2{background:var(--serie-2)}
+.tooltip .tt-sep{border-top:1px solid var(--border);margin-top:5px;padding-top:5px}
+/* Barras horizontales (de dónde vienen los ingresos, en qué se gasta) */
+.barras-h{position:relative;display:flex;flex-direction:column;gap:6px}
+.bh-fila{display:grid;grid-template-columns:minmax(0,10.5rem) minmax(0,1fr);align-items:center;gap:12px;padding:5px 6px;margin:0 -6px;border-radius:10px;outline:none;cursor:default}
+.bh-nombre{font-size:13.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bh-pista{display:flex;align-items:center;gap:8px;min-width:0}
+.bh-barra{height:14px;border-radius:0 4px 4px 0;background:var(--serie-1);flex:none;min-width:3px;transition:opacity .12s}
+.barras-h.gasto .bh-barra{background:var(--serie-2)}
+.bh-valor{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap}
+.bh-valor small{font-weight:600;color:var(--muted);font-size:12px}
+.barras-h.con-foco .bh-fila:not(.activa) .bh-barra{opacity:.45}
+.bh-fila:focus-visible{box-shadow:var(--foco)}
+.barras-h .tooltip{transform:translate(-50%,calc(-100% - 6px))}
+.vacio-grafico{padding:26px 8px;text-align:center;color:var(--muted);font-size:14px}
+.vacio-grafico .btn{margin-top:10px}
+/* Gastos */
+.chip.pagado{background:var(--ok-soft);color:var(--ok)}
+.form-gasto{max-width:760px}
+.desglose{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--text-2);background:var(--surface-2);border-radius:12px;padding:10px 12px;margin:-4px 0 16px}
+.desglose b{color:var(--text)}
+/* Color de Gastos (Ajustes) */
+.colores{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.color-op{width:40px;height:40px;border-radius:12px;border:2px solid transparent;box-shadow:inset 0 0 0 2px var(--surface);cursor:pointer;padding:0}
+.color-op.activo{border-color:var(--text)}
+.color-op:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--surface),var(--foco)}
+.color-propio{display:inline-flex;align-items:center;gap:8px;margin:0;font-weight:600;color:var(--text-2)}
+.color-propio input{width:48px;height:40px;padding:2px;border-radius:12px;min-height:0;cursor:pointer}
+.muestra-gastos{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13.5px;color:var(--text-2)}
 
 /* Primeros pasos */
 .pasos-inicio{max-width:620px;margin:10px auto;text-align:center}
@@ -375,10 +413,11 @@ body.con-acceso{overflow:hidden}
   .nav-item[data-ir="inicio"]{order:1}
   .nav-item[data-ir="facturas"]{order:2}
   .nav-nueva{order:3}
-  .nav-item[data-ir="clientes"]{order:4}
-  .nav-item[data-ir="ajustes"]{order:5}
+  .nav-item[data-ir="gastos"]{order:4}
+  .nav-item[data-ir="clientes"]{order:5}
+  .nav-item[data-ir="ajustes"]{order:6}
   .nav-nueva,.nav-nueva:hover,.nav-nueva.activa{background:transparent;color:var(--muted);margin:0;box-shadow:none}
-  .nav-nueva .fab{width:50px;height:50px;border-radius:17px;background:var(--primary);color:var(--on-primary);margin-top:-26px;box-shadow:0 8px 20px rgba(47,91,216,.35)}
+  .nav-nueva .fab{width:50px;height:50px;border-radius:17px;background:var(--primary);color:var(--on-primary);margin-top:-26px;box-shadow:0 8px 20px var(--sombra-primaria,rgba(47,91,216,.35))}
   .nav-nueva .fab svg.i{width:26px;height:26px;stroke-width:2.4}
   .nav-nueva.activa{color:var(--primary)}
   .largo{display:none}
@@ -396,6 +435,7 @@ body.con-acceso{overflow:hidden}
   .rejilla-2{grid-template-columns:minmax(0,1fr)}
   .ajustes-grid{grid-template-columns:minmax(0,1fr)}
   .grafico{height:220px}
+  .bh-fila{grid-template-columns:minmax(0,7.5rem) minmax(0,1fr);gap:10px}
 
   .item-factura{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"principal importe" "estado acciones";padding:12px 10px 8px 14px;gap:8px 10px}
   .item-factura .if-principal{grid-area:principal}
@@ -538,6 +578,7 @@ body.con-acceso{overflow:hidden}
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
   <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9.5 14.5 2.5 2.5 2.5-2.5"/></symbol>
   <symbol id="i-ia" viewBox="0 0 24 24"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9z"/></symbol>
+  <symbol id="i-gastos" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
   <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></symbol>
 </svg>
 
@@ -548,6 +589,7 @@ body.con-acceso{overflow:hidden}
   </button>
   <button type="button" class="nav-item" data-ir="inicio"><svg class="i"><use href="#i-home"/></svg><span>Inicio</span></button>
   <button type="button" class="nav-item" data-ir="facturas"><svg class="i"><use href="#i-file"/></svg><span>Facturas</span></button>
+  <button type="button" class="nav-item" data-ir="gastos"><svg class="i"><use href="#i-gastos"/></svg><span>Gastos</span></button>
   <button type="button" class="nav-item" data-ir="clientes"><svg class="i"><use href="#i-users"/></svg><span>Clientes</span></button>
   <button type="button" class="nav-item" data-ir="ajustes"><svg class="i"><use href="#i-settings"/></svg><span>Ajustes</span></button>
   <div class="nav-pie" id="nav-pie"></div>
@@ -608,16 +650,42 @@ body.con-acceso{overflow:hidden}
 
       <div class="card" style="margin-top:16px">
         <div class="card-cab">
-          <div><h2>Facturado por mes</h2><p id="ini-grafico-sub"></p></div>
+          <div><h2>Ingresos y gastos por mes</h2><p id="ini-grafico-sub"></p></div>
         </div>
+        <div class="leyenda"><span><i></i>Ingresos (facturado)</span><span><i class="s2"></i>Gastos</span></div>
         <div class="grafico" id="ini-grafico"></div>
         <details class="tabla-datos">
           <summary>Ver los datos en tabla</summary>
           <table class="tabla">
-            <thead><tr><th>Mes</th><th class="num">Facturado</th><th class="num">Cobrado</th><th class="num">Pendiente</th></tr></thead>
+            <thead><tr><th>Mes</th><th class="num">Ingresos</th><th class="num">Gastos</th><th class="num">Diferencia</th><th class="num">Cobrado</th></tr></thead>
             <tbody id="ini-tabla"></tbody>
           </table>
         </details>
+      </div>
+
+      <div class="rejilla-2">
+        <div class="card">
+          <div class="card-cab">
+            <div><h2>De dónde vienen los ingresos</h2><p id="ini-origen-sub"></p></div>
+            <div class="seg" id="ini-origen-modo" role="group" aria-label="Agrupar por" hidden>
+              <button type="button" data-valor="cliente" class="activo">Clientes</button>
+              <button type="button" data-valor="empresa">Empresas</button>
+            </div>
+          </div>
+          <div class="barras-h" id="ini-origen"></div>
+          <details class="tabla-datos">
+            <summary>Ver los datos en tabla</summary>
+            <table class="tabla"><thead><tr><th id="ini-origen-col">Cliente</th><th class="num">Facturado</th><th class="num">%</th></tr></thead><tbody id="ini-origen-tabla"></tbody></table>
+          </details>
+        </div>
+        <div class="card">
+          <div class="card-cab"><div><h2>En qué se va el dinero</h2><p id="ini-gastos-sub"></p></div><button type="button" class="btn peq" data-ir-gastos>Ver gastos</button></div>
+          <div class="barras-h gasto" id="ini-gastos-cat"></div>
+          <details class="tabla-datos" id="ini-gastos-detalle">
+            <summary>Ver los datos en tabla</summary>
+            <table class="tabla"><thead><tr><th>Categoría</th><th class="num">Gastado</th><th class="num">%</th></tr></thead><tbody id="ini-gastos-tabla"></tbody></table>
+          </details>
+        </div>
       </div>
 
       <div class="rejilla-2">
@@ -666,6 +734,113 @@ body.con-acceso{overflow:hidden}
     </div>
     <div class="tiles fila-tiles" id="c-tarjetas"></div>
     <div class="lista-facturas" id="c-lista"></div>
+  </section>
+
+  <!-- ================= GASTOS ================= -->
+  <section class="vista" id="vista-gastos">
+    <header class="cab-vista">
+      <div><p class="sobretitulo">Contabilidad</p><h1>Gastos</h1></div>
+      <div class="acciones">
+        <button type="button" class="btn" id="g-exportar"><svg class="i"><use href="#i-send"/></svg>Enviar al gestor</button>
+        <button type="button" class="btn primario solo-escritorio" data-nuevo-gasto><svg class="i"><use href="#i-plus"/></svg>Nuevo gasto</button>
+      </div>
+    </header>
+    <div class="aviso alerta" id="g-sin-permiso" hidden>
+      <span>Para guardar gastos en tu cuenta falta un paso en Firebase: actualizar las reglas (docs/CUENTAS.md). Avisa a quien gestiona la app y vuelve a abrirla.</span>
+    </div>
+    <div class="seg" id="g-estado" role="group" aria-label="Estado" style="margin-bottom:12px">
+      <button type="button" data-valor="" class="activo">Todos</button>
+      <button type="button" data-valor="pendientes">Por pagar</button>
+      <button type="button" data-valor="pagados">Pagados</button>
+    </div>
+    <div class="fila" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <label>Empresa <select id="g-empresa"></select></label>
+      <label>Año <select id="g-anio"></select></label>
+      <label>Trimestre
+        <select id="g-tri">
+          <option value="">Todo el año</option>
+          <option value="1">1.er trimestre</option>
+          <option value="2">2.º trimestre</option>
+          <option value="3">3.er trimestre</option>
+          <option value="4">4.º trimestre</option>
+        </select>
+      </label>
+      <label>Categoría <select id="g-cat"></select></label>
+      <label>Buscar
+        <span class="buscador" style="display:block;margin-top:6px"><svg class="i"><use href="#i-search"/></svg><input id="g-buscar" type="search" placeholder="Proveedor, concepto…"></span>
+      </label>
+    </div>
+    <div class="tiles fila-tiles" id="g-tarjetas"></div>
+    <div class="rejilla-2" id="g-graficos" style="margin:0 0 16px">
+      <div class="card">
+        <div class="card-cab"><div><h2>En qué se va el dinero</h2><p id="g-cat-sub"></p></div></div>
+        <div class="barras-h gasto" id="g-por-categoria"></div>
+        <details class="tabla-datos">
+          <summary>Ver los datos en tabla</summary>
+          <table class="tabla"><thead><tr><th>Categoría</th><th class="num">Gastado</th><th class="num">%</th></tr></thead><tbody id="g-tabla-cat"></tbody></table>
+        </details>
+      </div>
+      <div class="card">
+        <div class="card-cab"><div><h2>Gastos por mes</h2><p id="g-mes-sub"></p></div></div>
+        <div class="grafico" id="g-grafico"></div>
+        <details class="tabla-datos">
+          <summary>Ver los datos en tabla</summary>
+          <table class="tabla"><thead><tr><th>Mes</th><th class="num">Gastado</th><th class="num">IVA soportado</th></tr></thead><tbody id="g-tabla-mes"></tbody></table>
+        </details>
+      </div>
+    </div>
+    <div class="lista-facturas" id="g-lista"></div>
+  </section>
+
+  <!-- ================= FICHA DE GASTO ================= -->
+  <section class="vista" id="vista-gasto">
+    <header class="cab-vista">
+      <div class="titulo">
+        <button type="button" class="btn-icono btn-volver" id="gs-volver" aria-label="Volver a gastos"><svg class="i"><use href="#i-back"/></svg></button>
+        <div><p class="sobretitulo">Gastos</p><h1 id="gs-titulo">Nuevo gasto</h1></div>
+      </div>
+    </header>
+    <form class="card form-gasto" id="form-gasto" autocomplete="off" novalidate>
+      <div class="fila">
+        <label id="lbl-gs-empresa">Empresa <select id="gs-empresa"></select></label>
+        <label>Fecha <input id="gs-fecha" type="date"></label>
+      </div>
+      <h3 class="titulo-seccion">Proveedor</h3>
+      <label>Nombre <input id="gs-prov" list="lista-proveedores" placeholder="A quién se lo has pagado"></label>
+      <div class="fila">
+        <label>CIF / NIF <input id="gs-prov-cif" autocapitalize="characters" placeholder="Opcional"></label>
+        <label>Nº de factura o ticket <input id="gs-numero" placeholder="Opcional"></label>
+      </div>
+      <h3 class="titulo-seccion">Gasto</h3>
+      <label>Concepto <input id="gs-concepto" placeholder="Ej.: alquiler de la oficina de noviembre"></label>
+      <div class="fila">
+        <label>Categoría <select id="gs-categoria"></select></label>
+        <label id="lbl-gs-cat-otra" hidden>Nombre de la categoría <input id="gs-cat-otra" placeholder="Ej.: Limpieza"></label>
+      </div>
+      <div class="fila">
+        <label>Importe total (IVA incluido) <input id="gs-total" inputmode="decimal" placeholder="0,00"></label>
+        <label>IVA
+          <select id="gs-iva">
+            <option value="21">21 %</option>
+            <option value="10">10 %</option>
+            <option value="4">4 %</option>
+            <option value="0">Sin IVA</option>
+          </select>
+        </label>
+      </div>
+      <div class="desglose" id="gs-desglose"></div>
+      <div class="fila" style="align-items:end">
+        <label class="switch"><input type="checkbox" id="gs-pagado"><span class="pista"></span><span>Pagado</span></label>
+        <label id="lbl-gs-fecha-pago">Fecha de pago <input id="gs-fecha-pago" type="date"></label>
+      </div>
+      <label>Notas <textarea id="gs-notas" rows="2" placeholder="Opcional"></textarea></label>
+      <div class="acciones">
+        <button type="submit" class="btn primario">Guardar gasto</button>
+        <button type="button" class="btn" id="gs-cancelar">Cancelar</button>
+        <button type="button" class="btn peligro" id="gs-borrar" hidden>Borrar</button>
+      </div>
+    </form>
+    <datalist id="lista-proveedores"></datalist>
   </section>
 
   <!-- ================= EDITOR DE FACTURA ================= -->
@@ -910,6 +1085,10 @@ body.con-acceso{overflow:hidden}
           <button type="button" data-tema="claro">Claro</button>
           <button type="button" data-tema="oscuro">Oscuro</button>
         </div>
+        <h3 class="titulo-seccion" style="margin-top:20px">Color de Gastos</h3>
+        <p class="suave" style="font-size:14px">Al entrar en Gastos, toda la app cambia a este color.</p>
+        <div class="colores" id="aj-color-gastos" role="group" aria-label="Color de Gastos"></div>
+        <div class="muestra-gastos"><button type="button" class="btn peq" id="aj-ver-gastos">Ver cómo queda</button></div>
       </div>
     </div>
     <p class="tenue solo-movil" id="aj-version" style="font-size:13px;text-align:center;margin:18px 0 6px"></p>
@@ -1188,7 +1367,7 @@ window.CONFIG_NUBE = {
 (function () {
 'use strict';
 
-const VERSION_APP = '3.8';
+const VERSION_APP = '3.9';
 
 /* =========================================================
    Utilidades
@@ -1214,6 +1393,9 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
 const fmtEuros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
 const fmtDec = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
 const euros = (cent) => fmtEuros.format((cent || 0) / 100);
+/** Euros sin céntimos (para las gráficas): 12.345 €. */
+const eurosRedondos = (cent) => fmtEuros.format(Math.round((cent || 0) / 100)).replace(/,00(?=\D*$)/, '');
+const trimestreDe = (iso) => Math.ceil(Number((iso || '').slice(5, 7)) / 3);
 const porcentaje = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(n) + ' %';
 const leerLS = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const escribirLS = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } };
@@ -1296,6 +1478,7 @@ function aplicarTema(t) {
   $$('#aj-tema button').forEach((b) => b.classList.toggle('activo', b.dataset.tema === t));
   const oscuro = r.dataset.theme === 'dark' || (!r.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
   id('meta-tema').setAttribute('content', oscuro ? '#0b1020' : '#f3f5f9');
+  aplicarModo();
   if (vistaActual === 'inicio') renderInicio();
 }
 id('aj-tema').addEventListener('click', (ev) => {
@@ -1308,7 +1491,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
    Datos (se guardan en el dispositivo: localStorage)
    ========================================================= */
 function datosVacios() {
-  return { version: 3, empresas: [], clientes: [], facturas: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
+  return { version: 3, empresas: [], clientes: [], facturas: [], gastos: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
 }
 function normalizarDatos(d) {
   const v = datosVacios();
@@ -1325,6 +1508,8 @@ function normalizarDatos(d) {
     empresas,
     clientes: Array.isArray(d.clientes) ? d.clientes : [],
     facturas,
+    // Gastos (desde la versión 3.9): las copias de antes no los tienen.
+    gastos: (Array.isArray(d.gastos) ? d.gastos : []).map((g) => Object.assign({ ivaPct: 21, pagado: true, fechaPago: '', categoria: 'Otros', numero: '', concepto: '', notas: '', totalCent: 0, baseCent: 0, cuotaCent: 0 }, g, { proveedor: g.proveedor || {} })),
     ajustes: Object.assign(v.ajustes, d.ajustes || {}),
   };
 }
@@ -1643,7 +1828,7 @@ if (window.ResizeObserver) {
   const ro = new ResizeObserver(() => ajustarTodasPrevias());
   $$('.previa-ajuste').forEach((el) => ro.observe(el));
 }
-window.addEventListener('resize', () => { ajustarTodasPrevias(); if (vistaActual === 'inicio') pintarGraficoInicio(); });
+window.addEventListener('resize', () => { ajustarTodasPrevias(); if (vistaActual === 'inicio') pintarGraficoInicio(); if (vistaActual === 'gastos') pintarGraficoGastos(); });
 
 function esperarImagenes(el) {
   return Promise.all($$('img', el).map((img) => (img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }))));
@@ -1818,7 +2003,7 @@ id('rec-copiar').addEventListener('click', async () => {
 /* =========================================================
    Navegación (con el botón «atrás» del móvil)
    ========================================================= */
-const VISTAS = ['inicio', 'facturas', 'factura', 'clientes', 'ajustes', 'empresa'];
+const VISTAS = ['inicio', 'facturas', 'factura', 'gastos', 'gasto', 'clientes', 'ajustes', 'empresa'];
 let vistaActual = null;
 const vistaDeHash = () => { const v = location.hash.slice(1); return VISTAS.includes(v) ? v : 'inicio'; };
 function irA(vista) {
@@ -1830,22 +2015,27 @@ function mostrarVista(vista) {
   vistaActual = vista;
   document.body.dataset.vista = vista;
   $$('.vista').forEach((v) => v.classList.toggle('activa', v.id === 'vista-' + vista));
-  const nav = vista === 'empresa' ? 'ajustes' : vista;
+  const nav = vista === 'empresa' ? 'ajustes' : vista === 'gasto' ? 'gastos' : vista;
   $$('.nav-item').forEach((b) => b.classList.toggle('activa', b.dataset.ir === nav));
+  aplicarModo();   // en Gastos, toda la app cambia de color
   if (vista === 'inicio') renderInicio();
   if (vista === 'facturas') renderContabilidad();
+  if (vista === 'gastos') renderGastos();
+  if (vista === 'gasto' && !id('gs-categoria').options.length) ponerGastoEnForm(null, false);
   if (vista === 'factura') mostrarEditorOBienvenida();
   if (vista === 'clientes') { id('vista-clientes').classList.remove('editando'); renderClientes(); }
   if (vista === 'ajustes') renderAjustes();
   if (vista === 'empresa') renderEmpresaVista();
-  requestAnimationFrame(() => { ajustarTodasPrevias(); if (vista === 'inicio') pintarGraficoInicio(); });
+  requestAnimationFrame(() => { ajustarTodasPrevias(); if (vista === 'inicio') pintarGraficoInicio(); if (vista === 'gastos') pintarGraficoGastos(); });
   window.scrollTo(0, 0);
 }
 window.addEventListener('popstate', () => mostrarVista(vistaDeHash()));
 document.addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-nueva], .nav-item[data-ir]');
   if (!b) return;
-  if (b.hasAttribute('data-nueva')) pedirNuevaFactura();
+  if (b.classList.contains('nav-nueva') && enModoGastos()) {   // en Gastos, el «+» apunta un gasto
+    if (!(vistaActual === 'gasto' && !gastoEditando)) nuevoGasto();
+  } else if (b.hasAttribute('data-nueva')) pedirNuevaFactura();
   else irA(b.dataset.ir);
 });
 
@@ -1874,6 +2064,7 @@ function htmlItemFactura(f, compacto) {
 function renderVistaActual() {
   if (vistaActual === 'inicio') renderInicio();
   if (vistaActual === 'facturas') renderContabilidad();
+  if (vistaActual === 'gastos') renderGastos();
   if (vistaActual === 'clientes') renderClientes();
 }
 /** Marca una factura como cobrada / no cobrada, con «Deshacer». */
@@ -1960,6 +2151,12 @@ function renderInicio() {
   const delAnio = fs.filter((f) => (f.fecha || '').startsWith(anio));
   const delTri = delAnio.filter((f) => Math.ceil(Number(f.fecha.slice(5, 7)) / 3) === tri);
   const cobradasMes = fs.filter((f) => f.cobrada && (f.fechaCobro || '').startsWith(mes));
+  const gs = db.gastos.filter((g) => !sel.value || g.empresaId === sel.value);
+  const gastosAnio = gs.filter((g) => (g.fecha || '').startsWith(anio));
+  const gastosTri = gastosAnio.filter((g) => trimestreDe(g.fecha) === tri);
+  const beneficio = sumar(delAnio, 'baseCent') - sumar(gastosAnio, 'baseCent');
+  const ivaRep = sumar(delTri, 'cuotaCent');
+  const ivaSop = sumar(gastosTri, 'cuotaCent');
 
   id('ini-pendiente').textContent = euros(sumar(pendientes, 'totalCent'));
   id('ini-pendiente-sub').textContent = pendientes.length
@@ -1969,19 +2166,46 @@ function renderInicio() {
     <div class="tile ${vencidas.length ? 'alerta' : 'bien'}"><span class="etq">${ico(vencidas.length ? 'alert' : 'check')}Vencido</span><strong>${euros(sumar(vencidas, 'totalCent'))}</strong><small>${vencidas.length ? `${vencidas.length} factura${vencidas.length === 1 ? '' : 's'} fuera de plazo` : 'Nada fuera de plazo'}</small></div>
     <div class="tile"><span class="etq">Cobrado este mes</span><strong>${euros(sumar(cobradasMes, 'totalCent'))}</strong><small>${MESES[Number(hoy.slice(5, 7)) - 1]} · ${cobradasMes.length} factura${cobradasMes.length === 1 ? '' : 's'}</small></div>
     <div class="tile"><span class="etq">Facturado en ${anio}</span><strong>${euros(sumar(delAnio, 'totalCent'))}</strong><small>${delAnio.length} factura${delAnio.length === 1 ? '' : 's'}</small></div>
-    <div class="tile"><span class="etq">IVA del ${tri}.º trimestre</span><strong>${euros(sumar(delTri, 'cuotaCent'))}</strong><small>IVA repercutido</small></div>`;
+    <div class="tile"><span class="etq">Gastos en ${anio}</span><strong>${euros(sumar(gastosAnio, 'totalCent'))}</strong><small>${gastosAnio.length} gasto${gastosAnio.length === 1 ? '' : 's'}</small></div>
+    <div class="tile ${beneficio < 0 ? 'alerta' : ''}"><span class="etq">Beneficio en ${anio}</span><strong>${euros(beneficio)}</strong><small>Ingresos menos gastos, sin IVA</small></div>
+    <div class="tile"><span class="etq">IVA del ${tri}.º trimestre</span><strong>${euros(ivaRep - ivaSop)}</strong><small>${ivaRep - ivaSop < 0 ? 'a compensar' : 'a pagar'}: ${euros(ivaRep)} repercutido − ${euros(ivaSop)} soportado</small></div>`;
 
-  // Gráfico: facturado por mes del año en curso
+  // Gráfico: ingresos (facturado) y gastos de cada mes del año en curso
   datosGrafico = { anio, meses: MESES.map((nombre, i) => {
     const m = `${anio}-${String(i + 1).padStart(2, '0')}`;
     const delMes = fs.filter((f) => (f.fecha || '').startsWith(m));
-    const cobrado = sumar(delMes.filter((f) => f.cobrada), 'totalCent');
+    const gMes = gastosAnio.filter((g) => g.fecha.startsWith(m));
     const facturado = sumar(delMes, 'totalCent');
-    return { nombre, facturado, cobrado, pendiente: facturado - cobrado, n: delMes.length };
+    const gastado = sumar(gMes, 'totalCent');
+    return { nombre, valores: [facturado, gastado], facturado, gastado, cobrado: sumar(delMes.filter((f) => f.cobrada), 'totalCent'), n: delMes.length, nG: gMes.length };
   }) };
-  id('ini-grafico-sub').textContent = `${anio} · total de cada mes, en euros`;
-  id('ini-tabla').innerHTML = datosGrafico.meses.map((m) => `<tr><td>${m.nombre}</td><td class="num">${euros(m.facturado)}</td><td class="num">${euros(m.cobrado)}</td><td class="num">${euros(m.pendiente)}</td></tr>`).join('');
+  id('ini-grafico-sub').textContent = `${anio} · total de cada mes con IVA, en euros`;
+  id('ini-tabla').innerHTML = datosGrafico.meses.map((m) => `<tr><td>${m.nombre}</td><td class="num">${euros(m.facturado)}</td><td class="num">${euros(m.gastado)}</td><td class="num">${euros(m.facturado - m.gastado)}</td><td class="num">${euros(m.cobrado)}</td></tr>`).join('');
   pintarGraficoInicio();
+
+  // De dónde vienen los ingresos (por cliente o, con varias empresas, por empresa)
+  const porEmpresa = modoOrigen === 'empresa' && db.empresas.length > 1 && !sel.value;
+  id('ini-origen-modo').hidden = db.empresas.length < 2 || !!sel.value;
+  $$('#ini-origen-modo button').forEach((b) => b.classList.toggle('activo', b.dataset.valor === (porEmpresa ? 'empresa' : 'cliente')));
+  const origen = new Map();
+  delAnio.forEach((f) => {
+    const k = porEmpresa ? f.empresaId : (f.clienteId || normaliza(f.cliente.nombre));
+    const x = origen.get(k) || { nombre: (porEmpresa ? f.emisor.nombre : f.cliente.nombre) || 'Sin nombre', cent: 0, n: 0 };
+    x.cent += f.totalCent || 0; x.n++;
+    origen.set(k, x);
+  });
+  const itemsOrigen = agruparTop([...origen.values()], 5, porEmpresa ? 'empresas' : 'clientes');
+  id('ini-origen-sub').textContent = `${anio} · facturado con IVA, de más a menos`;
+  id('ini-origen-col').textContent = porEmpresa ? 'Empresa' : 'Cliente';
+  pintarBarrasH(id('ini-origen'), itemsOrigen, { unidad: ['factura', 'facturas'], vacio: `<div class="vacio-grafico">Aún no hay facturas en ${anio}.</div>` });
+  id('ini-origen-tabla').innerHTML = tablaReparto(itemsOrigen);
+
+  // En qué se va el dinero (gastos por categoría)
+  const itemsCat = gastosPorCategoria(gastosAnio, 5);
+  id('ini-gastos-sub').textContent = `${anio} · gastos con IVA, por categoría`;
+  pintarBarrasH(id('ini-gastos-cat'), itemsCat, { unidad: ['gasto', 'gastos'], vacio: `<div class="vacio-grafico">Aún no has apuntado gastos en ${anio}.<br><button type="button" class="btn peq suave" data-nuevo-gasto>Apuntar un gasto</button></div>` });
+  id('ini-gastos-tabla').innerHTML = tablaReparto(itemsCat);
+  id('ini-gastos-detalle').hidden = !itemsCat.length;
 
   const porCobrar = pendientes.slice().sort((a, b) => (a.vencimiento || a.fecha || '').localeCompare(b.vencimiento || b.fecha || '')).slice(0, 5);
   id('ini-por-cobrar').innerHTML = porCobrar.length ? porCobrar.map((f) => htmlItemFactura(f, true)).join('') : '<div class="vacio-lista">No hay nada pendiente de cobro 🎉</div>';
@@ -1989,6 +2213,13 @@ function renderInicio() {
   id('ini-ultimas').innerHTML = ultimas.map((f) => htmlItemFactura(f, true)).join('');
 }
 id('ini-empresa').addEventListener('change', renderInicio);
+let modoOrigen = 'cliente';
+id('ini-origen-modo').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-valor]');
+  if (!b) return;
+  modoOrigen = b.dataset.valor;
+  renderInicio();
+});
 id('ini-ver-pendientes').addEventListener('click', () => { filtroEstado = 'pendientes'; irA('facturas'); });
 id('ini-ver-todas').addEventListener('click', () => { filtroEstado = ''; irA('facturas'); });
 id('btn-paso-empresa').addEventListener('click', () => abrirEmpresa(null));
@@ -2047,7 +2278,27 @@ function crearDatosEjemplo() {
     factura(clientes[1], 3, 48, 1200, 'Honorarios Profesionales por la redacción del informe técnico de la fachada y la inspección de los balcones del edificio', false),
     factura(clientes[0], 15, 25, 2450, direccionTecnica, false),
   ];
-  return { empresas: [emp], clientes, facturas };
+  // Gastos inventados de los últimos meses (proveedores y CIF de ejemplo)
+  const gastos = [
+    [62, 'INMUEBLES DEL TURIA SL', 'B11111111', 'Alquiler', 'Alquiler de la oficina (septiembre)', 726, 21, true, 'A-2026-09'],
+    [32, 'INMUEBLES DEL TURIA SL', 'B11111111', 'Alquiler', 'Alquiler de la oficina (octubre)', 726, 21, true, 'A-2026-10'],
+    [1, 'INMUEBLES DEL TURIA SL', 'B11111111', 'Alquiler', 'Alquiler de la oficina (noviembre)', 726, 21, false, 'A-2026-11'],
+    [40, 'ASESORÍA CONTABLE NORTE SL', 'B22222222', 'Gestoría y asesoría', 'Cuota mensual de la gestoría', 145.2, 21, true, ''],
+    [10, 'ASESORÍA CONTABLE NORTE SL', 'B22222222', 'Gestoría y asesoría', 'Cuota mensual de la gestoría', 145.2, 21, true, ''],
+    [45, 'SEGUROS PROFESIONALES EJEMPLO', 'A33333333', 'Seguros', 'Seguro de responsabilidad civil (semestre)', 412.5, 0, true, ''],
+    [25, 'TELECOMUNICACIONES EJEMPLO', 'A44444444', 'Teléfono e internet', 'Fibra y móvil de octubre', 54.45, 21, true, ''],
+    [20, 'PAPELERÍA LA ESQUINA', '', 'Material y compras', 'Papel, tinta y copias de planos', 58.3, 21, true, 'T-0457'],
+    [15, 'ESTACIÓN DE SERVICIO EJEMPLO', '', 'Vehículo y combustible', 'Combustible de las visitas de obra', 70, 21, true, ''],
+    [5, 'PROGRAMAS DE DISEÑO EJEMPLO', '', 'Software y suscripciones', 'Licencia anual del programa de diseño', 290.4, 21, true, ''],
+  ].map(([dias, nombre, cif, categoria, concepto, eur, ivaPct, pagado, numero], i) => {
+    const fecha = sumarDias(hoy, -dias);
+    const totalCent = Math.round(eur * 100);
+    return {
+      id: `ej-gas-${i + 1}`, ejemplo: true, empresaId: emp.id, fecha, proveedor: { nombre, cif }, numero, concepto, categoria,
+      totalCent, ivaPct, ...desgloseGasto(totalCent, ivaPct), pagado, fechaPago: pagado ? fecha : '', notas: '', creado: ahora, modificado: ahora,
+    };
+  });
+  return { empresas: [emp], clientes, facturas, gastos };
 }
 id('btn-ejemplo').addEventListener('click', () => {
   if (db.empresas.length || db.facturas.length) return;
@@ -2055,6 +2306,7 @@ id('btn-ejemplo').addEventListener('click', () => {
   db.empresas.push(...ej.empresas);
   db.clientes.push(...ej.clientes);
   db.facturas.push(...ej.facturas);
+  db.gastos.push(...ej.gastos);
   db.ajustes.ultimaEmpresa = ej.empresas[0].id;
   db.ajustes.ejemplo = true;
   if (!guardarDatos()) return;
@@ -2067,6 +2319,7 @@ id('btn-borrar-ejemplo').addEventListener('click', () => {
   db.empresas = db.empresas.filter((x) => !x.ejemplo);
   db.clientes = db.clientes.filter((x) => !x.ejemplo);
   db.facturas = db.facturas.filter((x) => !x.ejemplo);
+  db.gastos = db.gastos.filter((x) => !x.ejemplo);
   db.ajustes.ejemplo = false;
   if (!empresaPorId(db.ajustes.ultimaEmpresa)) db.ajustes.ultimaEmpresa = null;
   if (!guardarDatos()) return;
@@ -2092,15 +2345,20 @@ function nodoSVG(tag, attrs, padre) {
   if (padre) padre.appendChild(n);
   return n;
 }
-/** Gráfico de columnas (una serie): barras finas con la punta redondeada, rejilla fina, tooltip y tabla aparte. */
-function pintarGraficoInicio() {
-  const cont = id('ini-grafico');
-  if (!datosGrafico || !cont.clientWidth || id('ini-panel').hidden) return;
+/**
+ * Gráfico de columnas por mes, con una o dos series (agrupadas): barras finas con la punta redondeada, rejilla fina,
+ * un detalle al pasar por encima (o con el teclado) y los mismos datos en una tabla aparte.
+ * cfg: { meses: [{ nombre, valores: [céntimos…] }], series: [{ clase, nombre }], aria, etiquetaZona(mm), detalle(mm) }
+ * detalle(mm) → { valor?, titulo, filas: [{ clave?, texto, valor, sep? }] }
+ */
+function pintarColumnas(cont, cfg) {
+  if (!cfg || !cont.clientWidth) return;
   cont.innerHTML = '';
-  const meses = datosGrafico.meses;
+  const { meses, series } = cfg;
+  const k = series.length;
   const ancho = cont.clientWidth;
   const alto = cont.clientHeight;
-  const maxEur = Math.max(...meses.map((m) => m.facturado)) / 100;
+  const maxEur = Math.max(0, ...meses.flatMap((mm) => mm.valores)) / 100;
   const paso = maxEur > 0 ? pasoBonito(maxEur, 4) : 250;
   const tope = Math.max(paso, Math.ceil(maxEur / paso) * paso);
   const compacto = tope >= 10000;
@@ -2114,8 +2372,10 @@ function pintarGraficoInicio() {
   const plotH = alto - m.arriba - m.abajo;
   const y = (eur) => m.arriba + plotH - (eur / tope) * plotH;
   const banda = plotW / 12;
-  const barW = Math.min(24, banda * 0.6);
-  const svg = nodoSVG('svg', { viewBox: `0 0 ${ancho} ${alto}`, role: 'img', 'aria-label': `Facturado por mes en ${datosGrafico.anio}` }, cont);
+  const hueco = 2;   // separación (del color del fondo) entre las barras de un mismo mes
+  const barW = k === 1 ? Math.min(24, banda * 0.6) : Math.max(3, Math.min(14, (banda * 0.72 - hueco * (k - 1)) / k));
+  const grupoW = barW * k + hueco * (k - 1);
+  const svg = nodoSVG('svg', { viewBox: `0 0 ${ancho} ${alto}`, role: 'img', 'aria-label': cfg.aria }, cont);
 
   ticks.forEach((t, i) => {
     const yy = Math.round(y(t)) + 0.5;
@@ -2124,68 +2384,167 @@ function pintarGraficoInicio() {
     tx.textContent = etiquetas[i];
   });
   const cortos = banda < 34;
+  // Con una sola serie se rotula el mes más alto; con dos, mandan la leyenda, el detalle y la tabla.
   let iMax = -1;
-  meses.forEach((mm, i) => { if (mm.facturado > 0 && (iMax < 0 || mm.facturado > meses[iMax].facturado)) iMax = i; });
+  if (k === 1) meses.forEach((mm, i) => { if (mm.valores[0] > 0 && (iMax < 0 || mm.valores[0] > meses[iMax].valores[0])) iMax = i; });
   const barras = [];
+  const base = m.arriba + plotH;
   meses.forEach((mm, i) => {
     const cx = m.izq + banda * i + banda / 2;
-    const eur = mm.facturado / 100;
-    const h = (eur / tope) * plotH;
-    const base = m.arriba + plotH;
-    if (h > 0) {
+    barras[i] = [];
+    series.forEach((se, j) => {
+      const h = (mm.valores[j] / 100 / tope) * plotH;
+      if (h <= 0) return;
       const r = Math.min(4, h, barW / 2);
-      const x0 = cx - barW / 2;
+      const x0 = cx - grupoW / 2 + j * (barW + hueco);
       const yTop = base - h;
       const d = `M${x0},${base} V${yTop + r} Q${x0},${yTop} ${x0 + r},${yTop} H${x0 + barW - r} Q${x0 + barW},${yTop} ${x0 + barW},${yTop + r} V${base} Z`;
-      barras[i] = nodoSVG('path', { d, class: 'g-barra' }, svg);
-    }
+      barras[i].push(nodoSVG('path', { d, class: ('g-barra ' + (se.clase || '')).trim() }, svg));
+    });
     const lbl = nodoSVG('text', { x: cx, y: alto - 8, 'text-anchor': 'middle', class: 'g-texto' }, svg);
     lbl.textContent = cortos ? mm.nombre[0].toUpperCase() : mm.nombre.slice(0, 3);
     if (i === iMax) {
-      const v = nodoSVG('text', { x: Math.min(Math.max(cx, m.izq + 30), ancho - 30), y: base - h - 7, 'text-anchor': 'middle', class: 'g-valor' }, svg);
-      v.textContent = fmtEuros.format(Math.round(eur)).replace(/,00/, '');
+      const eur = mm.valores[0] / 100;
+      const v = nodoSVG('text', { x: Math.min(Math.max(cx, m.izq + 30), ancho - 30), y: y(eur) - 7, 'text-anchor': 'middle', class: 'g-valor' }, svg);
+      v.textContent = eurosRedondos(mm.valores[0]);
     }
   });
-  // Tooltip: cada mes es una zona de toque (más grande que la barra)
+  // Detalle: cada mes es una zona de toque (más grande que las barras)
   const tip = document.createElement('div');
   tip.className = 'tooltip';
   tip.hidden = true;
   cont.appendChild(tip);
   const mostrar = (i) => {
     const mm = meses[i];
+    const det = cfg.detalle(mm);
     cont.classList.add('con-foco');
-    barras.forEach((b, j) => b && b.classList.toggle('activa', j === i));
+    barras.forEach((bs, j) => bs.forEach((b) => b.classList.toggle('activa', j === i)));
     tip.replaceChildren();
-    const fuerte = document.createElement('strong');
-    fuerte.textContent = euros(mm.facturado);
-    const mes = document.createElement('div');
-    mes.className = 'tt-mes';
-    mes.textContent = `Facturado en ${mm.nombre} ${datosGrafico.anio}` + (mm.n ? ` · ${mm.n} factura${mm.n === 1 ? '' : 's'}` : '');
-    tip.append(fuerte, mes);
-    [['Cobrado', mm.cobrado], ['Pendiente', mm.pendiente]].forEach(([t, v]) => {
+    if (det.valor) { const fuerte = document.createElement('strong'); fuerte.textContent = det.valor; tip.appendChild(fuerte); }
+    const tit = document.createElement('div');
+    tit.className = 'tt-mes';
+    tit.textContent = det.titulo;
+    tip.appendChild(tit);
+    det.filas.forEach((f) => {
       const fila = document.createElement('div');
-      fila.className = 'tt-fila';
-      const a = document.createElement('span'); a.textContent = t;
-      const b = document.createElement('b'); b.textContent = euros(v);
+      fila.className = 'tt-fila' + (f.sep ? ' tt-sep' : '');
+      const a = document.createElement('span');
+      if (f.clave !== undefined) { const c = document.createElement('i'); c.className = ('tt-clave ' + f.clave).trim(); a.appendChild(c); }
+      a.appendChild(document.createTextNode(f.texto));
+      const b = document.createElement('b'); b.textContent = f.valor;
       fila.append(a, b);
       tip.appendChild(fila);
     });
     tip.hidden = false;
     const cx = m.izq + banda * i + banda / 2;
-    const yTop = y(mm.facturado / 100);
+    const yTop = y(Math.max(...mm.valores) / 100);
     const mitad = tip.offsetWidth / 2;
     tip.style.left = Math.min(Math.max(cx, mitad), ancho - mitad) + 'px';
-    tip.style.top = Math.max(yTop, 70) + 'px';
+    tip.style.top = Math.max(yTop, tip.offsetHeight + 4) + 'px';
   };
-  const ocultar = () => { tip.hidden = true; cont.classList.remove('con-foco'); barras.forEach((b) => b && b.classList.remove('activa')); };
+  const ocultar = () => { tip.hidden = true; cont.classList.remove('con-foco'); barras.forEach((bs) => bs.forEach((b) => b.classList.remove('activa'))); };
   cont.onpointerleave = ocultar;
   meses.forEach((mm, i) => {
-    const r = nodoSVG('rect', { x: m.izq + banda * i, y: m.arriba, width: banda, height: plotH, class: 'g-hit', tabindex: 0, 'aria-label': `${mm.nombre}: ${euros(mm.facturado)} facturado` }, svg);
+    const r = nodoSVG('rect', { x: m.izq + banda * i, y: m.arriba, width: banda, height: plotH, class: 'g-hit', tabindex: 0, 'aria-label': cfg.etiquetaZona(mm) }, svg);
     r.addEventListener('pointerenter', () => mostrar(i));
     r.addEventListener('focus', () => mostrar(i));
     r.addEventListener('pointerleave', ocultar);
     r.addEventListener('blur', ocultar);
   });
+}
+function pintarGraficoInicio() {
+  const cont = id('ini-grafico');
+  if (!datosGrafico || id('ini-panel').hidden) return;
+  const anio = datosGrafico.anio;
+  pintarColumnas(cont, {
+    meses: datosGrafico.meses,
+    series: [{ clase: '', nombre: 'Ingresos' }, { clase: 's2', nombre: 'Gastos' }],
+    aria: `Ingresos y gastos por mes en ${anio}`,
+    etiquetaZona: (mm) => `${mm.nombre}: ingresos ${euros(mm.facturado)}, gastos ${euros(mm.gastado)}`,
+    detalle: (mm) => ({
+      titulo: `${mm.nombre} ${anio}`,
+      filas: [
+        { clave: '', texto: 'Ingresos' + (mm.n ? ` (${mm.n} factura${mm.n === 1 ? '' : 's'})` : ''), valor: euros(mm.facturado) },
+        { clave: 's2', texto: 'Gastos' + (mm.nG ? ` (${mm.nG})` : ''), valor: euros(mm.gastado) },
+        { texto: 'Diferencia', valor: euros(mm.facturado - mm.gastado), sep: true },
+        { texto: 'Cobrado', valor: euros(mm.cobrado) },
+      ],
+    }),
+  });
+}
+
+/** Agrupa los más grandes y junta el resto en «Otros» (para que nunca haya más de max + 1 barras). */
+function agruparTop(items, max, plural) {
+  const orden = items.filter((x) => x.cent > 0).sort((a, b) => b.cent - a.cent);
+  if (orden.length <= max + 1) return orden;
+  const resto = orden.slice(max);
+  return [...orden.slice(0, max), { nombre: `Otros (${resto.length} ${plural})`, cent: sumar(resto, 'cent'), n: sumar(resto, 'n'), otros: true }];
+}
+function tablaReparto(items) {
+  const total = sumar(items, 'cent');
+  return items.map((x) => `<tr><td>${esc(x.nombre)}</td><td class="num">${euros(x.cent)}</td><td class="num">${total ? Math.round((x.cent * 100) / total) : 0} %</td></tr>`).join('');
+}
+/**
+ * Barras horizontales ordenadas de mayor a menor (una sola serie): nombre, barra y valor en la punta.
+ * items: [{ nombre, cent, n }] · opciones: { unidad: ['factura', 'facturas'], vacio: html }
+ */
+function pintarBarrasH(cont, items, opciones) {
+  cont.innerHTML = '';
+  const total = sumar(items, 'cent');
+  if (!items.length || total <= 0) { cont.innerHTML = opciones.vacio; return; }
+  const max = Math.max(...items.map((x) => x.cent));
+  const tip = document.createElement('div');
+  tip.className = 'tooltip';
+  tip.hidden = true;
+  const filas = [];
+  const ocultar = () => { tip.hidden = true; cont.classList.remove('con-foco'); filas.forEach((f) => f.classList.remove('activa')); };
+  items.forEach((it) => {
+    const pct = Math.round((it.cent * 100) / total);
+    const fila = document.createElement('div');
+    fila.className = 'bh-fila';
+    fila.tabIndex = 0;
+    fila.setAttribute('aria-label', `${it.nombre}: ${euros(it.cent)}, ${pct} % del total`);
+    const nombre = document.createElement('span');
+    nombre.className = 'bh-nombre';
+    nombre.textContent = it.nombre;
+    const pista = document.createElement('span');
+    pista.className = 'bh-pista';
+    const barra = document.createElement('span');
+    barra.className = 'bh-barra';
+    barra.style.width = `calc((100% - 7.6em) * ${(it.cent / max).toFixed(4)})`;
+    const valor = document.createElement('span');
+    valor.className = 'bh-valor';
+    valor.textContent = eurosRedondos(it.cent) + ' ';
+    const pc = document.createElement('small');
+    pc.textContent = `${pct} %`;
+    valor.appendChild(pc);
+    pista.append(barra, valor);
+    fila.append(nombre, pista);
+    cont.appendChild(fila);
+    filas.push(fila);
+    const mostrar = () => {
+      cont.classList.add('con-foco');
+      filas.forEach((f) => f.classList.toggle('activa', f === fila));
+      tip.replaceChildren();
+      const fuerte = document.createElement('strong'); fuerte.textContent = euros(it.cent);
+      const tit = document.createElement('div'); tit.className = 'tt-mes'; tit.textContent = it.nombre;
+      const fila2 = document.createElement('div'); fila2.className = 'tt-fila';
+      const a = document.createElement('span'); a.textContent = `${pct} % del total`;
+      const b = document.createElement('b'); b.textContent = `${it.n} ${it.n === 1 ? opciones.unidad[0] : opciones.unidad[1]}`;
+      fila2.append(a, b);
+      tip.append(fuerte, tit, fila2);
+      tip.hidden = false;
+      const x = barra.offsetLeft + barra.offsetWidth;
+      const mitad = tip.offsetWidth / 2;
+      tip.style.left = Math.min(Math.max(x, mitad), cont.clientWidth - mitad) + 'px';
+      tip.style.top = fila.offsetTop + 'px';
+    };
+    fila.addEventListener('pointerenter', mostrar);
+    fila.addEventListener('focus', mostrar);
+    fila.addEventListener('pointerleave', ocultar);
+    fila.addEventListener('blur', ocultar);
+  });
+  cont.appendChild(tip);
 }
 
 /* =========================================================
@@ -2771,17 +3130,408 @@ async function exportarCSV(lista, nombre) {
     dec(f.cuotaCent), f.aplicaIrpf ? String(f.irpfPct).replace('.', ',') : '0', dec(f.irpfCent), dec(f.totalCent),
     { cobrada: 'Cobrada', pendiente: 'Pendiente', vencida: 'Vencida' }[estadoDe(f)], fechaCorta(f.fechaCobro), f.formaPago,
   ]);
-  const csv = '﻿' + [cab, ...filas].map((r) => r.map(celda).join(';')).join('\r\n');
-  const archivo = `${nombre}-${hoyISO()}.csv`;
+  await compartirCSV([cab, ...filas].map((r) => r.map(celda).join(';')), `${nombre}-${hoyISO()}.csv`, 'Facturas para el gestor');
+}
+/** CSV para Excel (con BOM y «;»): en el móvil se comparte (WhatsApp, correo…); en el ordenador se descarga. */
+async function compartirCSV(lineas, archivo, titulo) {
+  const csv = '﻿' + lineas.join('\r\n');
   if (esTactil() && navigator.canShare) {
     const file = new File([csv], archivo, { type: 'text/csv' });
     if (navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'Facturas para el gestor' }); return; }
+      try { await navigator.share({ files: [file], title: titulo }); return; }
       catch (e) { if (e && e.name === 'AbortError') return; }
     }
   }
   descargar(archivo, csv, 'text/csv;charset=utf-8');
 }
+
+/* =========================================================
+   Gastos: lo que se paga (alquiler, gestoría, material…). Al entrar, toda la app cambia de color.
+   ========================================================= */
+const CATEGORIAS_GASTO = ['Alquiler', 'Suministros (luz, agua, gas)', 'Teléfono e internet', 'Material y compras', 'Gestoría y asesoría', 'Seguros', 'Vehículo y combustible', 'Viajes y dietas', 'Software y suscripciones', 'Publicidad', 'Personal y nóminas', 'Impuestos y tasas', 'Bancos y comisiones', 'Formación', 'Otros'];
+const COLORES_GASTOS = [['#c2410c', 'Naranja'], ['#7c3aed', 'Morado'], ['#0f766e', 'Verde azulado'], ['#be185d', 'Frambuesa'], ['#15803d', 'Verde'], ['#475569', 'Gris']];
+const COLOR_GASTOS = COLORES_GASTOS[0][0];
+let filtroGasto = '';
+let gastoEditando = null;      // gasto guardado que se está editando (null = uno nuevo)
+let gastosSinPermiso = false;  // la cuenta todavía no admite gastos (reglas de Firebase sin actualizar)
+let datosGraficoGastos = null;
+const formG = id('form-gasto');
+const gastoPorId = (x) => db.gastos.find((g) => g.id === x) || null;
+const proveedorDe = (g) => g.proveedor || {};
+const pctTexto = (p) => String(p).replace('.', ',');
+/** Del total (con IVA) a base y cuota, en céntimos. */
+function desgloseGasto(totalCent, pct) {
+  const baseCent = pct ? redondear((totalCent * 100) / (100 + pct)) : totalCent;
+  return { baseCent, cuotaCent: totalCent - baseCent };
+}
+function gastosPorCategoria(lista, max) {
+  const mapa = new Map();
+  lista.forEach((g) => {
+    const k = g.categoria || 'Otros';
+    const x = mapa.get(k) || { nombre: k, cent: 0, n: 0 };
+    x.cent += g.totalCent || 0; x.n++;
+    mapa.set(k, x);
+  });
+  return agruparTop([...mapa.values()], max, 'categorías');
+}
+
+/* ---------- Color de Gastos ---------- */
+function hexRGB(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+const rgbHex = (c) => '#' + c.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('');
+const mezclar = (a, b, t) => { const x = hexRGB(a), y = hexRGB(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * t)); };
+function luminancia(h) {
+  const [r, g, b] = hexRGB(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contraste(a, b) { const x = luminancia(a), y = luminancia(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+/** Oscurece o aclara el color (hacia «hacia») hasta que tenga el contraste pedido con el fondo. */
+function conContraste(c, fondo, minimo, hacia) {
+  let x = c;
+  for (let i = 0; i < 30 && contraste(x, fondo) < minimo; i++) x = mezclar(x, hacia, 0.1);
+  return x;
+}
+const colorGastos = () => (/^#[0-9a-f]{6}$/i.test(db.ajustes.colorGastos || '') ? db.ajustes.colorGastos.toLowerCase() : COLOR_GASTOS);
+function esOscuro() {
+  const r = document.documentElement;
+  return r.dataset.theme === 'dark' || (!r.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+const enModoGastos = () => vistaActual === 'gastos' || vistaActual === 'gasto';
+const VARIABLES_MODO = ['--primary', '--primary-hover', '--primary-soft', '--primary-ink', '--on-primary', '--foco', '--hero-a', '--hero-b', '--sombra-primaria'];
+/** En Gastos, la app entera usa el color elegido (calculado para que se lea bien en claro y en oscuro). */
+function aplicarModo() {
+  const r = document.documentElement;
+  const gastos = enModoGastos();
+  if (gastos) r.dataset.modo = 'gastos'; else delete r.dataset.modo;
+  $('.nav-nueva').setAttribute('aria-label', gastos ? 'Nuevo gasto' : 'Nueva factura');
+  $('.nav-nueva .largo').textContent = gastos ? 'Nuevo gasto' : 'Nueva factura';
+  if (!gastos) { VARIABLES_MODO.forEach((v) => r.style.removeProperty(v)); return; }
+  const c = colorGastos();
+  const [R, G, B] = hexRGB(c);
+  const v = {};
+  if (esOscuro()) {
+    const fondo = '#141b2d';
+    v['--primary'] = conContraste(mezclar(c, '#ffffff', 0.25), fondo, 4.5, '#ffffff');
+    v['--primary-hover'] = mezclar(v['--primary'], '#ffffff', 0.15);
+    v['--primary-soft'] = mezclar(c, fondo, 0.72);
+    v['--primary-ink'] = conContraste(mezclar(v['--primary'], '#ffffff', 0.3), v['--primary-soft'], 4.5, '#ffffff');
+    v['--on-primary'] = '#0b1020';
+    v['--hero-a'] = conContraste(mezclar(c, '#000000', 0.1), '#ffffff', 4.5, '#000000');
+  } else {
+    v['--primary'] = conContraste(c, '#ffffff', 4.5, '#000000');   // los botones llevan texto blanco encima
+    v['--primary-hover'] = mezclar(v['--primary'], '#000000', 0.14);
+    v['--primary-soft'] = mezclar(c, '#ffffff', 0.9);
+    v['--primary-ink'] = conContraste(mezclar(v['--primary'], '#000000', 0.12), v['--primary-soft'], 4.5, '#000000');
+    v['--on-primary'] = '#ffffff';
+    v['--hero-a'] = v['--primary'];
+  }
+  v['--hero-b'] = mezclar(v['--hero-a'], '#000000', 0.25);
+  v['--foco'] = `0 0 0 3px rgba(${R},${G},${B},.28)`;
+  v['--sombra-primaria'] = `rgba(${R},${G},${B},.3)`;
+  Object.entries(v).forEach(([k, x]) => r.style.setProperty(k, x));
+}
+function pintarColoresGastos() {
+  const actual = colorGastos();
+  const propio = !COLORES_GASTOS.some(([c]) => c === actual);
+  id('aj-color-gastos').innerHTML = COLORES_GASTOS.map(([c, n]) => `<button type="button" class="color-op${c === actual ? ' activo' : ''}" data-color="${c}" style="background:${c}" title="${n}" aria-label="${n}" aria-pressed="${c === actual}"></button>`).join('')
+    + `<label class="color-propio">Otro <input type="color" id="aj-color-propio" value="${actual}" aria-label="Elegir otro color"${propio ? ' style="outline:2px solid var(--text);outline-offset:2px"' : ''}></label>`;
+}
+function elegirColorGastos(c) {
+  db.ajustes.colorGastos = c.toLowerCase();
+  guardarDatos();
+  pintarColoresGastos();
+  aviso('Color de Gastos cambiado. Entra en Gastos para verlo.');
+}
+id('aj-color-gastos').addEventListener('click', (ev) => { const b = ev.target.closest('[data-color]'); if (b) elegirColorGastos(b.dataset.color); });
+id('aj-color-gastos').addEventListener('change', (ev) => { if (ev.target.id === 'aj-color-propio') elegirColorGastos(ev.target.value); });
+id('aj-ver-gastos').addEventListener('click', () => irA('gastos'));
+
+/* ---------- Lista de gastos ---------- */
+function rellenarFiltrosGastos() {
+  const selE = id('g-empresa');
+  const e = selE.value;
+  selE.innerHTML = '<option value="">Todas las empresas</option>' + db.empresas.slice().sort(ordenarPorNombre)
+    .map((x) => `<option value="${esc(x.id)}">${esc(x.nombre)}</option>`).join('');
+  selE.value = empresaPorId(e) ? e : '';
+  selE.closest('label').hidden = db.empresas.length < 2;
+  const selA = id('g-anio');
+  const hoyAnio = hoyISO().slice(0, 4);
+  const a = selA.options.length ? selA.value : hoyAnio;   // la primera vez, el año en curso
+  const anios = new Set(db.gastos.map((g) => (g.fecha || '').slice(0, 4)).filter(Boolean));
+  anios.add(hoyAnio);
+  selA.innerHTML = '<option value="">Todos los años</option>' + Array.from(anios).sort().reverse().map((x) => `<option value="${x}">${x}</option>`).join('');
+  selA.value = a === '' || anios.has(a) ? a : hoyAnio;
+  const selC = id('g-cat');
+  const c = selC.value;
+  const cats = [...new Set(db.gastos.map((g) => g.categoria || 'Otros'))].sort((x, y) => x.localeCompare(y, 'es'));
+  selC.innerHTML = '<option value="">Todas</option>' + cats.map((x) => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  selC.value = cats.includes(c) ? c : '';
+  $$('#g-estado button').forEach((b) => b.classList.toggle('activo', b.dataset.valor === filtroGasto));
+}
+function gastosFiltrados() {
+  const emp = id('g-empresa').value;
+  const anio = id('g-anio').value;
+  const tri = id('g-tri').value;
+  const cat = id('g-cat').value;
+  const q = normaliza(id('g-buscar').value);
+  return db.gastos.filter((g) => (!emp || g.empresaId === emp) &&
+    (!filtroGasto || (filtroGasto === 'pagados' ? g.pagado : !g.pagado)) &&
+    (!anio || (g.fecha || '').slice(0, 4) === anio) &&
+    (!tri || trimestreDe(g.fecha) === Number(tri)) &&
+    (!cat || (g.categoria || 'Otros') === cat) &&
+    (!q || normaliza([proveedorDe(g).nombre, proveedorDe(g).cif, g.concepto, g.categoria, g.numero, g.notas].join(' ')).includes(q)))
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.creado || '').localeCompare(a.creado || ''));
+}
+function htmlItemGasto(g) {
+  const prov = proveedorDe(g);
+  const emp = db.empresas.length > 1 && empresaPorId(g.empresaId);
+  const meta = [`<b class="if-codigo">${esc(g.categoria || 'Otros')}</b>`, fechaCorta(g.fecha), prov.nombre && g.concepto ? esc(g.concepto) : '', emp ? esc(emp.nombre) : '']
+    .filter(Boolean).join(' · ');
+  const chip = g.pagado
+    ? `<button type="button" class="chip pagado" data-pagado title="Pulsa para marcarlo como no pagado">${ico('check')}Pagado</button>`
+    : `<button type="button" class="chip pendiente" data-pagado title="Pulsa para marcarlo como pagado">${ico('clock')}Por pagar</button>`;
+  return `<article class="item-factura item-gasto" data-gasto="${esc(g.id)}">
+    <button type="button" class="if-principal" data-abrir><span class="if-cliente">${esc(prov.nombre || g.concepto || 'Gasto')}</span><span class="if-meta">${meta}</span></button>
+    <span class="if-importe">${euros(g.totalCent)}</span>
+    <span class="if-estado">${chip}</span>
+    <span class="if-acciones">
+      <button type="button" class="btn-icono" data-duplicar title="Duplicar" aria-label="Duplicar el gasto">${ico('copy')}</button>
+      <button type="button" class="btn-icono peligro" data-borrar title="Borrar" aria-label="Borrar el gasto">${ico('trash')}</button>
+    </span>
+  </article>`;
+}
+function renderGastos() {
+  rellenarFiltrosGastos();
+  id('g-sin-permiso').hidden = !gastosSinPermiso;
+  const lista = gastosFiltrados();
+  const pendientes = lista.filter((g) => !g.pagado);
+  const anio = id('g-anio').value;
+  id('g-tarjetas').innerHTML = `
+    <div class="tile"><span class="etq">Total gastado</span><strong>${euros(sumar(lista, 'totalCent'))}</strong><small>${lista.length} gasto${lista.length === 1 ? '' : 's'}${anio ? ' en ' + anio : ''}</small></div>
+    <div class="tile"><span class="etq">IVA soportado</span><strong>${euros(sumar(lista, 'cuotaCent'))}</strong><small>Base: ${euros(sumar(lista, 'baseCent'))}</small></div>
+    <div class="tile ${pendientes.length ? 'alerta' : 'bien'}"><span class="etq">${ico(pendientes.length ? 'clock' : 'check')}Por pagar</span><strong>${euros(sumar(pendientes, 'totalCent'))}</strong><small>${pendientes.length ? `${pendientes.length} gasto${pendientes.length === 1 ? '' : 's'} sin pagar` : 'Todo pagado'}</small></div>`;
+  // En qué se va el dinero (con los mismos filtros)
+  const cats = gastosPorCategoria(lista, 6);
+  id('g-cat-sub').textContent = `${anio || 'Todos los años'} · con IVA, de más a menos`;
+  pintarBarrasH(id('g-por-categoria'), cats, { unidad: ['gasto', 'gastos'], vacio: '<div class="vacio-grafico">No hay gastos con estos filtros.</div>' });
+  id('g-tabla-cat').innerHTML = tablaReparto(cats);
+  // Gastos por mes (del año elegido o, con «Todos los años», del año en curso)
+  const anioG = anio || hoyISO().slice(0, 4);
+  datosGraficoGastos = { anio: anioG, meses: MESES.map((nombre, i) => {
+    const m = `${anioG}-${String(i + 1).padStart(2, '0')}`;
+    const delMes = lista.filter((g) => (g.fecha || '').startsWith(m));
+    const gastado = sumar(delMes, 'totalCent');
+    return { nombre, valores: [gastado], gastado, iva: sumar(delMes, 'cuotaCent'), n: delMes.length };
+  }) };
+  id('g-mes-sub').textContent = `${anioG} · total de cada mes con IVA`;
+  id('g-tabla-mes').innerHTML = datosGraficoGastos.meses.map((x) => `<tr><td>${x.nombre}</td><td class="num">${euros(x.gastado)}</td><td class="num">${euros(x.iva)}</td></tr>`).join('');
+  id('g-graficos').hidden = !db.gastos.length;
+  pintarGraficoGastos();
+  id('g-lista').innerHTML = lista.length ? lista.map(htmlItemGasto).join('')
+    : `<div class="card vacio-lista">${db.gastos.length ? 'No hay gastos con estos filtros.' : 'Todavía no has apuntado ningún gasto. Pulsa «+» para apuntar el primero.'}</div>`;
+}
+function pintarGraficoGastos() {
+  if (!datosGraficoGastos || id('g-graficos').hidden) return;
+  const anio = datosGraficoGastos.anio;
+  pintarColumnas(id('g-grafico'), {
+    meses: datosGraficoGastos.meses,
+    series: [{ clase: 's2', nombre: 'Gastos' }],
+    aria: `Gastos por mes en ${anio}`,
+    etiquetaZona: (mm) => `${mm.nombre}: ${euros(mm.gastado)} gastado`,
+    detalle: (mm) => ({
+      valor: euros(mm.gastado),
+      titulo: `Gastado en ${mm.nombre} ${anio}` + (mm.n ? ` · ${mm.n} gasto${mm.n === 1 ? '' : 's'}` : ''),
+      filas: [{ texto: 'IVA soportado', valor: euros(mm.iva) }],
+    }),
+  });
+}
+id('g-estado').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-valor]');
+  if (!b) return;
+  filtroGasto = b.dataset.valor;
+  renderGastos();
+});
+['g-empresa', 'g-anio', 'g-tri', 'g-cat'].forEach((x) => id(x).addEventListener('change', renderGastos));
+id('g-buscar').addEventListener('input', renderGastos);
+id('g-exportar').addEventListener('click', () => exportarGastosCSV(gastosFiltrados()));
+document.addEventListener('click', (ev) => {
+  if (ev.target.closest('[data-nuevo-gasto]')) { nuevoGasto(); return; }
+  if (ev.target.closest('[data-ir-gastos]')) { irA('gastos'); return; }
+  const b = ev.target.closest('button');
+  const art = b && b.closest('.item-gasto');
+  if (!art) return;
+  const g = gastoPorId(art.dataset.gasto);
+  if (!g) return;
+  const d = b.dataset;
+  if ('abrir' in d) abrirGasto(g);
+  else if ('pagado' in d) alternarPagado(g);
+  else if ('duplicar' in d) { nuevoGasto(g); aviso('Copia preparada: revisa la fecha y el importe y guárdala.'); }
+  else if ('borrar' in d) borrarGasto(g);
+});
+/** Marca un gasto como pagado / por pagar, con «Deshacer». */
+function alternarPagado(g) {
+  const antes = { pagado: g.pagado, fechaPago: g.fechaPago, modificado: g.modificado };
+  g.pagado = !g.pagado;
+  g.fechaPago = g.pagado ? (g.fechaPago || hoyISO()) : '';
+  g.modificado = new Date().toISOString();
+  guardarDatos();
+  renderVistaActual();
+  aviso(g.pagado ? 'Gasto marcado como pagado' : 'Gasto marcado como por pagar', {
+    accion: 'Deshacer',
+    fn: () => { Object.assign(g, antes); guardarDatos(); renderVistaActual(); },
+  });
+}
+function borrarGasto(g) {
+  if (!confirm(`¿Borrar el gasto de ${proveedorDe(g).nombre || g.concepto || 'este proveedor'} (${euros(g.totalCent)})?`)) return false;
+  const pos = db.gastos.findIndex((x) => x.id === g.id);
+  db.gastos = db.gastos.filter((x) => x.id !== g.id);
+  guardarDatos();
+  renderVistaActual();
+  aviso('Gasto borrado', { accion: 'Deshacer', fn: () => { db.gastos.splice(Math.max(0, pos), 0, g); guardarDatos(); renderVistaActual(); } });
+  return true;
+}
+/** CSV de gastos para el gestor (mismo formato que el de facturas). */
+async function exportarGastosCSV(lista) {
+  if (!lista.length) { aviso('No hay gastos que exportar.', 'error'); return; }
+  const dec = (cent) => fmtDec.format((cent || 0) / 100).replace(/\./g, '');
+  const celda = (v) => { const x = String(v ?? ''); return /[";\n\r]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
+  const cab = ['Fecha', 'Empresa', 'Proveedor', 'CIF proveedor', 'Nº factura', 'Concepto', 'Categoría', 'Base imponible', '% IVA', 'Cuota IVA', 'Total', 'Estado', 'Fecha de pago', 'Notas'];
+  const filas = lista.slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')).map((g) => [
+    fechaCorta(g.fecha), (empresaPorId(g.empresaId) || {}).nombre || '', proveedorDe(g).nombre, proveedorDe(g).cif, g.numero,
+    (g.concepto || '').replace(/\s*\n\s*/g, ' / '), g.categoria, dec(g.baseCent), pctTexto(g.ivaPct || 0), dec(g.cuotaCent), dec(g.totalCent),
+    g.pagado ? 'Pagado' : 'Por pagar', fechaCorta(g.fechaPago), (g.notas || '').replace(/\s*\n\s*/g, ' / '),
+  ]);
+  await compartirCSV([cab, ...filas].map((r) => r.map(celda).join(';')), `gastos-${hoyISO()}.csv`, 'Gastos para el gestor');
+}
+
+/* ---------- Ficha de un gasto ---------- */
+function rellenarCategoriasGasto(valor) {
+  const extra = [...new Set(db.gastos.map((g) => g.categoria).filter((c) => c && !CATEGORIAS_GASTO.includes(c)))].sort((a, b) => a.localeCompare(b, 'es'));
+  const todas = [...CATEGORIAS_GASTO, ...extra];
+  const sel = id('gs-categoria');
+  sel.innerHTML = todas.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + '<option value="__otra">Otra…</option>';
+  const v = valor || 'Otros';
+  sel.value = todas.includes(v) ? v : '__otra';
+  id('gs-cat-otra').value = todas.includes(v) ? '' : v;
+}
+function ponerGastoEnForm(g, copia) {
+  formG.reset();
+  const selE = id('gs-empresa');
+  selE.innerHTML = db.empresas.slice().sort(ordenarPorNombre).map((e) => `<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('');
+  const empId = [g && g.empresaId, db.ajustes.ultimaEmpresa].find((x) => x && empresaPorId(x)) || (selE.options[0] ? selE.options[0].value : '');
+  selE.value = empId;
+  id('lbl-gs-empresa').hidden = db.empresas.length < 2;
+  rellenarCategoriasGasto(g && g.categoria);
+  // Proveedores ya usados (el más reciente primero), para elegirlos al escribir
+  const vistos = new Map();
+  db.gastos.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).forEach((x) => {
+    const n = (proveedorDe(x).nombre || '').trim();
+    if (n && !vistos.has(normaliza(n))) vistos.set(normaliza(n), n);
+  });
+  id('lista-proveedores').innerHTML = [...vistos.values()].map((n) => `<option value="${esc(n)}"></option>`).join('');
+  const prov = g ? proveedorDe(g) : {};
+  id('gs-fecha').value = g && !copia ? g.fecha : hoyISO();
+  id('gs-prov').value = prov.nombre || '';
+  id('gs-prov-cif').value = prov.cif || '';
+  id('gs-numero').value = g && !copia ? g.numero || '' : '';
+  id('gs-concepto').value = g ? g.concepto || '' : '';
+  id('gs-total').value = g ? fmtDec.format((g.totalCent || 0) / 100) : '';
+  const iva = String(g ? g.ivaPct || 0 : 21);
+  const selIva = id('gs-iva');
+  if (![...selIva.options].some((o) => o.value === iva)) selIva.add(new Option(`${pctTexto(iva)} %`, iva));
+  selIva.value = iva;
+  id('gs-pagado').checked = g && !copia ? !!g.pagado : true;
+  id('gs-fecha-pago').value = g && !copia ? g.fechaPago || '' : id('gs-fecha').value;
+  id('gs-fecha').dataset.antes = id('gs-fecha').value;
+  id('gs-notas').value = g ? g.notas || '' : '';
+  actualizarFormGasto();
+}
+function nuevoGasto(copia) {
+  if (gastosSinPermiso) {
+    aviso('Para apuntar gastos en tu cuenta falta actualizar las reglas de Firebase (docs/CUENTAS.md).', 'error');
+    irA('gastos');
+    return;
+  }
+  gastoEditando = null;
+  ponerGastoEnForm(copia || null, !!copia);
+  id('gs-titulo').textContent = copia ? 'Copia de un gasto' : 'Nuevo gasto';
+  id('gs-borrar').hidden = true;
+  irA('gasto');
+  if (!esTactil()) id(copia ? 'gs-total' : 'gs-prov').focus();
+}
+function abrirGasto(g) {
+  gastoEditando = g;
+  ponerGastoEnForm(g, false);
+  id('gs-titulo').textContent = proveedorDe(g).nombre || 'Gasto';
+  id('gs-borrar').hidden = false;
+  irA('gasto');
+}
+function actualizarFormGasto() {
+  id('lbl-gs-cat-otra').hidden = id('gs-categoria').value !== '__otra';
+  id('lbl-gs-fecha-pago').hidden = !id('gs-pagado').checked;
+  const total = aCentimos(id('gs-total').value);
+  const pct = leerPct(id('gs-iva').value);
+  const caja = id('gs-desglose');
+  if (!Number.isFinite(total) || total <= 0) {
+    caja.innerHTML = '<span>Escribe el total que has pagado (con IVA): la app calcula la base y el IVA.</span>';
+    return;
+  }
+  const d = desgloseGasto(total, pct);
+  caja.innerHTML = `<span>Base imponible <b>${euros(d.baseCent)}</b></span><span>IVA ${pct ? pctTexto(pct) + ' %' : '(sin IVA)'} <b>${euros(d.cuotaCent)}</b></span><span>Total <b>${euros(total)}</b></span>`;
+}
+id('gs-total').addEventListener('input', actualizarFormGasto);
+// La fecha de pago sigue a la del gasto mientras no se cambie a mano
+id('gs-fecha').addEventListener('change', () => {
+  if (id('gs-fecha-pago').value === id('gs-fecha').dataset.antes) id('gs-fecha-pago').value = id('gs-fecha').value;
+  id('gs-fecha').dataset.antes = id('gs-fecha').value;
+});
+['gs-iva', 'gs-categoria', 'gs-pagado'].forEach((x) => id(x).addEventListener('change', actualizarFormGasto));
+// Al elegir un proveedor ya usado, se ponen su CIF, su categoría y su IVA
+id('gs-prov').addEventListener('change', () => {
+  const n = normaliza(id('gs-prov').value);
+  if (!n) return;
+  const ultimo = db.gastos.filter((g) => normaliza(proveedorDe(g).nombre) === n && g !== gastoEditando)
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))[0];
+  if (!ultimo) return;
+  if (!id('gs-prov-cif').value) id('gs-prov-cif').value = proveedorDe(ultimo).cif || '';
+  if (!gastoEditando) {
+    rellenarCategoriasGasto(ultimo.categoria);
+    id('gs-iva').value = String(ultimo.ivaPct || 0);
+    if (!id('gs-concepto').value) id('gs-concepto').value = ultimo.concepto || '';
+    actualizarFormGasto();
+  }
+});
+formG.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const total = aCentimos(id('gs-total').value);
+  if (!Number.isFinite(total) || total <= 0) { aviso('Escribe el importe del gasto.', 'error'); id('gs-total').focus(); return; }
+  if (!id('gs-fecha').value) { aviso('Pon la fecha del gasto.', 'error'); id('gs-fecha').focus(); return; }
+  const prov = id('gs-prov').value.trim();
+  const concepto = id('gs-concepto').value.trim();
+  if (!prov && !concepto) { aviso('Escribe a quién se lo has pagado o el concepto.', 'error'); id('gs-prov').focus(); return; }
+  let categoria = id('gs-categoria').value;
+  if (categoria === '__otra') categoria = id('gs-cat-otra').value.trim() || 'Otros';
+  const pct = leerPct(id('gs-iva').value);
+  const pagado = id('gs-pagado').checked;
+  const ahora = new Date().toISOString();
+  const datos = {
+    empresaId: id('gs-empresa').value || '', fecha: id('gs-fecha').value,
+    proveedor: { nombre: prov, cif: id('gs-prov-cif').value.trim().toUpperCase().replace(/[\s.-]+/g, '') },
+    numero: id('gs-numero').value.trim(), concepto, categoria, totalCent: total, ivaPct: pct, ...desgloseGasto(total, pct),
+    pagado, fechaPago: pagado ? (id('gs-fecha-pago').value || id('gs-fecha').value) : '', notas: id('gs-notas').value.trim(), modificado: ahora,
+  };
+  const eraNuevo = !gastoEditando;
+  if (gastoEditando) Object.assign(gastoEditando, datos);
+  else db.gastos.push(Object.assign({ id: uid(), creado: ahora }, datos));
+  if (!guardarDatos()) return;
+  gastoEditando = null;
+  irA('gastos');
+  aviso(eraNuevo ? 'Gasto apuntado ✔' : 'Gasto guardado ✔');
+});
+id('gs-volver').addEventListener('click', () => { gastoEditando = null; irA('gastos'); });
+id('gs-cancelar').addEventListener('click', () => { gastoEditando = null; irA('gastos'); });
+id('gs-borrar').addEventListener('click', () => {
+  if (gastoEditando && borrarGasto(gastoEditando)) { gastoEditando = null; irA('gastos'); }
+});
 
 /* =========================================================
    Clientes
@@ -2908,6 +3658,7 @@ id('cl-facturar').addEventListener('click', () => {
    Ajustes y empresas (plantilla + numeración)
    ========================================================= */
 function renderAjustes() {
+  pintarColoresGastos();
   const lista = db.empresas.slice().sort(ordenarPorNombre);
   id('aj-empresas').innerHTML = lista.length ? lista.map((e) => {
     const n = db.facturas.filter((f) => f.empresaId === e.id).length;
@@ -3526,7 +4277,7 @@ window.addEventListener('storage', (ev) => {
    Firestore guarda una copia en el dispositivo: se puede trabajar sin internet y se sincroniza solo.
    ========================================================= */
 const DOMINIO_USUARIOS = 'usuarios.facturacion.app';   // «fran» → fran@usuarios.facturacion.app (no se envía ningún correo)
-const COLECCIONES = ['empresas', 'clientes', 'facturas'];
+const COLECCIONES = ['empresas', 'clientes', 'facturas', 'gastos'];
 let FB = null, fbAuth = null, fbDb = null;
 let modoAcceso = 'entrar';
 let desuscribir = [];
@@ -3662,7 +4413,7 @@ function entrarConUsuario(u) {
   usuarioNube = u;
   claveDatos = 'facturacion.datos.u.' + u.uid;
   db = cargarDatos();   // la copia de este usuario en el dispositivo: la app se ve al momento
-  sincronizado = { empresas: new Map(), clientes: new Map(), facturas: new Map(), ajustes: null };
+  sincronizado = { empresas: new Map(), clientes: new Map(), facturas: new Map(), gastos: new Map(), ajustes: null };
   primerasLecturas = { pendientes: new Set([...COLECCIONES, 'perfil']), servidor: new Set([...COLECCIONES, 'perfil']), revisada: false };
   id('panel-cuenta').hidden = false;
   id('cuenta-usuario').textContent = nombreUsuario();
@@ -3701,7 +4452,7 @@ function escucharNube() {
       }
       if (cambios) alCambiarDesdeNube();
       lecturaHecha(col, snap.metadata.fromCache);
-    }, errorNube));
+    }, (e) => errorColeccion(col, e)));
   });
   desuscribir.push(FB.onSnapshot(base, { includeMetadataChanges: true }, (snap) => {
     const ajustes = snap.exists() ? (snap.data().ajustes || {}) : null;
@@ -3712,6 +4463,16 @@ function escucharNube() {
     lecturaHecha('perfil', snap.metadata.fromCache);
   }, errorNube));
   estadoSync();
+}
+/** Si la cuenta aún tiene las reglas antiguas de Firebase, los gastos no se pueden leer ni guardar: se avisa en Gastos. */
+function errorColeccion(col, e) {
+  if (col === 'gastos' && e && e.code === 'permission-denied') {
+    gastosSinPermiso = true;
+    lecturaHecha('gastos', false);
+    if (vistaActual === 'gastos') renderGastos();
+    return;
+  }
+  errorNube(e);
 }
 function lecturaHecha(nombre, desdeCache) {
   primerasLecturas.pendientes.delete(nombre);
@@ -3741,6 +4502,7 @@ function subirCambios() {
   const base = FB.doc(fbDb, 'usuarios', usuarioNube.uid);
   const ops = [];
   COLECCIONES.forEach((col) => {
+    if (col === 'gastos' && gastosSinPermiso) return;
     const vistos = new Set();
     db[col].forEach((rec) => {
       if (!rec || !rec.id) return;
@@ -3783,6 +4545,8 @@ function alCambiarDesdeNube() {
     rellenarSelectClientes();
     revisarAvisoCopia();
     // No se tocan los formularios a medio rellenar (factura o empresa).
+    aplicarModo();   // por si ha cambiado el color de Gastos
+    if (vistaActual === 'gasto') return;   // no se toca un gasto a medio escribir
     if (vistaActual === 'factura') {
       if (!id('editor-vacio').hidden || id('editor-factura').hidden) mostrarEditorOBienvenida();
       else if (!edicion && !cambiosSinGuardar && !formF.contains(document.activeElement)) nuevaFactura();   // factura nueva sin tocar: número al día

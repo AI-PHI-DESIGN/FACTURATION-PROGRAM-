@@ -31,7 +31,9 @@ const reducir = (archivo) => execFileSync('ffmpeg', ['-loglevel', 'error', '-y',
 
 (async () => {
   fs.mkdirSync(CAPTURAS, { recursive: true });
-  for (const f of fs.readdirSync(CAPTURAS)) if (f.endsWith('.png')) fs.unlinkSync(path.join(CAPTURAS, f));
+  // movil-0-acceso.png (pantalla de cuentas) no se rehace aquí: sale de la prueba (pruebas/salida/movil-cuenta-acceso.png),
+  // porque necesita servir la app por http y este script la abre como archivo.
+  for (const f of fs.readdirSync(CAPTURAS)) if (f.endsWith('.png') && f !== 'movil-0-acceso.png') fs.unlinkSync(path.join(CAPTURAS, f));
   const browser = await chromium.launch();
 
   // Ordenador
@@ -39,6 +41,9 @@ const reducir = (archivo) => execFileSync('ffmpeg', ['-loglevel', 'error', '-y',
   await p.screenshot({ path: path.join(CAPTURAS, 'inicio.png') });
   await ir(p, 'facturas');
   await p.screenshot({ path: path.join(CAPTURAS, 'facturas.png') });
+  await ir(p, 'gastos');
+  await p.screenshot({ path: path.join(CAPTURAS, 'gastos.png') });
+  await ir(p, 'facturas');
   await p.click('#c-lista .item-factura:has-text("A 15/26") [data-abrir]');
   await p.waitForTimeout(300);
   await p.evaluate(() => document.querySelector('#f-concepto').scrollIntoView({ block: 'center' }));
@@ -74,6 +79,9 @@ const reducir = (archivo) => execFileSync('ffmpeg', ['-loglevel', 'error', '-y',
   await m.p.click('#btn-pdf-movil');
   await m.p.waitForFunction(() => !document.getElementById('pdf-descargar').disabled, null, { timeout: 30000 });
   await m.p.screenshot({ path: path.join(CAPTURAS, 'movil-5-pdf.png') });
+  await m.p.click('#pdf-cerrar').catch(() => {});
+  await ir(m.p, 'gastos');
+  await m.p.screenshot({ path: path.join(CAPTURAS, 'movil-7-gastos.png') });
   await m.ctx.close();
   const mo = await contexto(browser, devices['Pixel 7'], true);
   await mo.p.screenshot({ path: path.join(CAPTURAS, 'movil-6-oscuro.png') });

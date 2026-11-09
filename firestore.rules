@@ -1,12 +1,12 @@
 rules_version = '2';
-// Cada persona solo puede leer y escribir sus propios datos: usuarios/{su uid}/...
+// Cada persona solo puede leer y escribir sus propios datos: usuarios/{su uid} y todo lo que cuelga de ahí
+// (empresas, clientes, facturas, gastos… y lo que se añada más adelante, sin tener que cambiar estas reglas).
 service cloud.firestore {
   match /databases/{database}/documents {
     match /usuarios/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
       match /{coleccion}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid
-          && coleccion in ['empresas', 'clientes', 'facturas'];
+        allow read, write: if request.auth != null && request.auth.uid == uid;
       }
     }
   }

@@ -23,7 +23,9 @@ ver "guardar una factura propia" "$(curl -sS -o /dev/null -w '%{http_code}' -X P
 ver "leer sus facturas" "$(curl -sS -o /dev/null -w '%{http_code}' "$FS/usuarios/$UIDP/facturas" -H "Authorization: Bearer $TOK")" 200
 ver "reglas: leer datos de otro usuario" "$(curl -sS -o /dev/null -w '%{http_code}' "$FS/usuarios/otro-usuario/facturas" -H "Authorization: Bearer $TOK")" 403
 ver "reglas: leer sin sesión" "$(curl -sS -o /dev/null -w '%{http_code}' "$FS/usuarios/$UIDP/facturas")" 403
-ver "reglas: colección no permitida" "$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH "$FS/usuarios/$UIDP/otra/x" -H "Authorization: Bearer $TOK" -H 'content-type: application/json' -d '{"fields":{}}')" 403
+ver "guardar un gasto (si falla: faltan las reglas nuevas, docs/CUENTAS.md)" "$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH "$FS/usuarios/$UIDP/gastos/prueba" -H "Authorization: Bearer $TOK" -H 'content-type: application/json' -d '{"fields":{"id":{"stringValue":"prueba"}}}')" 200
+ver "reglas: escribir en los datos de otro usuario" "$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH "$FS/usuarios/otro-usuario/gastos/x" -H "Authorization: Bearer $TOK" -H 'content-type: application/json' -d '{"fields":{}}')" 403
+curl -sS -o /dev/null -X DELETE "$FS/usuarios/$UIDP/gastos/prueba" -H "Authorization: Bearer $TOK"
 ver "limpieza: borrar la factura" "$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE "$FS/usuarios/$UIDP/facturas/prueba" -H "Authorization: Bearer $TOK")" 200
 ver "limpieza: borrar la cuenta de prueba" "$(curl -sS -o /dev/null -w '%{http_code}' -X POST "https://identitytoolkit.googleapis.com/v1/accounts:delete?key=$KEY" -H 'content-type: application/json' -d "{\"idToken\":\"$TOK\"}")" 200
 [ "$fallos" = 0 ] && echo "Firebase correcto ✔" || { echo "$fallos comprobación(es) FALLIDA(S)"; exit 1; }
