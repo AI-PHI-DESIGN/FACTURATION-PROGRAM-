@@ -82,7 +82,7 @@ async function uidDe(page) {
   return (await h.jsonValue()).slice('facturacion.datos.u.'.length);
 }
 
-/** Para las pruebas sin cuentas: «facturacion.nube.prueba» = 'null' desactiva config-nube.js en ese navegador. */
+/** Para las pruebas sin cuentas: «facturacion.nube.prueba» = 'null' desactiva CONFIG_NUBE en ese navegador. */
 const sinNube = (ctx) => ctx.addInitScript(() => {
   try { if (!localStorage.getItem('facturacion.nube.prueba')) localStorage.setItem('facturacion.nube.prueba', 'null'); } catch (e) { /* nada */ }
 });
@@ -605,14 +605,14 @@ function vigilarErrores(page, errores, nube = false) {
 
     console.log('17. Cuentas: correo y contraseña por persona, datos en la nube (emuladores de Firebase)');
     {
-      // Con config-nube.js tal cual (el proyecto real), la app pide correo y contraseña. No se entra: solo se mira.
+      // Con CONFIG_NUBE tal cual (el proyecto real), la app pide correo y contraseña. No se entra: solo se mira.
       const real = await browser.newContext({ locale: 'es-ES' });
       const r = await real.newPage();
       vigilarErrores(r, errores, true);
       await r.goto(URL_APP);
       await r.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });
       const conf = await r.evaluate(() => window.CONFIG_NUBE && window.CONFIG_NUBE.firebase.projectId);
-      comprobar(!!conf && await r.isVisible('#ac-usuario'), `con config-nube.js (proyecto «${conf}»), al abrir pide correo y contraseña`);
+      comprobar(!!conf && await r.isVisible('#ac-usuario'), `con la configuración real (proyecto «${conf}»), al abrir pide correo y contraseña`);
       await real.close();
     }
     if (!(await emuladoresListos())) {
@@ -802,6 +802,67 @@ function vigilarErrores(page, errores, nube = false) {
       await c.waitForFunction(() => document.querySelector('#toast').textContent.includes('Contraseña cambiada'), null, { timeout: 15000 }).catch(() => {});
       comprobar((await c.textContent('#toast')).includes('Contraseña cambiada'), 'se puede cambiar la contraseña');
       await Promise.all([ctxA.close(), ctxB.close(), ctxC.close()]);
+    }
+
+    console.log('18. Actualizar una app ya instalada (móvil con una versión anterior)');
+    {
+      // Copia de la app «de antes»: sin cuentas y con otro service worker. Un servidor al que se le cambia la carpeta
+      // hace de GitHub Pages publicando una versión nueva.
+      const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'facturacion-'));
+      const copiar = (destino, cambiar) => {
+        for (const x of ['index.html', 'manifest.json', 'sw.js', 'iconos', 'vendor']) fs.cpSync(path.join(RAIZ, x), path.join(destino, x), { recursive: true });
+        cambiar(destino);
+        return destino;
+      };
+      const reescribir = (f, a, b) => { const t = fs.readFileSync(f, 'utf8'); if (!t.includes(a)) throw new Error('no está: ' + a); fs.writeFileSync(f, t.replace(a, b)); };
+      const vieja = copiar(path.join(tmp, 'vieja'), (d) => {
+        reescribir(path.join(d, 'index.html'), 'window.CONFIG_NUBE = {', 'window.CONFIG_NUBE = null && {');
+        reescribir(path.join(d, 'index.html'), /const VERSION_APP = '[^']*';/.exec(fs.readFileSync(path.join(d, 'index.html'), 'utf8'))[0], "const VERSION_APP = '0.9';");
+        reescribir(path.join(d, 'sw.js'), /const VERSION = '[^']*';/.exec(fs.readFileSync(path.join(d, 'sw.js'), 'utf8'))[0], "const VERSION = 'facturacion-vieja';");
+      });
+      const siguiente = copiar(path.join(tmp, 'siguiente'), (d) => {
+        reescribir(path.join(d, 'index.html'), /const VERSION_APP = '[^']*';/.exec(fs.readFileSync(path.join(d, 'index.html'), 'utf8'))[0], "const VERSION_APP = '9.9';");
+        reescribir(path.join(d, 'sw.js'), /const VERSION = '[^']*';/.exec(fs.readFileSync(path.join(d, 'sw.js'), 'utf8'))[0], "const VERSION = 'facturacion-siguiente';");
+      });
+      let carpeta = vieja;
+      const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
+      const pages = http.createServer((req, res) => {
+        let ruta = decodeURIComponent(new URL(req.url, 'http://x').pathname); if (ruta.endsWith('/')) ruta += 'index.html';
+        fs.readFile(path.join(carpeta, ruta), (e, d) => {
+          if (e) { res.writeHead(404); return res.end(); }
+          res.writeHead(200, { 'content-type': tipos[path.extname(ruta)] || 'application/octet-stream', 'cache-control': 'max-age=600' });
+          res.end(d);
+        });
+      });
+      await new Promise((r) => pages.listen(0, '127.0.0.1', r));
+      const urlPages = `http://127.0.0.1:${pages.address().port}/`;
+      const act = await browser.newContext({ ...devices['Pixel 7'], locale: 'es-ES' });
+      const p = await act.newPage();
+      vigilarErrores(p, errores, true);
+      const estado = () => p.evaluate(() => ({ acceso: !document.querySelector('#acceso').hidden, version: document.querySelector('#nav-pie').textContent }));
+      await p.goto(urlPages);
+      await p.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+      await p.reload();
+      const antes = await estado();
+      carpeta = RAIZ;   // se publica la versión con cuentas
+      await p.reload();
+      await p.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 }).catch(() => {});
+      const despues = await estado();
+      comprobar(!antes.acceso && antes.version.includes('0.9') && despues.acceso,
+        'un móvil con la versión anterior instalada ve «Crear cuenta» la PRIMERA vez que abre la app tras publicar');
+      // Con la app abierta en segundo plano: se publica otra versión y, al volver a la app, se pone al día sola
+      await p.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+      await p.waitForTimeout(25000);   // lleva un rato abierta
+      carpeta = siguiente;
+      await Promise.all([
+        p.waitForEvent('load', { timeout: 30000 }).catch(() => {}),
+        p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); }),
+      ]);
+      await p.waitForFunction(() => document.querySelector('#nav-pie').textContent.includes('9.9'), null, { timeout: 15000 }).catch(() => {});
+      comprobar((await estado()).version.includes('9.9'), 'al volver a la app (estaba en segundo plano), coge la versión nueva sola');
+      await act.close();
+      pages.close();
+      fs.rmSync(tmp, { recursive: true, force: true });
     }
   } finally {
     await browser.close();

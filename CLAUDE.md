@@ -57,7 +57,8 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
   datos de una persona en el código.
 - **Cuentas (usuario y contraseña):**
   - Firebase Auth + Firestore, con el SDK empaquetado en `vendor/firebase.mjs` (`herramientas/empaquetar-firebase.sh`);
-  - **activadas** con el proyecto `facturacion-536fc` en `config-nube.js` (si fuera `null`, la app funcionaría sin
+  - **activadas** con el proyecto `facturacion-536fc` en `CONFIG_NUBE`, **dentro de `index.html`** (nunca en un archivo
+    aparte: los service workers viejos servirían la copia antigua). Si fuera `null`, la app funcionaría sin
     cuentas); guía en `docs/CUENTAS.md`; para comprobar el proyecto real: `herramientas/comprobar-firebase.sh`;
   - datos en `usuarios/{uid}/{empresas|clientes|facturas}/{id}`; las reglas están en `firestore.rules`;
   - todo cambio pasa por `guardarDatos()`, que sube a la nube solo lo que ha cambiado;

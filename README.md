@@ -128,7 +128,7 @@ visto bueno.
   - `vendor/`: jsPDF y html2canvas, para el PDF; `anthropic-sdk.mjs`, el SDK oficial de Claude empaquetado
     (`herramientas/empaquetar-sdk-claude.sh`); y `firebase.mjs`, el SDK de Firebase para las cuentas
     (`herramientas/empaquetar-firebase.sh`);
-  - `config-nube.js` y `firestore.rules`: la configuración de las cuentas y sus reglas de seguridad
+  - `firestore.rules`: las reglas de seguridad de las cuentas (la configuración de Firebase va dentro de `index.html`)
     ([`docs/CUENTAS.md`](docs/CUENTAS.md)).
 - **Publicación:** GitHub Pages desde la rama de trabajo, carpeta raíz. Al cambiar archivos, sube `VERSION` en `sw.js`.
 - Prueba de punta a punta, en ordenador y en móvil:

@@ -7,7 +7,7 @@ facturación”, “que sea una app” o, en general, una app a partir de notas 
 
 **Audios → requisitos → app web instalable (PWA) en un `index.html` sin compilación → prueba de punta a punta
 con Playwright (ordenador + móvil + sin internet) → GitHub Pages → enlace para reenviar.** Si se piden cuentas
-con usuario y contraseña: **Firebase (Auth + Firestore) activable con `config-nube.js`, probado con los emuladores**.
+con usuario y contraseña: **Firebase (Auth + Firestore) activable con `CONFIG_NUBE` dentro de `index.html`, probado con los emuladores**.
 
 ## 1. Entender el encargo a partir de los audios
 
@@ -53,7 +53,7 @@ Piezas:
 | `sw.js` | Caché para usarla sin internet. La página se pide primero a la red (con un límite de 4 s) y, si no hay conexión, se usa la copia guardada. El resto se sirve de la caché y se actualiza en segundo plano. **Sube `VERSION` en cada cambio.** |
 | `iconos/` | Iconos de 192 y 512 px, *maskable* y `apple-touch-icon`, generados con `node herramientas/generar-iconos.cjs`. |
 | `vendor/` | `jspdf.umd.min.js` y `html2canvas.min.js` (MIT), descargados del registro de npm con `curl`. Se cargan solo al crear un PDF. Además, `anthropic-sdk.mjs` (IA) y `firebase.mjs` (cuentas), empaquetados con esbuild. |
-| `config-nube.js`, `firestore.rules`, `firebase.json` | Cuentas en la nube (fase 7): la configuración de Firebase (`null` = sin cuentas), las reglas de seguridad y los emuladores para las pruebas. |
+| `firestore.rules`, `firebase.json` | Cuentas en la nube (fase 7): las reglas de seguridad y los emuladores para las pruebas. La configuración de Firebase va dentro de `index.html` (`<script id="config-nube">`; `null` = sin cuentas). |
 | `.nojekyll` | Para que GitHub Pages sirva los archivos tal cual. |
 
 En `index.html` hay además:
@@ -94,7 +94,7 @@ docs/COMO-SE-HIZO.md          ← este documento
 docs/capturas/, docs/factura-ejemplo.pdf
 herramientas/transcribir-audios.sh, transcribir.py, generar-iconos.cjs, generar-capturas.cjs
 herramientas/empaquetar-sdk-claude.sh, empaquetar-firebase.sh, emuladores-firebase.sh, cambiar-clave.py
-config-nube.js, firestore.rules, firebase.json   ← cuentas (Firebase)
+firestore.rules, firebase.json   ← cuentas (Firebase); la configuración, en index.html
 docs/CUENTAS.md               ← cómo activar las cuentas
 pruebas/prueba-completa.cjs   ← prueba de punta a punta
 CLAUDE.md                     ← instrucciones para Claude en este repositorio
@@ -274,7 +274,7 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
   - El SDK se empaqueta en `vendor/firebase.mjs` (como el de Claude) y se carga con `import()` solo si hay cuentas.
     Se usa `initializeAuth` (no `getAuth`), porque `getAuth` carga scripts de `apis.google.com` para ventanas
     emergentes de Google.
-- **Sin romper lo anterior:** con `window.CONFIG_NUBE = null` (en `config-nube.js`) la app funciona igual que antes.
+- **Sin romper lo anterior:** con `window.CONFIG_NUBE = null` la app funciona igual que antes.
   Activarlo es solo pegar la configuración del proyecto de Firebase (`docs/CUENTAS.md`). Esa configuración **no es
   secreta**; la protección está en `firestore.rules` (cada `uid` solo lee y escribe `usuarios/{uid}/…`).
 - **Se entra con correo y contraseña** (lo pidió así el usuario). El correo permite recuperar la contraseña con
@@ -286,18 +286,17 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
   creyó que no estaban hechas porque la app seguía sin pedir contraseña.
 - **Si el usuario quiere que otro asistente (Gemini…) cree el proyecto de Firebase:** se le pasa el texto de la
   sección «Hacerlo con un asistente» de `docs/CUENTAS.md` (pasos exactos, plan gratuito, reglas incluidas, y que
-  devuelva el `firebaseConfig`). Con ese bloque se rellena `config-nube.js` y se publica.
+  devuelva el `firebaseConfig`). Con ese bloque se rellena `CONFIG_NUBE` en `index.html` y se publica.
 - **Activación (04/11/2026):** el usuario creó el proyecto siguiendo los pasos con capturas, uno a uno (ojo: al crear
   Firestore sale «Copias de seguridad programadas», que pide el plan de pago: se deja sin marcar). Con el
   `firebaseConfig`:
-  1. se pega en `config-nube.js`;
+  1. se pega en `CONFIG_NUBE` (entonces en `config-nube.js`; ahora dentro de `index.html`);
   2. se comprueba el proyecto real con `herramientas/comprobar-firebase.sh` (alta, guardar, leer, reglas y limpieza
      de la cuenta de prueba);
   3. las pruebas sin cuentas fuerzan `localStorage['facturacion.nube.prueba'] = 'null'`, y una comprobación nueva
      mira que la app real pide correo y contraseña;
-  4. el *service worker* pide `config-nube.js` primero a internet y llena la caché con `cache: 'reload'`. Así, al
-     activar o cambiar la configuración, los móviles la cogen enseguida (como mucho, hay que abrir la app dos veces
-     o pulsar «Actualizar»).
+  4. el *service worker* llena la caché con `cache: 'reload'` (ver la lección de «no me sale crear una cuenta», más
+     abajo: la configuración acabó dentro de `index.html`).
 - **Lección: límite de 1 MB por documento de Firestore.** El logo y la firma van dentro de la empresa como imagen en
   base64. Una foto o captura grande no cabía: el lote entero de escrituras fallaba y Firestore deshacía también los
   otros cambios. Ahora `prepararImagen()` reduce cada imagen hasta 300 KB como mucho, y `subirCambios()` no mete en el
@@ -310,6 +309,19 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
   - comprobar que «Restaurar…» sube a la cuenta el JSON de configuración privado. Se hizo con el emulador y un
     script en la carpeta temporal, nunca con el Firebase real ni subiendo datos al repositorio;
   - mandar al usuario un mensaje listo para reenviar, con los pasos para cada persona.
+- **Lección (grave): «no me sale crear una cuenta».** La configuración estaba en `config-nube.js`. El *service worker*
+  de las versiones ya instaladas lo servía desde su caché (la copia con `null`), así que la primera vez que se abría
+  la app tras publicar salía la versión nueva **sin cuentas**. Solo salía bien a la segunda apertura completa, y en
+  el móvil la app se queda en segundo plano y casi nunca se vuelve a cargar del todo. Se reprodujo sirviendo con
+  Playwright la versión vieja (`git archive`) y cambiando la carpeta del servidor. Arreglo:
+  1. la configuración va **dentro de `index.html`**, que siempre se pide primero a internet;
+  2. al volver a la app se llama a `registration.update()`, y si llega versión nueva justo al abrir (y no hay nada a
+     medio hacer), se recarga sola;
+  3. la prueba 18 simula una app instalada con la versión anterior y comprueba que sale «Crear cuenta» a la primera.
+
+  **Regla:** lo que tenga que cambiar al publicar (configuración) va en la página, no en un archivo aparte. Y si
+  cambia un archivo de `vendor/`, hay que **cambiarle el nombre**: los *service workers* viejos lo buscan en su caché
+  con `ignoreSearch` y servirían la copia antigua.
 - **Cómo se guardan los datos:**
   - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
     `usuarios/{uid}`;
@@ -319,7 +331,7 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
 - **Lectura:** `onSnapshot` por colección. La primera lectura sustituye la colección; después se aplican los
   cambios. Se repinta con `requestAnimationFrame` y **no se tocan los formularios a medio rellenar**.
 - **Sin internet:** `persistentLocalCache` de Firestore + copia en `localStorage` por usuario. El *service worker*
-  guarda `firebase.mjs` y `config-nube.js`, así que la app abre sin conexión con la sesión iniciada.
+  guarda `firebase.mjs`, así que la app abre sin conexión con la sesión iniciada.
 - **Datos de antes:** si la cuenta está vacía (confirmado por el servidor, con `includeMetadataChanges`) y el
   dispositivo tenía datos sin cuenta, se pregunta si se pasan.
 - **Cerrar sesión:** `waitForPendingWrites` (máx. 6 s; si no, avisa de que se perderían cambios), borrar la copia

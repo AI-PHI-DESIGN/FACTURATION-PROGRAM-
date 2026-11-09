@@ -1119,7 +1119,7 @@ body.con-acceso{overflow:hidden}
 
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-texto"></span><button type="button" id="toast-accion" hidden></button></div>
 
-<!-- Pantalla de acceso (solo si las cuentas en la nube están activadas en config-nube.js) -->
+<!-- Pantalla de acceso (solo si las cuentas en la nube están activadas: CONFIG_NUBE, más abajo) -->
 <div class="acceso" id="acceso" hidden>
   <div class="acceso-caja">
     <img src="iconos/icono.svg" class="acceso-logo" alt="">
@@ -1163,18 +1163,38 @@ body.con-acceso{overflow:hidden}
   <option value="Entrega intracomunitaria exenta (art. 25 Ley 37/1992)">
 </datalist>
 
-<script src="config-nube.js"></script>
+<script id="config-nube">
+/*
+ * Cuentas en la nube (correo y contraseña por persona): proyecto de Firebase «facturacion».
+ * Va DENTRO de la página (y no en un archivo aparte) porque la página siempre se pide primero a internet:
+ * así un cambio aquí llega al momento, también a los móviles que tenían guardada una versión vieja.
+ * Con CONFIG_NUBE = null, la app funciona SIN cuentas (los datos se quedan en cada dispositivo).
+ * Estos datos NO son secretos (van en cualquier app web de Firebase): lo que protege la información son las
+ * reglas de firestore.rules y las contraseñas. Ver docs/CUENTAS.md.
+ */
+window.CONFIG_NUBE = {
+  firebase: {
+    apiKey: 'AIzaSyBWsns3aOokhD_GfXefwrWqCISAlhTSFwg',
+    authDomain: 'facturacion-536fc.firebaseapp.com',
+    projectId: 'facturacion-536fc',
+    storageBucket: 'facturacion-536fc.firebasestorage.app',
+    messagingSenderId: '983150088611',
+    appId: '1:983150088611:web:5573d02983b5ff3263ca16',
+  },
+  permitirRegistro: true,   // false: quita «Crear cuenta» (cerrar también el registro en Firebase, ver docs/CUENTAS.md)
+};
+</script>
 <script>
 (function () {
 'use strict';
 
-const VERSION_APP = '3.7';
+const VERSION_APP = '3.8';
 
 /* =========================================================
    Utilidades
    ========================================================= */
 const CLAVE = 'facturacion.datos.v1';
-/* Cuentas en la nube: config-nube.js (o, solo para las pruebas, localStorage «facturacion.nube.prueba»). */
+/* Cuentas en la nube: CONFIG_NUBE (arriba, en <script id="config-nube">) o, solo para las pruebas, localStorage «facturacion.nube.prueba». */
 const NUBE = (() => {
   try { const p = localStorage.getItem('facturacion.nube.prueba'); if (p) return JSON.parse(p); } catch (e) { /* nada */ }
   return window.CONFIG_NUBE || null;
@@ -3223,9 +3243,20 @@ const esInstalada = () => window.matchMedia('(display-mode: standalone)').matche
 let peticionInstalar = null;
 if ('serviceWorker' in navigator && enInternet) {
   let teniaControlador = !!navigator.serviceWorker.controller;
+  let abiertaDesde = performance.now();   // cuándo se abrió la app o se volvió a ella
+  // En el móvil la app se queda en segundo plano y no se vuelve a cargar: al volver a ella, se mira si hay versión nueva.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    abiertaDesde = performance.now();
+    navigator.serviceWorker.getRegistration().then((r) => r && r.update()).catch(() => { /* sin conexión */ });
+  });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (teniaControlador && !cambiosSinGuardar) aviso('Hay una versión nueva de la app', { accion: 'Actualizar', fn: () => location.reload() });
-    teniaControlador = true;
+    if (!teniaControlador) { teniaControlador = true; return; }
+    if (cambiosSinGuardar) return;
+    // Versión nueva recién llegada: si se acaba de abrir y no hay nada a medio hacer, se recarga sola.
+    const aMedias = vistaActual === 'empresa' || (vistaActual === 'clientes' && clienteEditando);
+    if (!aMedias && performance.now() - abiertaDesde < 20000) { location.reload(); return; }
+    aviso('Hay una versión nueva de la app', { accion: 'Actualizar', fn: () => location.reload() });
   });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('Service worker:', e));

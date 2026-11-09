@@ -9,7 +9,7 @@ van en *Cloud Firestore*. Para el uso de esta app, el plan gratuito (**Spark**) 
 
 **Estado: activadas** desde el 04/11/2026, con el proyecto de Firebase `facturacion-536fc` (plan gratuito Spark).
 Para comprobar el proyecto real: `herramientas/comprobar-firebase.sh` (crea una cuenta de prueba, guarda, lee,
-comprueba las reglas y lo borra todo). Con `window.CONFIG_NUBE = null` en `config-nube.js`, la app vuelve a
+comprueba las reglas y lo borra todo). Con `window.CONFIG_NUBE = null` (en `index.html`, `<script id="config-nube">`), la app vuelve a
 funcionar **sin cuentas** (los datos en cada dispositivo).
 
 ![Pantalla de acceso](capturas/movil-0-acceso.png)
@@ -55,7 +55,7 @@ funcionar **sin cuentas** (los datos en cada dispositivo).
    pulsa **Publicar**. Estas reglas hacen que **cada usuario solo pueda leer y escribir sus propios datos**.
 5. **⚙ Configuración del proyecto** → **Tus apps** → icono **`</>`** (Web) → nombre `Facturación` → **Registrar app**
    (sin Firebase Hosting). Sale un bloque `firebaseConfig` con `apiKey`, `authDomain`, `projectId`, `appId`…
-6. **Pásale ese bloque a Claude**, o pégalo tú en [`config-nube.js`](../config-nube.js):
+6. **Pásale ese bloque a Claude**, o pégalo tú en `index.html`, dentro de `<script id="config-nube">`:
 
    ```js
    window.CONFIG_NUBE = {
@@ -74,7 +74,7 @@ funcionar **sin cuentas** (los datos en cada dispositivo).
 7. Al publicarlo, la app pide correo y contraseña. Cada persona pulsa **Crear cuenta** la primera vez.
    - Si en ese móvil ya había facturas de antes, la app pregunta si se pasan a la cuenta.
 8. **Recomendado:** cuando ya estén creadas las cuentas de todos, cierra la puerta a cuentas nuevas:
-   - en `config-nube.js`, `permitirRegistro: false` (quita el botón «Crear cuenta»);
+   - en `index.html` (`CONFIG_NUBE`), `permitirRegistro: false` (quita el botón «Crear cuenta»);
    - y en Firebase: **Authentication → Configuración → Acciones del usuario** → desmarca **Habilitar creación
      (registro)**. Esto es lo que lo impide de verdad. Las cuentas nuevas se crean entonces en
      **Authentication → Usuarios → Agregar usuario**, con el correo `nombre@usuarios.facturacion.app`.
@@ -160,7 +160,11 @@ tarjeta, para y avísame. Al terminar, confírmame uno por uno los pasos hechos.
   (`herramientas/emuladores-firebase.sh`, necesita Java 11+). La configuración de prueba se pone en
   `localStorage['facturacion.nube.prueba']`; con el valor `'null'` se desactivan las cuentas en ese navegador (así
   se prueban las partes 1–16 y se hacen las capturas sin cuentas). Al proyecto real no se le hace nada desde las
-  pruebas: solo se comprueba que, con `config-nube.js` tal cual, la app pide correo y contraseña.
-- **Service worker:** `config-nube.js` se pide primero a internet (como la página), para que un cambio de
-  configuración se aplique al momento. Al instalarse, la caché se llena con `cache: 'reload'` para no coger copias
-  viejas de la caché HTTP de GitHub Pages (10 minutos).
+  pruebas: solo se comprueba que, con `CONFIG_NUBE` tal cual, la app pide correo y contraseña.
+- **La configuración va dentro de `index.html`**, no en un archivo aparte: la página se pide siempre primero a
+  internet, así que un cambio llega a la primera, también a los móviles con una versión vieja instalada (con un
+  `config-nube.js` aparte, el *service worker* viejo seguía dando la copia antigua y no salía «Crear cuenta»). La
+  prueba 18 lo comprueba simulando la actualización de una app instalada.
+- **Actualizaciones:** al volver a la app (estaba en segundo plano) se busca versión nueva; si llega justo al abrir y
+  no hay nada a medio hacer, la app se recarga sola. Al instalarse, la caché se llena con `cache: 'reload'` para no
+  coger copias viejas de la caché HTTP de GitHub Pages (10 minutos).

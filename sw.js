@@ -5,7 +5,7 @@
  * - El resto de archivos se sirven de la copia guardada y se actualizan en segundo plano.
  * Al publicar cambios en los archivos, sube VERSION para limpiar la caché antigua.
  */
-const VERSION = 'facturacion-v10';
+const VERSION = 'facturacion-v11';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -19,7 +19,6 @@ const ARCHIVOS = [
   './vendor/html2canvas.min.js',
   './vendor/anthropic-sdk.mjs',
   './vendor/firebase.mjs',
-  './config-nube.js',
 ];
 
 self.addEventListener('install', (ev) => {
@@ -57,22 +56,6 @@ self.addEventListener('fetch', (ev) => {
           return resp;
         })
         .catch(() => caches.match('./index.html').then((r) => r || fetch(req)))
-    );
-    return;
-  }
-
-  // La configuración de las cuentas también se pide primero a internet: si cambia, se aplica al momento.
-  if (new URL(req.url).pathname.endsWith('/config-nube.js')) {
-    ev.respondWith(
-      conLimite(fetch(req, { cache: 'no-cache' }), 4000)
-        .then((resp) => {
-          if (resp.ok) {
-            const copia = resp.clone();
-            caches.open(VERSION).then((c) => c.put('./config-nube.js', copia));
-          }
-          return resp;
-        })
-        .catch(() => caches.match('./config-nube.js', { ignoreSearch: true }).then((r) => r || fetch(req)))
     );
     return;
   }

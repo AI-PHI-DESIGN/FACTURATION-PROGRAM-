@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Comprueba el proyecto de Firebase REAL de config-nube.js: crea una cuenta de prueba, guarda y lee una factura,
+# Comprueba el proyecto de Firebase REAL (CONFIG_NUBE de index.html): crea una cuenta de prueba, guarda y lee una factura,
 # comprueba que las reglas bloquean los datos de otros y lo borra todo al terminar.
 #   herramientas/comprobar-firebase.sh
 set -uo pipefail
 cd "$(dirname "$0")/.."
-KEY=$(grep -o "apiKey: '[^']*'" config-nube.js | cut -d"'" -f2)
-P=$(grep -o "projectId: '[^']*'" config-nube.js | cut -d"'" -f2)
-[ -n "$KEY" ] && [ -n "$P" ] || { echo "config-nube.js no tiene un proyecto de Firebase"; exit 1; }
+KEY=$(grep -o "apiKey: '[^']*'" index.html | head -1 | cut -d"'" -f2)
+P=$(grep -o "projectId: '[^']*'" index.html | head -1 | cut -d"'" -f2)
+[ -n "$KEY" ] && [ -n "$P" ] || { echo "index.html no tiene un proyecto de Firebase en CONFIG_NUBE"; exit 1; }
 FS="https://firestore.googleapis.com/v1/projects/$P/databases/(default)/documents"
 EMAIL="prueba-$RANDOM$RANDOM@example.com"; CLAVE="clave-$RANDOM$RANDOM"
 fallos=0
