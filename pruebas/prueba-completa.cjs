@@ -737,6 +737,26 @@ function vigilarErrores(page, errores, nube = false) {
         `un logo enorme (${Math.round(logoEnorme.length / 1e6)} MB) se reduce y la empresa se guarda en la cuenta (${Math.round((await logoNube()).length / 1024)} KB)`);
       await c.click('#emp-volver');
 
+      // Con cuenta: «Restaurar…» sube a la cuenta los datos de una copia (así se carga una configuración privada)
+      const [copiaMama] = await Promise.all([c.waitForEvent('download'), c.click('#cp-descargar')]);
+      const copiaJson = JSON.parse(fs.readFileSync(await copiaMama.path(), 'utf8'));
+      copiaJson.clientes.push({ id: 'cli-restaurado', nombre: 'Cliente de la copia restaurada', codigo: 'CR', cif: 'B00000000' });
+      copiaJson.facturas.forEach((f) => { delete f.ejemplo; });
+      const restaurar = async (diasSinCopia) => {
+        copiaJson.ajustes.ultimaCopia = new Date(HOY.getTime() - diasSinCopia * 864e5).toISOString();
+        await c.setInputFiles('#cp-archivo', { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(copiaJson)) });
+        await c.waitForTimeout(200);
+        await c.click('.nav-item[data-ir=inicio]');
+        const visible = await c.isVisible('#aviso-copia');
+        await c.click('.nav-item[data-ir=ajustes]');
+        return visible;
+      };
+      const aviso40 = await restaurar(40);
+      comprobar(await esperarNube(async () => (await docsNube(uidMama, 'clientes')).some((x) => x.nombre && x.nombre.stringValue === 'Cliente de la copia restaurada')),
+        'con cuenta, «Restaurar…» sube a la cuenta los datos de la copia');
+      const aviso20 = await restaurar(20);
+      comprobar(aviso40 && !aviso20, 'con cuenta, recuerda descargar una copia al pasar un mes (a los 40 días sí, a los 20 no)');
+
       // Las reglas de seguridad: con la sesión de «mama» no se pueden leer ni escribir los datos de «fran»
       const sesion = await (await fetch(`${AUTH_EMU}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-clave`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
@@ -753,6 +773,8 @@ function vigilarErrores(page, errores, nube = false) {
       // Cerrar sesión en el móvil: vuelve a pedir usuario y no deja sus datos en el dispositivo
       await b.click('.nav-item[data-ir=ajustes]');
       comprobar((await b.textContent('#panel-cuenta')).includes('fran'), 'Ajustes → «Mi cuenta» muestra el usuario');
+      comprobar(await b.isVisible('#aj-version') && (await b.textContent('#aj-version')).includes('Versión') && (await b.textContent('#aj-version')).includes('fran'),
+        'en el móvil, al final de Ajustes se ve la versión y el usuario');
       await b.screenshot({ path: path.join(SALIDA, 'movil-cuenta-ajustes.png'), fullPage: false });
       await Promise.all([b.waitForEvent('load', { timeout: 20000 }), b.click('#cuenta-salir')]);
       await b.waitForSelector('#acceso-formulario:not([hidden])', { timeout: 20000 });

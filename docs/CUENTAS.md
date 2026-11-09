@@ -36,8 +36,8 @@ funcionar **sin cuentas** (los datos en cada dispositivo).
 
 1. Activar la **verificación en dos pasos** en la cuenta de Google dueña del proyecto: quien entre en esa cuenta
    puede ver y borrar todos los datos.
-2. **Descargar una copia** de vez en cuando (Ajustes → Descargar copia). En el plan gratuito no hay copias
-   automáticas, y lo que se borra en un dispositivo se borra en todos.
+2. **Descargar una copia** cada mes (Ajustes → Descargar copia; Inicio lo recuerda a los 30 días). En el plan
+   gratuito no hay copias automáticas, y lo que se borra en un dispositivo se borra en todos.
 3. Cuando todos tengan cuenta, **cerrar el registro** de cuentas nuevas (paso 8 de abajo).
 
 ## Activarlas (una sola vez, unos 10 minutos)

@@ -93,7 +93,9 @@ Las capturas y este PDF se rehacen con `node herramientas/generar-capturas.cjs`,
 
 ## ⚠️ Copias de seguridad
 
-**Con cuenta**, los datos están en la nube: si se pierde el móvil, basta con entrar en otro. La copia es opcional.
+**Con cuenta**, los datos están en la nube: si se pierde el móvil, basta con entrar en otro. Aun así, Inicio recuerda
+**cada mes** descargar una copia: si se borra algo por error, se borra en todos los dispositivos. **Restaurar…** sube a
+la cuenta los datos de una copia (así se carga también un JSON de configuración privado).
 
 **Sin cuentas**, los datos viven en el dispositivo. **Si se borra la app o se cambia de móvil, solo se recuperan con
 una copia.** Cuando lleva más de 7 días sin copia, Inicio lo avisa.

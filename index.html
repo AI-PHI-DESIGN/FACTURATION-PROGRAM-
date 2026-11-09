@@ -912,6 +912,7 @@ body.con-acceso{overflow:hidden}
         </div>
       </div>
     </div>
+    <p class="tenue solo-movil" id="aj-version" style="font-size:13px;text-align:center;margin:18px 0 6px"></p>
   </section>
 
   <!-- ================= EMPRESA (editor) ================= -->
@@ -1167,7 +1168,7 @@ body.con-acceso{overflow:hidden}
 (function () {
 'use strict';
 
-const VERSION_APP = '3.6';
+const VERSION_APP = '3.7';
 
 /* =========================================================
    Utilidades
@@ -3172,7 +3173,8 @@ function renderCopias() {
 function revisarAvisoCopia() {
   const u = db.ajustes.ultimaCopia;
   const dias = u ? (Date.now() - new Date(u).getTime()) / 864e5 : Infinity;
-  id('aviso-copia').hidden = !!usuarioNube || !(db.facturas.some((f) => !f.ejemplo) && dias > 7);
+  // Sin cuenta, cada semana. Con cuenta, cada mes: los datos ya están en la nube, pero lo que se borra se borra en todos.
+  id('aviso-copia').hidden = !(db.facturas.some((f) => !f.ejemplo) && dias > (usuarioNube ? 30 : 7));
   id('aviso-copia-texto').textContent = u
     ? `Hace ${Math.floor(dias)} días que no haces una copia de seguridad de tus facturas.`
     : 'Aún no has hecho ninguna copia de seguridad de tus facturas.';
@@ -3633,8 +3635,8 @@ function entrarConUsuario(u) {
   primerasLecturas = { pendientes: new Set([...COLECCIONES, 'perfil']), servidor: new Set([...COLECCIONES, 'perfil']), revisada: false };
   id('panel-cuenta').hidden = false;
   id('cuenta-usuario').textContent = nombreUsuario();
-  id('cp-sub').textContent = 'Opcional: tus datos ya están en tu cuenta';
-  id('cp-texto').textContent = 'Con cuenta no hace falta, pero puedes descargar una copia para guardarla aparte o para dársela al gestor.';
+  id('cp-sub').textContent = 'Tus datos ya están en tu cuenta';
+  id('cp-texto').textContent = 'Descarga una copia cada mes y guárdala aparte (correo, Google Drive…): si se borra algo por error, se borra en todos tus dispositivos. También sirve para el gestor. «Restaurar…» sube a tu cuenta los datos de una copia.';
   ocultarAcceso();
   arrancarApp();
   escucharNube();
@@ -3776,7 +3778,9 @@ function estadoSync(estado) {
   pintarPie();
 }
 function pintarPie() {
-  id('nav-pie').textContent = `Versión ${VERSION_APP}` + (usuarioNube ? ` · ${nombreUsuario()}` : '') + (navigator.onLine ? '' : ' · sin conexión');
+  const texto = `Versión ${VERSION_APP}` + (usuarioNube ? ` · ${nombreUsuario()}` : '') + (navigator.onLine ? '' : ' · sin conexión');
+  id('nav-pie').textContent = texto;
+  id('aj-version').textContent = texto;   // en el móvil el menú lateral no se ve: va al final de Ajustes
 }
 id('cu-guardar').addEventListener('click', async () => {
   const actual = id('cu-actual').value, nueva = id('cu-nueva').value;

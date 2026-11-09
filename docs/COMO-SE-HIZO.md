@@ -304,6 +304,12 @@ Petición: «que la app tenga un usuario y contraseña por persona y que, una ve
   lote un registro de más de 950 KB (avisa). La prueba sube un logo de 13 MB.
 - **Dónde están los datos** (lo preguntó el usuario): tabla en `docs/CUENTAS.md` → «¿Dónde se guardan los datos y
   quién los ve?». Hay que decir con claridad que el dueño del proyecto de Firebase puede verlo todo desde la consola.
+- **«Déjalo todo listo para usar»:**
+  - recordatorio de copia también con cuenta, cada 30 días (sin cuenta, cada 7);
+  - la versión y el usuario al final de Ajustes, porque en el móvil no se ve el menú lateral y sirve para dar soporte;
+  - comprobar que «Restaurar…» sube a la cuenta el JSON de configuración privado. Se hizo con el emulador y un
+    script en la carpeta temporal, nunca con el Firebase real ni subiendo datos al repositorio;
+  - mandar al usuario un mensaje listo para reenviar, con los pasos para cada persona.
 - **Cómo se guardan los datos:**
   - un documento por empresa, cliente y factura, con el mismo formato que la copia de seguridad, y los ajustes en
     `usuarios/{uid}`;

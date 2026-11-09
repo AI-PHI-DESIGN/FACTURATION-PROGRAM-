@@ -5,7 +5,7 @@
  * - El resto de archivos se sirven de la copia guardada y se actualizan en segundo plano.
  * Al publicar cambios en los archivos, sube VERSION para limpiar la caché antigua.
  */
-const VERSION = 'facturacion-v9';
+const VERSION = 'facturacion-v10';
 const ARCHIVOS = [
   './',
   './index.html',
