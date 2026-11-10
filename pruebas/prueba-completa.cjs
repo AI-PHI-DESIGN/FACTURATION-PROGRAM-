@@ -798,6 +798,22 @@ function vigilarErrores(page, errores, nube = false) {
       await entrar(b, 'fran', 'clave-nueva-fran');
       await b.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
       comprobar(salidaClave.includes('Contraseña cambiada') && (await b.textContent('#nav-pie')).includes('fran'), 'herramientas/cambiar-clave.py le pone una contraseña nueva y ya puede entrar');
+      // Cambio de proyecto de Firebase: en el dispositivo queda la copia de una cuenta anterior → se ofrece pasarla
+      const [ctxD, dd] = await contextoNube({ viewport: { width: 1280, height: 900 } });
+      await dd.addInitScript(() => {
+        if (localStorage.getItem('facturacion.datos.u.uid-proyecto-viejo') || localStorage.getItem('facturacion.datos.u.uid-proyecto-viejo.subido')) return;
+        localStorage.setItem('facturacion.datos.u.uid-proyecto-viejo', JSON.stringify({ version: 3, empresas: [{ id: 'e-vieja', nombre: 'EMPRESA ANTIGUA SL', cif: 'B00000001' }], clientes: [], facturas: [],
+          gastos: [{ id: 'g-viejo', fecha: '2026-10-01', proveedor: { nombre: 'PROVEEDOR ANTIGUO' }, categoria: 'Otros', totalCent: 1210, ivaPct: 21, baseCent: 1000, cuotaCent: 210, pagado: true }], ajustes: {} }));
+      });
+      await dd.goto(URL_APP);
+      await entrar(dd, 'nueva@ejemplo.es', 'clave-nueva-1', true);
+      await dd.waitForSelector('#acceso', { state: 'hidden', timeout: 20000 });
+      const uidNueva = await (async () => { const h = await dd.waitForFunction(() => Object.keys(localStorage).find((k) => k.startsWith('facturacion.datos.u.') && !k.includes('viejo')), null, { timeout: 20000 }); return (await h.jsonValue()).slice('facturacion.datos.u.'.length); })();
+      comprobar(await esperarNube(async () => (await docsNube(uidNueva, 'empresas')).some((e) => e.nombre.stringValue === 'EMPRESA ANTIGUA SL') && (await docsNube(uidNueva, 'gastos')).length === 1)
+        && await dd.evaluate(() => !localStorage.getItem('facturacion.datos.u.uid-proyecto-viejo') && !!localStorage.getItem('facturacion.datos.u.uid-proyecto-viejo.subido')),
+        'tras cambiar de proyecto de Firebase, los datos de la cuenta anterior que había en el dispositivo pasan a la cuenta nueva (lo pregunta)');
+      await ctxD.close();
+
       // Una cuenta con las reglas ANTIGUAS de Firebase (sin gastos): la app sigue funcionando y lo explica en Gastos
       const reglas = (texto) => fetch(`${FS_EMU}/emulator/v1/projects/${PROYECTO}:securityRules`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { files: [{ name: 'firestore.rules', content: texto }] } }) });
       await reglas(fs.readFileSync(path.join(RAIZ, 'firestore.rules'), 'utf8').replace(

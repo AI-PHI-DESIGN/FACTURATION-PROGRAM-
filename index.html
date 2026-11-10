@@ -1367,7 +1367,7 @@ window.CONFIG_NUBE = {
 (function () {
 'use strict';
 
-const VERSION_APP = '3.9';
+const VERSION_APP = '3.10';
 
 /* =========================================================
    Utilidades
@@ -4483,18 +4483,32 @@ function lecturaHecha(nombre, desdeCache) {
   const vacia = COLECCIONES.every((c) => !sincronizado[c].size && !db[c].length) && sincronizado.ajustes === null;
   if (vacia) ofrecerSubirDatosLocales();
 }
+/**
+ * Cuenta nueva y vacía: si en este dispositivo hay datos de antes de tener cuenta, o de una cuenta de un proyecto de
+ * Firebase anterior (se cambió de proyecto), se ofrece pasarlos a esta cuenta. Se enseña de qué empresa son, para que
+ * nadie se quede con los datos de otra persona en un ordenador compartido.
+ */
 function ofrecerSubirDatosLocales() {
-  let locales = null;
-  try { const t = localStorage.getItem(CLAVE); if (t) locales = normalizarDatos(JSON.parse(t)); } catch (e) { /* nada */ }
-  if (!locales || !(locales.empresas.length || locales.facturas.length)) return;
-  const n = locales.facturas.length;
-  if (!confirm(`En este dispositivo hay datos de antes de tener cuenta (${locales.empresas.length} empresa(s) y ${n} factura(s)).\n\n¿Quieres pasarlos a tu cuenta para tenerlos en todos tus dispositivos?`)) return;
-  db = locales;
-  guardarDatos();
-  try { localStorage.setItem(CLAVE + '.subido', localStorage.getItem(CLAVE)); localStorage.removeItem(CLAVE); } catch (e) { /* nada */ }
-  nuevaFactura();
-  alCambiarDesdeNube();
-  aviso('Datos pasados a tu cuenta ✔');
+  const candidatas = [CLAVE];
+  try {
+    Object.keys(localStorage).forEach((k) => { if (k.startsWith('facturacion.datos.u.') && k !== claveDatos && !/\.(subido|rechazado)$/.test(k)) candidatas.push(k); });
+  } catch (e) { /* sin almacenamiento */ }
+  for (const clave of candidatas) {
+    let locales = null;
+    try { const t = localStorage.getItem(clave); if (t) locales = normalizarDatos(JSON.parse(t)); } catch (e) { /* nada */ }
+    if (!locales || !(locales.empresas.length || locales.facturas.length || locales.gastos.length)) continue;
+    const origen = clave === CLAVE ? 'de antes de tener cuenta' : 'de una cuenta anterior';
+    const empresas = locales.empresas.map((e) => e.nombre).filter(Boolean).slice(0, 2).join(', ');
+    const resumen = `${locales.empresas.length} empresa(s), ${locales.facturas.length} factura(s) y ${locales.gastos.length} gasto(s)`;
+    if (!confirm(`En este dispositivo hay datos ${origen}${empresas ? ` (${empresas})` : ''}: ${resumen}.\n\n¿Son tuyos y quieres pasarlos a tu cuenta para tenerlos en todos tus dispositivos?`)) continue;
+    db = locales;
+    guardarDatos();
+    try { localStorage.setItem(clave + '.subido', localStorage.getItem(clave)); localStorage.removeItem(clave); } catch (e) { /* nada */ }
+    nuevaFactura();
+    alCambiarDesdeNube();
+    aviso('Datos pasados a tu cuenta ✔');
+    return;
+  }
 }
 /** Sube a la nube lo que ha cambiado desde la última vez (añadidos, cambios y borrados). */
 function subirCambios() {

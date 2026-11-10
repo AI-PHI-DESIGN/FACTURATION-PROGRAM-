@@ -379,6 +379,11 @@ otro color que se pueda elegir, y gráficas de dónde se ha ingresado, meses y d
 - **Datos de ejemplo:** 10 gastos inventados (alquiler, gestoría, seguro sin IVA, uno por pagar…) para ver las
   gráficas llenas. «Borrar el ejemplo» también los quita.
 
+- **Lección: apuntar con qué cuenta de Google se crea el proyecto de Firebase.** El usuario no encontraba el primer
+  proyecto (`facturacion-536fc`) en ninguna de sus cuentas y hubo que crear otro. Para no perder datos, la app ofrece
+  pasar a la cuenta nueva y vacía la copia que quedó en el dispositivo de la cuenta anterior
+  (`facturacion.datos.u.<uid viejo>`), enseñando de qué empresa son. La prueba 17 lo comprueba.
+
 ## 13. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
