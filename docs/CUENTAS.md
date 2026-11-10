@@ -7,7 +7,8 @@ en el ordenador. Sin internet se puede seguir trabajando: los cambios se suben a
 Los datos se guardan en **Firebase** (de Google): el acceso con contraseña es *Firebase Authentication* y los datos
 van en *Cloud Firestore*. Para el uso de esta app, el plan gratuito (**Spark**) sobra y no pide tarjeta.
 
-**Estado: activadas** desde el 04/11/2026, con el proyecto de Firebase `facturacion-536fc` (plan gratuito Spark).
+**Estado: activadas** con el proyecto de Firebase `facturacion-dec62` (plan gratuito Spark), creado el 10/11/2026. El
+primero (`facturacion-536fc`, del 04/11/2026) se dejó de usar porque no se encontraba la cuenta de Google que lo creó.
 Para comprobar el proyecto real: `herramientas/comprobar-firebase.sh` (crea una cuenta de prueba, guarda, lee,
 comprueba las reglas y lo borra todo). Con `window.CONFIG_NUBE = null` (en `index.html`, `<script id="config-nube">`), la app vuelve a
 funcionar **sin cuentas** (los datos en cada dispositivo).
@@ -18,7 +19,7 @@ funcionar **sin cuentas** (los datos en cada dispositivo).
 
 | Dónde | Qué hay | Quién lo ve |
 |---|---|---|
-| **Cloud Firestore** (Google), en el proyecto de Firebase `facturacion-536fc`, que es de la cuenta de Google que lo creó | Todo: empresas (con logo y firma), clientes, facturas y ajustes de cada persona | Cada persona, **solo lo suyo** (lo imponen las reglas de `firestore.rules`). El **dueño del proyecto** puede verlo todo desde la consola de Firebase (Firestore Database → Datos). Google lo guarda cifrado como proveedor. |
+| **Cloud Firestore** (Google), en el proyecto de Firebase `facturacion-dec62`, que es de la cuenta de Google que lo creó | Todo: empresas (con logo y firma), clientes, facturas y ajustes de cada persona | Cada persona, **solo lo suyo** (lo imponen las reglas de `firestore.rules`). El **dueño del proyecto** puede verlo todo desde la consola de Firebase (Firestore Database → Datos). Google lo guarda cifrado como proveedor. |
 | **Cada móvil u ordenador** donde alguien ha entrado | Una copia de sus datos, para trabajar sin internet | Quien use ese dispositivo. Se borra al **cerrar la sesión**. |
 | **GitHub** (repositorio público) | Solo el **código** de la app, nunca datos | Cualquiera |
 | **Anthropic** (solo con el lector con IA) | El PDF o la foto que se le pasa para leer los datos del cliente | Se envía solo para leerlo; la app no lo guarda allí |
