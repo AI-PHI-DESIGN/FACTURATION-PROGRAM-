@@ -403,6 +403,12 @@ Problema: «subir el PDF y que lo lea la IA» pedía una clave de pago a cada pe
 - **Flujo:** sin clave → PDF de texto en local; foto o PDF escaneado (sin texto) → lo explica y ofrece «Usar la IA»;
   con clave → todo con la IA. Sin clave **nunca** se llama a la API (la prueba lo comprueba con `context.route`).
 - Pruebas: la sección 20 genera con jsPDF dos PDF de texto inventados (a dos columnas y con etiquetas).
+- **Empresa nueva desde un PDF** (`data-leer="empresa"`): `extraerCliente(lineas, 'empresa')` toma el primer CIF
+  que no es de una empresa ya dada de alta y está **antes** de «Cliente:» (la cabecera de quien emite), no mira
+  más allá de esa etiqueta y salta las líneas con otro CIF. Además busca en todo el documento el **IBAN** (en
+  grupos de 4), la **web**, el **firmante** («Fdo.:»), el **cargo** (la línea siguiente) y la **nota legal**
+  (criterio de caja, exenta…). Con clave, la IA usa `ESQUEMA_EMPRESA` e instrucciones propias. La prueba 20 lo
+  comprueba con una factura inventada a dos columnas.
 
 ## 14. Posibles mejoras (no pedidas todavía)
 

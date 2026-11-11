@@ -1106,6 +1106,8 @@ body.con-acceso{overflow:hidden}
       <form class="editor-form" id="form-empresa" autocomplete="off" novalidate>
         <div class="card">
           <h3 class="titulo-seccion">Datos de la empresa</h3>
+          <button type="button" class="btn btn-ia" data-leer="empresa" style="margin-bottom:4px"><svg class="i"><use href="#i-ia"/></svg>Rellenar desde un PDF</button>
+          <span class="ayuda" style="margin:0 0 14px">Por ejemplo, una factura vuestra: se sacan los datos de quien la emite.</span>
           <label>Nombre o razón social <input id="e-nombre"></label>
           <div class="fila">
             <label>CIF / NIF <input id="e-cif" autocapitalize="characters"></label>
@@ -1238,7 +1240,7 @@ body.con-acceso{overflow:hidden}
 <!-- Diálogo: leer los datos del cliente con IA -->
 <input type="file" id="ia-archivo" accept="application/pdf,image/*">
 <dialog id="dlg-ia">
-  <h2>Datos del cliente</h2>
+  <h2 id="ia-titulo">Datos del cliente</h2>
   <div id="ia-paso-clave" hidden>
     <p class="suave" style="font-size:14px">Para leer documentos con IA hace falta la clave de la API de Claude (se crea en console.anthropic.com → API Keys). Se guarda solo en este dispositivo.</p>
     <label>Clave de la API de Claude <input id="ia-clave-dlg" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
@@ -1262,6 +1264,17 @@ body.con-acceso{overflow:hidden}
       <label>Provincia <input id="ia-prov"></label>
     </div>
     <label>Email <input id="ia-email" type="email"></label>
+    <div id="ia-campos-empresa" hidden>
+      <div class="fila">
+        <label>Web <input id="ia-web"></label>
+        <label>IBAN <input id="ia-iban" autocapitalize="characters"></label>
+      </div>
+      <div class="fila">
+        <label>Firmante <input id="ia-firmante"></label>
+        <label>Cargo <input id="ia-cargo"></label>
+      </div>
+      <label>Nota legal <input id="ia-notalegal"></label>
+    </div>
   </form>
   <div class="dlg-acciones">
     <button type="button" class="btn" id="ia-cancelar">Cancelar</button>
@@ -1368,7 +1381,7 @@ window.CONFIG_NUBE = {
 (function () {
 'use strict';
 
-const VERSION_APP = '3.13';
+const VERSION_APP = '3.14';
 
 /* =========================================================
    Utilidades
@@ -4081,8 +4094,28 @@ const ESQUEMA_CLIENTE = {
   required: ['encontrado', 'nombre', 'cif', 'direccion', 'cp', 'poblacion', 'provincia', 'telefono', 'email', 'nota'],
   additionalProperties: false,
 };
-function instruccionesIA() {
+const ESQUEMA_EMPRESA = {
+  type: 'object',
+  properties: Object.assign({}, ESQUEMA_CLIENTE.properties, {
+    encontrado: { type: 'boolean', description: 'false si el documento no tiene datos de la empresa que lo emite' },
+    web: { type: 'string' },
+    iban: { type: 'string', description: 'Número de cuenta (IBAN) para cobrar, si aparece' },
+    firmante: { type: 'string', description: 'Quien firma (lo que va tras «Fdo.»)' },
+    cargo: { type: 'string', description: 'Cargo o profesión bajo la firma' },
+    notaLegal: { type: 'string', description: 'Nota legal de la factura (p. ej., criterio de caja del IVA)' },
+  }),
+  required: [...ESQUEMA_CLIENTE.required, 'web', 'iban', 'firmante', 'cargo', 'notaLegal'],
+  additionalProperties: false,
+};
+function instruccionesIA(destino) {
   const propias = db.empresas.map((e) => `${e.nombre}${e.cif ? ` (NIF ${e.cif})` : ''}`).join('; ') || 'ninguna';
+  if (destino === 'empresa') {
+    return [
+      'Extrae del documento los datos de la EMPRESA O PERSONA QUE LO EMITE (la que lo firma o cuyos datos van en la cabecera), para darla de alta como emisora de facturas. No el cliente ni el destinatario.',
+      `Estas empresas ya están dadas de alta y NO son la que buscamos: ${propias}.`,
+      'Copia los datos tal y como aparecen; el CIF/NIF, sin espacios ni guiones; el IBAN, en grupos de 4. Si un dato no aparece, déjalo vacío. No te inventes nada.',
+    ].join('\n');
+  }
   return [
     'Extrae del documento los datos fiscales del CLIENTE, para hacerle una factura.',
     `Estas son nuestras empresas, que NO son el cliente: ${propias}.`,
@@ -4151,14 +4184,14 @@ async function leerConIA() {
       max_tokens: 16000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      output_config: { effort: 'low', format: { type: 'json_schema', schema: ESQUEMA_CLIENTE } },
-      messages: [{ role: 'user', content: [bloque, { type: 'text', text: instruccionesIA() }] }],
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: destinoIA === 'empresa' ? ESQUEMA_EMPRESA : ESQUEMA_CLIENTE } },
+      messages: [{ role: 'user', content: [bloque, { type: 'text', text: instruccionesIA(destinoIA) }] }],
     });
     if (respuesta.stop_reason === 'refusal') { errorIA('La IA no ha podido leer este documento. Prueba con otro.'); return; }
     if (respuesta.stop_reason === 'max_tokens') { errorIA('La respuesta de la IA se ha cortado. Prueba otra vez.'); return; }
     const texto = respuesta.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
     const d = JSON.parse(texto);
-    if (!d.encontrado || !(d.nombre || d.cif)) { errorIA('No he encontrado datos de ningún cliente en el documento. ' + (d.nota || '')); return; }
+    if (!d.encontrado || !(d.nombre || d.cif)) { errorIA(`No he encontrado los datos de ${destinoIA === 'empresa' ? 'la empresa' : 'ningún cliente'} en el documento. ` + (d.nota || '')); return; }
     mostrarRevision(d, d.nota || 'Datos leídos del documento con la IA.');
   } catch (e) {
     console.error(e);
@@ -4180,6 +4213,11 @@ function mostrarRevision(d, nota) {
   id('ia-prov').value = d.provincia || '';
   id('ia-tel').value = d.telefono || '';
   id('ia-email').value = d.email || '';
+  id('ia-web').value = d.web || '';
+  id('ia-iban').value = d.iban || '';
+  id('ia-firmante').value = d.firmante || '';
+  id('ia-cargo').value = d.cargo || '';
+  id('ia-notalegal').value = d.notaLegal || '';
   id('ia-nota').textContent = nota;
   pasoIA('revisar');
 }
@@ -4251,8 +4289,12 @@ const RE_ETIQUETA = /^(?:cliente|destinatario|facturar a|datos del cliente|raz[o
 const RE_NO_NOMBRE = /\b(?:factura|presupuesto|albar[aá]n|fecha|total|concepto|importe|iva|base imponible|p[aá]gina|n[ºo°]\s*de\s*factura|vencimiento|forma de pago|iban|cuenta)\b/i;
 const RE_SOCIEDAD = /\b(?:S\.?\s?L\.?\s?U?\.?|S\.?\s?A\.?\s?U?\.?|S\.?\s?COOP\.?|C\.?\s?B\.?|S\.?\s?C\.?|COMUNIDAD|ASOCIACI[OÓ]N|FUNDACI[OÓ]N|AYUNTAMIENTO|CONSTRUCCIONES|INMOBILIARIA)\b/i;
 const quitarEtiqueta = (t) => { let x = t; for (let i = 0; i < 3; i++) x = x.replace(RE_ETIQUETA, ''); return x.trim(); };
-/** Busca los datos del cliente en las líneas de texto de un documento. null si no hay bastante. */
-function extraerCliente(lineas) {
+/**
+ * Busca en las líneas de texto de un documento los datos del cliente (tipo «cliente») o de la empresa que lo emite
+ * (tipo «empresa»: además web, IBAN, firmante, cargo y nota legal). null si no hay bastante.
+ */
+function extraerCliente(lineas, tipo) {
+  const emisora = tipo === 'empresa';
   const propios = db.empresas.flatMap((e) => [e.nombre, e.direccion, e.email, e.telefono, e.cp && e.poblacion ? `${e.cp} ${e.poblacion}` : ''])
     .map(normaliza).filter((x) => x && x.length > 4);
   const cifsPropios = new Set(db.empresas.map((e) => limpiaCif(e.cif)).filter(Boolean));
@@ -4261,13 +4303,19 @@ function extraerCliente(lineas) {
   // Dónde empieza el cliente: una etiqueta («Cliente:», «Facturar a»…) o el primer CIF que no es nuestro
   const iEtiqueta = lineas.findIndex((l) => /^(?:cliente|destinatario|facturar a|datos del cliente)\b/i.test(l.trim()));
   const conCif = lineas.map((l, i) => ({ i, cif: cifDe(l) })).filter((x) => x.cif && !cifsPropios.has(limpiaCif(x.cif)));
-  const elegido = conCif.find((x) => iEtiqueta >= 0 && x.i > iEtiqueta) || conCif[0];
-  const ancla = elegido ? elegido.i : (iEtiqueta >= 0 ? iEtiqueta + 1 : -1);
+  // El cliente va tras la etiqueta; la empresa que emite, antes (normalmente arriba del todo)
+  const elegido = emisora ? (conCif.find((x) => iEtiqueta < 0 || x.i < iEtiqueta) || conCif[0])
+    : (conCif.find((x) => iEtiqueta >= 0 && x.i > iEtiqueta) || conCif[0]);
+  const ancla = elegido ? elegido.i : (emisora ? 0 : (iEtiqueta >= 0 ? iEtiqueta + 1 : -1));
   if (ancla < 0 || ancla >= lineas.length) return null;
-  const desde = Math.max(0, iEtiqueta >= 0 && iEtiqueta < ancla && ancla - iEtiqueta <= 6 ? iEtiqueta : ancla - 5);
-  const hasta = Math.min(lineas.length - 1, ancla + 5);
+  const desde = Math.max(0, !emisora && iEtiqueta >= 0 && iEtiqueta < ancla && ancla - iEtiqueta <= 6 ? iEtiqueta : ancla - 5);
+  const hasta = Math.min(lineas.length - 1, ancla + 5, emisora && iEtiqueta > ancla ? iEtiqueta - 1 : Infinity);
   const ventana = [];
-  for (let i = desde; i <= hasta; i++) if (!esPropia(lineas[i])) ventana.push({ i, t: lineas[i], d: Math.abs(i - ancla) + (i > ancla ? 0.5 : 0) });
+  for (let i = desde; i <= hasta; i++) {
+    const otroCif = cifDe(lineas[i]);
+    if (esPropia(lineas[i]) || (otroCif && elegido && otroCif !== elegido.cif)) continue;   // datos de otra empresa
+    ventana.push({ i, t: lineas[i], d: Math.abs(i - ancla) + (i > ancla ? 0.5 : 0) });
+  }
   ventana.sort((a, b) => a.d - b.d);
   const d = { nombre: '', cif: elegido ? elegido.cif : '', direccion: '', cp: '', poblacion: '', provincia: '', telefono: '', email: '' };
   // Nombre: mejor una línea con forma de sociedad; si no, la más cercana que parezca un nombre
@@ -4297,6 +4345,24 @@ function extraerCliente(lineas) {
   if (correo) d.email = correo;
   const tel = ventana.map((v) => telefonoDe(v.t)).find((x) => x && !esPropia(x));
   if (tel) d.telefono = tel;
+  if (emisora) {
+    // IBAN, web, firma y nota legal: en cualquier parte del documento
+    for (const l of lineas) {
+      const ib = /\b([A-Z]{2}\d{2}(?:[ -]?[A-Z0-9]{4}){4,7}(?:[ -]?[A-Z0-9]{1,3})?)\b/.exec(l.toUpperCase());
+      if (ib && !d.iban) d.iban = ib[1].replace(/[ -]/g, '').replace(/(.{4})(?=.)/g, '$1 ');
+      const web = /(?:https?:\/\/)?www\.[a-z0-9.-]+\.[a-z]{2,}(?:\/\S*)?/i.exec(l);
+      if (web && !d.web && !esPropia(web[0])) d.web = web[0];
+      if (!d.notaLegal && /criterio de caja|exent[ao] de iva|inversi[oó]n del sujeto pasivo|art[íi]culo\s+\d+/i.test(l) && l.length < 160) d.notaLegal = l.trim();
+    }
+    const iFdo = lineas.findIndex((l) => /^(?:fdo|firmado)\.?\s*[:.]?/i.test(l.trim()));
+    if (iFdo >= 0) {
+      let k = iFdo;
+      d.firmante = lineas[iFdo].trim().replace(/^(?:fdo|firmado)\.?\s*[:.]?\s*/i, '');
+      if (!d.firmante && lineas[iFdo + 1]) { d.firmante = lineas[iFdo + 1].trim(); k = iFdo + 1; }
+      const sig = (lineas[k + 1] || '').trim();
+      if (sig && sig.length <= 40 && /^[A-Za-zÁÉÍÓÚÑáéíóúñ .\/-]+$/.test(sig) && !RE_NO_NOMBRE.test(sig)) d.cargo = sig;
+    }
+  }
   return d.nombre || d.cif ? d : null;
 }
 /** Elige cómo leer: con clave, la IA; sin clave, los PDF en el propio dispositivo (las fotos necesitan la IA). */
@@ -4317,9 +4383,9 @@ async function leerDocumento() {
   }
   try {
     const lineas = await lineasDelPDF(archivoIA);
-    const d = lineas.join('').replace(/\s/g, '').length >= 20 ? extraerCliente(lineas) : null;
+    const d = lineas.join('').replace(/\s/g, '').length >= 20 ? extraerCliente(lineas, destinoIA) : null;
     if (d) { mostrarRevision(d, 'Leído en el propio móvil, sin IA. Revisa los datos: puede que falte o sobre algo.'); return; }
-    errorSinClave(lineas.length ? 'No he encontrado los datos de un cliente en este PDF.' : 'Este PDF es una imagen (un escaneado, una foto o un PDF hecho a partir de una imagen): no lleva texto que leer, así que solo se puede leer con la IA.');
+    errorSinClave(lineas.length ? `No he encontrado los datos de ${destinoIA === 'empresa' ? 'una empresa' : 'un cliente'} en este PDF.` : 'Este PDF es una imagen (un escaneado, una foto o un PDF hecho a partir de una imagen): no lleva texto que leer, así que solo se puede leer con la IA.');
   } catch (e) {
     console.warn(e);
     errorSinClave(e && e.name === 'PasswordException' ? 'Este PDF está protegido con contraseña y no se puede leer.' : 'No se ha podido abrir este PDF (¿está dañado?).');
@@ -4334,6 +4400,8 @@ document.addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-leer]');
   if (!b) return;
   destinoIA = b.dataset.leer;
+  id('ia-titulo').textContent = destinoIA === 'empresa' ? 'Datos de la empresa' : 'Datos del cliente';
+  id('ia-campos-empresa').hidden = destinoIA !== 'empresa';
   id('ia-archivo').click();
 });
 id('ia-archivo').addEventListener('change', (ev) => {
@@ -4361,7 +4429,17 @@ id('ia-usar').addEventListener('click', () => {
     cp: id('ia-cp').value.trim(), poblacion: id('ia-pob').value.trim(), provincia: id('ia-prov').value.trim(),
     telefono: id('ia-tel').value.trim(), email: id('ia-email').value.trim(),
   };
-  if (!d.nombre) { aviso('Falta el nombre del cliente.', 'error'); id('ia-nombre').focus(); return; }
+  if (!d.nombre) { aviso(destinoIA === 'empresa' ? 'Falta el nombre de la empresa.' : 'Falta el nombre del cliente.', 'error'); id('ia-nombre').focus(); return; }
+  if (destinoIA === 'empresa') {
+    const extra = { web: id('ia-web').value.trim(), iban: id('ia-iban').value.trim().toUpperCase(), firmante: id('ia-firmante').value.trim(), cargo: id('ia-cargo').value.trim(), nota: id('ia-notalegal').value.trim() };
+    dlgIA.close();
+    const poner = (campo, valor) => { if (!valor) return; const el = id(campo); el.value = valor; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+    [['e-nombre', d.nombre], ['e-cif', d.cif], ['e-dir', d.direccion], ['e-cp', d.cp], ['e-pob', d.poblacion], ['e-prov', d.provincia], ['e-tel', d.telefono],
+      ['e-email', d.email], ['e-web', extra.web], ['e-iban', extra.iban], ['e-firmante', extra.firmante], ['e-cargo', extra.cargo], ['e-nota', extra.nota]].forEach(([c, v]) => poner(c, v));
+    const repetida = d.cif && db.empresas.find((e) => limpiaCif(e.cif) === limpiaCif(d.cif) && e !== empresaEditando);
+    aviso(repetida ? `Ojo: ya tienes dada de alta una empresa con ese CIF (${repetida.nombre}).` : 'Datos rellenados. Añade el logo y la firma, revisa el resto y pulsa «Guardar».', repetida ? 'error' : undefined);
+    return;
+  }
   const existente = d.cif && db.clientes.find((c) => limpiaCif(c.cif) === limpiaCif(d.cif));
   dlgIA.close();
   if (destinoIA === 'factura') {

@@ -952,6 +952,31 @@ function vigilarErrores(page, errores, nube = false) {
       comprobar(r2.nombre === 'COMUNIDAD DE PROPIETARIOS AV. DEL PUERTO 25' && r2.cif === 'H98765432' && r2.dir === 'Avda. del Puerto, 25' && r2.cp === '46023' && r2.pob === 'Valencia' && r2.tel === '' && r2.email === 'administracion@ejemplo-fincas.es',
         'PDF con etiquetas («Cliente:», «CIF:», «Dirección:»…): también, y no confunde el CIF con un teléfono');
       await lp.click('#ia-cancelar');
+      // Dar de alta una empresa desde una factura suya (la empresa que la emite, no el cliente)
+      const pdfEmisora = await lp.evaluate(() => {
+        const { jsPDF } = window.jspdf;
+        const e = new jsPDF();
+        e.setFontSize(10);
+        [['ESTUDIO NORTE ARQUITECTOS S.L.', 'Cliente:'], ['C/ Mayor, 12, 3º', 'CONSTRUCCIONES DEL SUR SL'], ['28013 Madrid (Madrid)', 'CIF: B33445566'], ['CIF: B76543210', 'Av. de Andalucía, 5'],
+          ['Tel. 915 555 123', '41001 Sevilla'], ['info@estudionorte.es', ''], ['www.estudionorte.es', '']]
+          .forEach(([iz, de], i) => { e.text(iz, 15, 20 + i * 6); if (de) e.text(de, 115, 20 + i * 6); });
+        ['FACTURA 12/26', 'Concepto: proyecto básico y de ejecución', 'TOTAL 2.420,00 €', 'Ruego abonen el importe en la cuenta ES91 2100 0418 4502 0005 1332',
+          'Fdo.: D. Pedro Gómez Sánchez', 'Arquitecto', 'Factura acogida al criterio de Caja del IVA'].forEach((t, i) => e.text(t, 15, 80 + i * 8));
+        return Array.from(new Uint8Array(e.output('arraybuffer')));
+      });
+      await lp.click('.nav-item[data-ir=ajustes]');
+      await lp.click('#aj-nueva-empresa');
+      const [fcE] = await Promise.all([lp.waitForEvent('filechooser'), lp.click('[data-leer=empresa]')]);
+      await fcE.setFiles({ name: 'factura-propia.pdf', mimeType: 'application/pdf', buffer: Buffer.from(pdfEmisora) });
+      await lp.waitForSelector('#ia-paso-revisar:not([hidden]), #ia-paso-error:not([hidden])', { timeout: 20000 });
+      const re = await lp.evaluate(() => Object.fromEntries(['nombre', 'cif', 'dir', 'cp', 'pob', 'prov', 'tel', 'email', 'web', 'iban', 'firmante', 'cargo', 'notalegal'].map((k) => [k, document.getElementById('ia-' + k).value])));
+      comprobar(re.nombre === 'ESTUDIO NORTE ARQUITECTOS S.L.' && re.cif === 'B76543210' && re.dir === 'C/ Mayor, 12, 3º' && re.cp === '28013' && re.pob === 'Madrid' && re.tel === '915 555 123' && re.email === 'info@estudionorte.es',
+        'empresa desde una factura suya: saca la que emite (no el cliente) con CIF, dirección, CP, teléfono y email');
+      comprobar(re.web === 'www.estudionorte.es' && re.iban === 'ES91 2100 0418 4502 0005 1332' && re.firmante === 'D. Pedro Gómez Sánchez' && re.cargo === 'Arquitecto' && re.notalegal === 'Factura acogida al criterio de Caja del IVA',
+        '… y también la web, el IBAN, el firmante, el cargo y la nota legal' + (re.iban ? '' : ' ' + JSON.stringify(re)));
+      await lp.click('#ia-usar');
+      comprobar(await lp.inputValue('#e-nombre') === 'ESTUDIO NORTE ARQUITECTOS S.L.' && await lp.inputValue('#e-iban') === 'ES91 2100 0418 4502 0005 1332' && await lp.inputValue('#e-cargo') === 'Arquitecto',
+        '«Usar estos datos» rellena la ficha de la empresa nueva');
       await lc.close();
     }
 

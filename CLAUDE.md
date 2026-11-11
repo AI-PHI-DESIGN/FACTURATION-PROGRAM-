@@ -52,7 +52,8 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
 - Para transcribir notas de voz nuevas: `herramientas/transcribir-audios.sh <audios>`.
 - Para rehacer las capturas y el PDF de `docs/` con datos inventados: `node herramientas/generar-capturas.cjs`.
 - **Leer PDF sin IA (por defecto):** `lineasDelPDF()` con pdf.js en `vendor/pdfjs-<versión>/` (si se actualiza,
-  carpeta nueva) y `extraerCliente()` (el CIF que no es nuestro y los datos de alrededor). Sin clave, nunca se llama a la
+  carpeta nueva) y `extraerCliente(lineas, 'cliente' | 'empresa')` (el CIF que no es nuestro y los datos de alrededor;
+  para una empresa nueva, la que emite el documento, con IBAN, web, firmante, cargo y nota legal). Sin clave, nunca se llama a la
   IA; las fotos y los PDF escaneados ofrecen «Usar la IA».
 - **Lector con IA (opcional, con clave):**
   - Claude Opus 5.5 con el SDK oficial empaquetado en `vendor/anthropic-sdk.mjs`
