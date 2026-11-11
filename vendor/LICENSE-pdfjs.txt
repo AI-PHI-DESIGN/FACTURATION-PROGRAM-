@@ -1,0 +1,4 @@
+pdf.js 6.5.438 (Mozilla, https://github.com/mozilla/pdf.js), del paquete npm pdfjs-dist.
+Licencia Apache 2.0: https://www.apache.org/licenses/LICENSE-2.0
+Se usa para leer el texto de los PDF en el propio dispositivo (sin IA).
+Si se actualiza, cambia el nombre de la carpeta (los service workers viejos servirian la copia antigua).

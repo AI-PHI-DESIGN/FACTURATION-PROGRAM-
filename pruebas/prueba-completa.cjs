@@ -559,7 +559,11 @@ function vigilarErrores(page, errores, nube = false) {
     // Sin clave: el propio diálogo la pide
     let [selector] = await Promise.all([ia.waitForEvent('filechooser'), ia.click('[data-leer=factura]')]);
     await selector.setFiles(path.join(RAIZ, 'docs', 'factura-ejemplo.pdf'));
-    comprobar(await ia.isVisible('#ia-paso-clave'), 'sin clave, la app la pide antes de leer');
+    await ia.waitForSelector('#ia-paso-error:not([hidden])', { timeout: 15000 });
+    comprobar((await ia.textContent('#ia-error')).includes('imagen') && await ia.isVisible('#ia-con-clave') && peticiones.length === 0,
+      'sin clave, un PDF escaneado no se manda a la IA: lo explica y ofrece «Usar la IA»');
+    await ia.click('#ia-con-clave');
+    comprobar(await ia.isVisible('#ia-paso-clave'), '«Usar la IA» pide la clave');
     await ia.fill('#ia-clave-dlg', 'sk-ant-prueba-1234');
     await ia.click('#ia-clave-seguir');
     await ia.waitForSelector('#ia-paso-revisar:not([hidden])', { timeout: 15000 });
@@ -899,6 +903,56 @@ function vigilarErrores(page, errores, nube = false) {
       await act.close();
       pages.close();
       fs.rmSync(tmp, { recursive: true, force: true });
+    }
+
+    console.log('20. Leer un PDF sin IA ni clave (en el propio dispositivo)');
+    {
+      const lc = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'es-ES' });
+      await lc.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+      await sinNube(lc);
+      await lc.clock.setFixedTime(HOY);
+      let llamadasIA = 0;
+      await lc.route('https://api.anthropic.com/**', (r) => { llamadasIA++; return r.abort(); });
+      const lp = await lc.newPage();
+      vigilarErrores(lp, errores);
+      await lp.goto(URL_APP);
+      await lp.click('#btn-ejemplo');
+      // Dos PDF de texto inventados: a dos columnas (nosotros a la izquierda, el cliente a la derecha) y con etiquetas
+      await lp.addScriptTag({ url: './vendor/jspdf.umd.min.js' });
+      const pdfs = await lp.evaluate(() => {
+        const { jsPDF } = window.jspdf;
+        const a = new jsPDF();
+        a.setFontSize(10);
+        [['DELTA ESTUDIO DE ARQUITECTURA S.L.', 'TALLERES MARÍTIMOS DEL TURIA SL'], ['C/ de la Paz, 7', 'C/ del Puerto nº 4'], ['46003 Valencia', '46024 Valencia (Valencia)'],
+          ['N.I.F. nº B12345678', 'C.I.F.: B-11223344'], ['Tel. 963 000 000', 'Tel. 961 234 567'], ['info@delta.es', 'admin@talleresturia.es']]
+          .forEach(([iz, de], i) => { a.text(iz, 15, 25 + i * 6); a.text(de, 115, 25 + i * 6); });
+        a.text('PRESUPUESTO Nº 27      Fecha: 3 de noviembre de 2026', 15, 80);
+        a.text('TOTAL 1.210,00 €', 15, 90);
+        const c = new jsPDF();
+        c.setFontSize(11);
+        ['FACTURA 2026-118', 'Fecha: 12/10/2026', 'Cliente: COMUNIDAD DE PROPIETARIOS AV. DEL PUERTO 25', 'CIF: H98765432', 'Dirección: Avda. del Puerto, 25', 'Valencia 46023', 'Email: administracion@ejemplo-fincas.es']
+          .forEach((t, i) => c.text(t, 20, 30 + i * 8));
+        return [Array.from(new Uint8Array(a.output('arraybuffer'))), Array.from(new Uint8Array(c.output('arraybuffer')))];
+      });
+      const leer = async (bytes, nombre) => {
+        const [fc] = await Promise.all([lp.waitForEvent('filechooser'), lp.click('#vista-factura [data-leer=factura]')]);
+        await fc.setFiles({ name: nombre, mimeType: 'application/pdf', buffer: Buffer.from(bytes) });
+        await lp.waitForSelector('#ia-paso-revisar:not([hidden]), #ia-paso-error:not([hidden])', { timeout: 20000 });
+        return lp.evaluate(() => Object.fromEntries(['nombre', 'cif', 'dir', 'cp', 'pob', 'prov', 'tel', 'email'].map((k) => [k, document.getElementById('ia-' + k).value])));
+      };
+      await lp.click('.nav-nueva');
+      const r1 = await leer(pdfs[0], 'presupuesto.pdf');
+      comprobar(r1.nombre === 'TALLERES MARÍTIMOS DEL TURIA SL' && r1.cif === 'B11223344' && r1.dir === 'C/ del Puerto nº 4' && r1.cp === '46024' && r1.pob === 'Valencia' && r1.prov === 'Valencia' && r1.tel === '961 234 567' && r1.email === 'admin@talleresturia.es',
+        'PDF a dos columnas: saca el cliente (no nuestra empresa) con CIF, dirección, CP, población, provincia, teléfono y email');
+      comprobar((await lp.textContent('#ia-nota')).includes('sin IA') && llamadasIA === 0, 'sin clave y sin llamar a la IA');
+      await lp.click('#ia-usar');
+      comprobar(await lp.inputValue('#f-cli-nombre') === 'TALLERES MARÍTIMOS DEL TURIA SL' && await lp.inputValue('#f-cli-cp') === '46024', '«Usar estos datos» los pone en la factura');
+      await lp.click('#btn-nueva-factura');
+      const r2 = await leer(pdfs[1], 'factura-recibida.pdf');
+      comprobar(r2.nombre === 'COMUNIDAD DE PROPIETARIOS AV. DEL PUERTO 25' && r2.cif === 'H98765432' && r2.dir === 'Avda. del Puerto, 25' && r2.cp === '46023' && r2.pob === 'Valencia' && r2.tel === '' && r2.email === 'administracion@ejemplo-fincas.es',
+        'PDF con etiquetas («Cliente:», «CIF:», «Dirección:»…): también, y no confunde el CIF con un teléfono');
+      await lp.click('#ia-cancelar');
+      await lc.close();
     }
 
     console.log('19. Gastos: apartado propio, con su color, gráficas y CSV');

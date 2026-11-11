@@ -384,7 +384,27 @@ otro color que se pueda elegir, y gráficas de dónde se ha ingresado, meses y d
   pasar a la cuenta nueva y vacía la copia que quedó en el dispositivo de la cuenta anterior
   (`facturacion.datos.u.<uid viejo>`), enseñando de qué empresa son. La prueba 17 lo comprueba.
 
-## 13. Posibles mejoras (no pedidas todavía)
+## 13. Fase 9: leer el PDF sin IA ni clave
+
+Problema: «subir el PDF y que lo lea la IA» pedía una clave de pago a cada persona. Solución:
+
+- **pdf.js** (Mozilla, Apache 2.0) en `vendor/pdfjs-6.5.438/`, con la versión en el nombre de la carpeta porque los
+  *service workers* viejos sirven su copia por nombre. Se carga solo al usarlo y está en `ARCHIVOS` para usarlo sin
+  conexión.
+- `lineasDelPDF()` agrupa el texto en filas por altura, parte las filas por huecos grandes (columnas) y ordena
+  **columna a columna**: así, en un documento con nuestra empresa a la izquierda y el cliente a la derecha, los datos
+  no se mezclan.
+- `extraerCliente()`:
+  - ancla en el primer **CIF/NIF que no es de nuestras empresas** (o tras «Cliente:», «Facturar a»…);
+  - mira 5 líneas arriba y abajo y salta las líneas con nuestros datos;
+  - nombre: mejor una línea con forma de sociedad (S.L., S.A., Comunidad…); dirección por el tipo de vía;
+    CP + población (+ provincia entre paréntesis), email, y teléfono de **9 cifras** que no vaya pegado a una letra
+    (al principio confundía el CIF «H98765432» con un teléfono).
+- **Flujo:** sin clave → PDF de texto en local; foto o PDF escaneado (sin texto) → lo explica y ofrece «Usar la IA»;
+  con clave → todo con la IA. Sin clave **nunca** se llama a la API (la prueba lo comprueba con `context.route`).
+- Pruebas: la sección 20 genera con jsPDF dos PDF de texto inventados (a dos columnas y con etiquetas).
+
+## 14. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
 - Facturas rectificativas.

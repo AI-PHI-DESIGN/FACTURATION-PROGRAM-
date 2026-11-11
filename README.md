@@ -10,10 +10,10 @@ está **vencido**.
 - **Cuentas con correo y contraseña**: cada persona (Fran, tu madre…) entra con lo suyo y tiene **todas sus
   empresas, clientes y facturas** en cualquier móvil u ordenador, al momento. Nadie ve los datos de otro. Funcionan
   con un proyecto gratuito de Firebase (de Google), ya activado: [`docs/CUENTAS.md`](docs/CUENTAS.md).
-- **Lector con IA:** al hacer una factura o dar de alta un cliente, el botón **«Rellenar con IA desde un PDF o
-  una foto»** lee el documento con **Claude** (la IA de Anthropic) y rellena el nombre, el CIF, la dirección, el
-  teléfono y el email del cliente. Antes de usarlos se pueden revisar. Necesita internet y una clave de la API
-  de Claude (ver más abajo).
+- **Rellenar desde un PDF:** al hacer una factura o dar de alta un cliente, el botón **«Rellenar desde un PDF»**
+  lee el documento **en el propio móvil, sin clave y gratis**, y rellena el nombre, el CIF, la dirección, el teléfono
+  y el email del cliente (se revisan antes de usarlos). Las **fotos** y los PDF **escaneados** necesitan la IA
+  (**Claude**, de Anthropic), que es opcional y necesita una clave (ver más abajo).
 - **Gastos:** un apartado propio (abajo, «Gastos») para apuntar lo que se paga: proveedor, categoría, total con IVA
   (la app saca la base y el IVA) y si está pagado. Al entrar, **toda la app cambia de color** (se elige en Ajustes).
   Tiene filtros, totales, gráficas y CSV para el gestor.
