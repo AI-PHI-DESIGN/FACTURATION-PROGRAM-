@@ -1368,7 +1368,7 @@ window.CONFIG_NUBE = {
 (function () {
 'use strict';
 
-const VERSION_APP = '3.12';
+const VERSION_APP = '3.13';
 
 /* =========================================================
    Utilidades
@@ -4186,7 +4186,7 @@ function mostrarRevision(d, nota) {
 
 /* ---------- Leer el PDF en el propio dispositivo: sin IA, sin clave, gratis y sin internet ----------
    pdf.js (vendor/pdfjs-<versión>/) saca el texto; extraerCliente() busca el CIF que no es nuestro y los datos de alrededor. */
-const RUTA_PDFJS = './vendor/pdfjs-6.5.438/';
+const RUTA_PDFJS = './vendor/pdfjs-6.5.438-legacy/';   // versión «legacy»: funciona también en móviles con navegadores antiguos
 let promesaPdfjs = null;
 function cargarPdfjs() {
   if (!promesaPdfjs) {
@@ -4309,13 +4309,20 @@ async function leerDocumento() {
   pasoIA('cargando');
   id('ia-texto').textContent = `Leyendo «${archivoIA.name}»…`;
   try {
+    await cargarPdfjs();
+  } catch (e) {
+    console.warn(e);
+    errorSinClave(enInternet ? 'Este navegador no ha podido cargar el lector de PDF. Actualiza el navegador (o prueba con Chrome) y vuelve a intentarlo.' : 'Abre la app desde su enlace de internet para leer PDF.');
+    return;
+  }
+  try {
     const lineas = await lineasDelPDF(archivoIA);
     const d = lineas.join('').replace(/\s/g, '').length >= 20 ? extraerCliente(lineas) : null;
     if (d) { mostrarRevision(d, 'Leído en el propio móvil, sin IA. Revisa los datos: puede que falte o sobre algo.'); return; }
-    errorSinClave(lineas.length ? 'No he encontrado los datos de un cliente en este PDF.' : 'Este PDF es una imagen (un escaneado o una foto) y así solo se puede leer con la IA.');
+    errorSinClave(lineas.length ? 'No he encontrado los datos de un cliente en este PDF.' : 'Este PDF es una imagen (un escaneado, una foto o un PDF hecho a partir de una imagen): no lleva texto que leer, así que solo se puede leer con la IA.');
   } catch (e) {
     console.warn(e);
-    errorSinClave(enInternet ? 'No se ha podido abrir este PDF (¿está protegido con contraseña?).' : 'Abre la app desde su enlace de internet para leer PDF.');
+    errorSinClave(e && e.name === 'PasswordException' ? 'Este PDF está protegido con contraseña y no se puede leer.' : 'No se ha podido abrir este PDF (¿está dañado?).');
   }
 }
 function errorSinClave(texto) {

@@ -388,7 +388,7 @@ otro color que se pueda elegir, y gráficas de dónde se ha ingresado, meses y d
 
 Problema: «subir el PDF y que lo lea la IA» pedía una clave de pago a cada persona. Solución:
 
-- **pdf.js** (Mozilla, Apache 2.0) en `vendor/pdfjs-6.5.438/`, con la versión en el nombre de la carpeta porque los
+- **pdf.js** (Mozilla, Apache 2.0) en `vendor/pdfjs-6.5.438-legacy/` (la versión *legacy*, para móviles con navegadores antiguos), con la versión en el nombre de la carpeta porque los
   *service workers* viejos sirven su copia por nombre. Se carga solo al usarlo y está en `ARCHIVOS` para usarlo sin
   conexión.
 - `lineasDelPDF()` agrupa el texto en filas por altura, parte las filas por huecos grandes (columnas) y ordena
