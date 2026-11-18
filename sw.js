@@ -5,7 +5,7 @@
  * - El resto de archivos se sirven de la copia guardada y se actualizan en segundo plano.
  * Al publicar cambios en los archivos, sube VERSION para limpiar la caché antigua.
  */
-const VERSION = 'facturacion-v17';
+const VERSION = 'facturacion-v18';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const ARCHIVOS = [
   './vendor/html2canvas.min.js',
   './vendor/anthropic-sdk.mjs',
   './vendor/firebase.mjs',
+  './vendor/qrcode-generator-2.0.4.js',
   './vendor/pdfjs-6.5.438-legacy/pdf.min.mjs',
   './vendor/pdfjs-6.5.438-legacy/pdf.worker.min.mjs',
 ];

@@ -1,0 +1,2 @@
+qrcode-generator 2.0.4 (Kazuhiko Arase), licencia MIT: https://github.com/kazuhikoarase/qrcode-generator
+Se usa para el codigo QR tributario (Veri*factu) de las facturas.

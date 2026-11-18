@@ -119,7 +119,11 @@ en **Ajustes → Restaurar…**.
 El Reglamento de sistemas de facturación (RD 1007/2023, “Veri\*factu”) obligará a que los programas de
 facturación encadenen y firmen cada factura, lleven un código QR y, según la modalidad, envíen los registros a
 Hacienda. Según la última información disponible, se **aplazó a 2027** (1 de enero para sociedades y 1 de julio
-para el resto). Esta app **todavía no** lo incluye. Confirmad las fechas con el gestor.
+para el resto). **Fase 1 hecha (versión 3.15):** cada factura emitida genera su **registro de facturación** encadenado con el
+anterior (huella SHA-256 según la especificación de la AEAT), lleva el **QR tributario** y queda **bloqueada**: no
+se puede modificar ni borrar, solo **rectificar** (serie R). Ajustes comprueba la cadena y permite descargar los
+registros. **Falta la fase 2: enviar los registros a la AEAT** (necesita un servidor y un certificado electrónico) y
+la declaración responsable del productor del programa. Confirmad las fechas con el gestor.
 
 La numeración por cliente funciona como una **serie distinta para cada cliente**. Conviene que el gestor dé el
 visto bueno.

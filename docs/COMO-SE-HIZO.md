@@ -410,7 +410,40 @@ Problema: «subir el PDF y que lo lea la IA» pedía una clave de pago a cada pe
   (criterio de caja, exenta…). Con clave, la IA usa `ESQUEMA_EMPRESA` e instrucciones propias. La prueba 20 lo
   comprueba con una factura inventada a dos columnas.
 
-## 14. Posibles mejoras (no pedidas todavía)
+## 14. Fase 10: Veri\*factu, fase 1 (registro, QR, bloqueo y rectificativas)
+
+Petición: venderla como suscripción a través del gestor, con «lo del QR de Hacienda». Explicación dada al usuario:
+el programa **no manda el PDF**; genera un **registro** por factura, encadenado, que (en la fase 2) se envía a la AEAT;
+el **QR lo pone el programa** y sirve para que quien recibe la factura la coteje en la sede de la AEAT. Para venderlo,
+el productor firma una **declaración responsable**; multas de hasta 150.000 € (productor) y 50.000 € (usuario).
+Obligatorio desde el 1-1-2027 para sociedades y el 1-7-2027 para el resto (RDL 15/2025; confirmarlo antes de publicar).
+
+- **Registro de alta** (`registrarAlta()`): NIF del emisor, `NumSerieFactura` = código de la factura, fecha
+  `dd-mm-aaaa`, tipo `F1` (o `R1` en rectificativas), `CuotaTotal` e `ImporteTotal` (base + IVA, sin restar el IRPF)
+  con 2 decimales y punto, `FechaHoraHusoGenRegistro` con huso (`2026-11-02T10:00:00+01:00`), la huella del anterior
+  de la **misma empresa (NIF)** y `huella = SHA-256(cadena)` en hexadecimal en mayúsculas, con la cadena
+  `IDEmisorFactura=…&NumSerieFactura=…&FechaExpedicionFactura=…&TipoFactura=…&CuotaTotal=…&ImporteTotal=…&Huella=…&FechaHoraHusoGenRegistro=…`.
+  `sha256()` es síncrono (guardar sigue siendo inmediato); la prueba lo compara con `crypto` de Node.
+- **QR:** `qrcode-generator` (MIT) en `vendor/qrcode-generator-2.0.4.js`, nivel M, 30 mm, arriba de la factura con el
+  texto «QR tributario:». URL `https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ValidarQR?nif=…&numserie=…&fecha=…&importe=…`.
+  La leyenda «VERI*FACTU» **no** se pone hasta que se envíen los registros. La prueba regenera el QR esperado y lo
+  compara con la imagen de la factura.
+- **Bloqueo:** `emitida(f)` = tiene `registroId`. Emitida → formulario desactivado salvo el cobro, sin «Borrar» (ni en
+  la lista); `guardarFactura()` solo guarda el cobro. Las facturas de antes de esta versión (y las del ejemplo) no
+  tienen registro: se pueden editar hasta que se guardan, y al guardarlas se emiten.
+- **Rectificativas:** «Rectificar» → `rectificarFactura()`: copia con la base en negativo (abono), serie propia
+  `R n/aa` (`serieClave` `empresa|rect|año`), `rectificativa: {facturaId, codigo, fecha}`, y la original guarda
+  `rectificadaPor`. Una factura normal no admite base negativa.
+- **Verificación:** `verificarRegistros()` recalcula huellas y enlaces y comprueba que cada factura coincide con su
+  registro; Ajustes lo muestra y descarga los registros en JSON. La prueba altera un registro a mano y comprueba el aviso.
+- Nube: colección `registros`; si las reglas antiguas no la permiten, se trata como Gastos (`sinPermiso`).
+
+**Fase 2 (pendiente, necesita decisiones del usuario/gestor):** servidor que envíe los registros a la AEAT por su
+servicio web con certificado electrónico (el del gestor como colaborador social o el de cada cliente), guardar la
+respuesta (CSV), leyenda VERI*FACTU; registros de anulación; suscripciones con Stripe; productor y declaración
+responsable; marca, dominio, condiciones y privacidad (RGPD).
+
+## 15. Posibles mejoras (no pedidas todavía)
 
 - Varias líneas de concepto con importe cada una.
 - Facturas rectificativas.

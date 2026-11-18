@@ -177,6 +177,7 @@ button{font:inherit}
 .aviso span{flex:1 1 220px}
 .aviso.info{background:var(--primary-soft);color:var(--primary-ink)}
 .aviso.alerta{background:var(--warn-soft);color:var(--warn)}
+.editor-form input:disabled,.editor-form select:disabled,.editor-form textarea:disabled{opacity:.75;background:var(--surface-2)}
 .aviso .btn{min-height:36px}
 
 /* ---------- Chips de estado ---------- */
@@ -485,6 +486,11 @@ body.con-acceso{overflow:hidden}
 .hoja .h-doc td{padding:.6mm 0 .6mm 5mm;white-space:nowrap}
 .hoja .h-doc td:first-child{color:#666;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}
 .hoja .h-doc td:last-child{font-weight:700;font-size:10.5pt}
+.hoja .h-qr{margin:2.5mm 0 0 auto;width:30mm;text-align:center;font-size:7pt;line-height:1.2;color:#333}
+.hoja .h-qr img{display:block;width:30mm;height:30mm;margin-top:.8mm;image-rendering:pixelated}
+.hoja .h-rect{margin:0 0 4mm;padding:2mm 3mm;border-left:2pt solid var(--c);font-size:9pt}
+.hoja.clasica .h-qr{margin:0 0 0 auto;flex:none}
+.hoja.clasica .h-rect{margin:5mm 14mm 0 12mm;border-left-color:#000}
 .hoja .h-cliente{margin:6mm 0;display:flex;gap:6mm}
 .hoja .h-caja{flex:1;padding:3.5mm 4.5mm;background:var(--c-claro);border-left:2.5pt solid var(--c);border-radius:0 2mm 2mm 0}
 .hoja .h-etq{display:block;font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--c);margin-bottom:1.2mm}
@@ -867,6 +873,11 @@ body.con-acceso{overflow:hidden}
 
     <div class="editor" id="editor-factura" data-modo="datos">
       <form class="editor-form" id="form-factura" autocomplete="off" novalidate>
+        <div class="aviso info" id="aviso-emitida" hidden style="margin:0 0 16px">
+          <span>Factura <strong>emitida y registrada</strong> (Veri*factu): ya no se puede modificar ni borrar. Solo se puede apuntar el cobro. Para corregirla, haz una <strong>factura rectificativa</strong>.</span>
+          <button type="button" class="btn peq primario" id="btn-rectificar">Rectificar</button>
+        </div>
+        <div class="aviso alerta" id="aviso-rectificativa" hidden style="margin:0 0 16px"><span id="aviso-rectificativa-texto"></span></div>
         <div class="card">
           <div class="seccion-form" id="fila-empresa">
             <h3 class="titulo-seccion">Empresa que factura</h3>
@@ -1056,6 +1067,11 @@ body.con-acceso{overflow:hidden}
       <div class="card">
         <div class="card-cab"><div><h2>Para el gestor</h2><p>Todas las facturas en un archivo para Excel</p></div></div>
         <button type="button" class="btn" id="cp-csv"><svg class="i"><use href="#i-send"/></svg>Enviar todas las facturas (CSV)</button>
+      </div>
+      <div class="card" id="panel-registro">
+        <div class="card-cab"><div><h2>Registro de facturas (Veri*factu)</h2><p id="reg-estado"></p></div></div>
+        <p class="suave" style="font-size:14px">Cada factura emitida queda registrada y encadenada con la anterior (huella SHA-256), y lleva su <strong>QR tributario</strong>. Así no se puede cambiar ni borrar una factura sin que se note. <strong>Todavía no se envía a la Agencia Tributaria</strong>: eso llega en la siguiente fase.</p>
+        <div class="acciones"><button type="button" class="btn" id="reg-descargar"><svg class="i"><use href="#i-download"/></svg>Descargar los registros</button></div>
       </div>
       <div class="card" id="panel-ia">
         <div class="card-cab"><div><h2>Lector con IA (opcional)</h2><p id="ia-estado"></p></div></div>
@@ -1356,6 +1372,7 @@ body.con-acceso{overflow:hidden}
   <option value="Entrega intracomunitaria exenta (art. 25 Ley 37/1992)">
 </datalist>
 
+<script src="vendor/qrcode-generator-2.0.4.js"></script>
 <script id="config-nube">
 /*
  * Cuentas en la nube (correo y contraseña por persona): proyecto de Firebase «facturacion».
@@ -1381,7 +1398,7 @@ window.CONFIG_NUBE = {
 (function () {
 'use strict';
 
-const VERSION_APP = '3.14';
+const VERSION_APP = '3.15';
 
 /* =========================================================
    Utilidades
@@ -1505,7 +1522,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
    Datos (se guardan en el dispositivo: localStorage)
    ========================================================= */
 function datosVacios() {
-  return { version: 3, empresas: [], clientes: [], facturas: [], gastos: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
+  return { version: 3, empresas: [], clientes: [], facturas: [], gastos: [], registros: [], ajustes: { ultimaCopia: null, ultimaEmpresa: null } };
 }
 function normalizarDatos(d) {
   const v = datosVacios();
@@ -1524,6 +1541,8 @@ function normalizarDatos(d) {
     facturas,
     // Gastos (desde la versión 3.9): las copias de antes no los tienen.
     gastos: (Array.isArray(d.gastos) ? d.gastos : []).map((g) => Object.assign({ ivaPct: 21, pagado: true, fechaPago: '', categoria: 'Otros', numero: '', concepto: '', notas: '', totalCent: 0, baseCent: 0, cuotaCent: 0 }, g, { proveedor: g.proveedor || {} })),
+    // Registros de facturación (Veri*factu, desde la versión 3.15)
+    registros: Array.isArray(d.registros) ? d.registros : [],
     ajustes: Object.assign(v.ajustes, d.ajustes || {}),
   };
 }
@@ -1663,6 +1682,113 @@ function importeEnLetra(cent) {
 }
 
 /* =========================================================
+   Veri*factu (RD 1007/2023 y Orden HAC/1177/2024), fase 1:
+   · al emitir una factura se crea su REGISTRO DE FACTURACIÓN, encadenado con el anterior de la misma empresa (NIF)
+     por su huella SHA-256, calculada como dice la especificación de la AEAT;
+   · la factura lleva el QR tributario (URL de cotejo de la AEAT con NIF, número, fecha e importe);
+   · una factura emitida ya no se puede modificar ni borrar: se corrige con una factura rectificativa (serie R).
+   Falta (fase 2): enviar los registros a la AEAT, que necesita un servidor y un certificado electrónico.
+   ========================================================= */
+const SISTEMA_INFORMATICO = { nombre: 'Facturación', id: 'FA' };
+const URL_QR_AEAT = 'https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ValidarQR';
+const emitida = (f) => !!(f && f.registroId);
+const nifLimpio = (x) => String(x || '').toUpperCase().replace(/[\s.-]/g, '');
+const fechaAEAT = (iso) => { const [a, m, d] = String(iso || '').split('-'); return `${d}-${m}-${a}`; };
+const importeAEAT = (cent) => ((cent || 0) / 100).toFixed(2);
+/** Fecha y hora con huso horario, como pide la AEAT: 2026-11-18T19:20:30+01:00 */
+function fechaHoraHuso(d) {
+  const x = d || new Date();
+  const dos = (n) => String(Math.abs(n)).padStart(2, '0');
+  const off = -x.getTimezoneOffset();
+  return `${x.getFullYear()}-${dos(x.getMonth() + 1)}-${dos(x.getDate())}T${dos(x.getHours())}:${dos(x.getMinutes())}:${dos(x.getSeconds())}${off >= 0 ? '+' : '-'}${dos(Math.trunc(off / 60))}:${dos(off % 60)}`;
+}
+/** SHA-256 (síncrono, para que guardar una factura siga siendo inmediato). Devuelve hexadecimal en MAYÚSCULAS. */
+function sha256(texto) {
+  const K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+  const bytes = Array.from(new TextEncoder().encode(texto));
+  const largo = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  for (let i = 7; i >= 0; i--) bytes.push(i >= 4 ? 0 : (largo >>> (i * 8)) & 0xff);
+  const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+  const w = new Array(64);
+  const rot = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let o = 0; o < bytes.length; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = (bytes[o + 4 * i] << 24) | (bytes[o + 4 * i + 1] << 16) | (bytes[o + 4 * i + 2] << 8) | bytes[o + 4 * i + 3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = rot(w[i - 15], 7) ^ rot(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rot(w[i - 2], 17) ^ rot(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, hh] = h;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (hh + (rot(e, 6) ^ rot(e, 11) ^ rot(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+      const t2 = ((rot(a, 2) ^ rot(a, 13) ^ rot(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    h[0] = (h[0] + a) | 0; h[1] = (h[1] + b) | 0; h[2] = (h[2] + c) | 0; h[3] = (h[3] + d) | 0;
+    h[4] = (h[4] + e) | 0; h[5] = (h[5] + f) | 0; h[6] = (h[6] + g) | 0; h[7] = (h[7] + hh) | 0;
+  }
+  return h.map((x) => (x >>> 0).toString(16).padStart(8, '0')).join('').toUpperCase();
+}
+/** Cadena de la huella de un registro de alta (especificación de la AEAT). */
+const cadenaHuella = (r) => `IDEmisorFactura=${r.nif}&NumSerieFactura=${r.numSerie}&FechaExpedicionFactura=${r.fecha}&TipoFactura=${r.tipoFactura}&CuotaTotal=${r.cuotaTotal}&ImporteTotal=${r.importeTotal}&Huella=${r.huellaAnterior}&FechaHoraHusoGenRegistro=${r.fechaHora}`;
+/** Crea (y guarda en db) el registro de alta de una factura, encadenado con el último de la misma empresa. */
+function registrarAlta(f) {
+  const nif = nifLimpio(f.emisor && f.emisor.cif);
+  const anterior = db.registros.filter((r) => r.nif === nif).pop();
+  const r = {
+    id: uid(), tipo: 'alta', facturaId: f.id, empresaId: f.empresaId, nif,
+    numSerie: f.codigo, fecha: fechaAEAT(f.fecha), tipoFactura: f.rectificativa ? 'R1' : 'F1',
+    cuotaTotal: importeAEAT(f.cuotaCent), importeTotal: importeAEAT((f.baseCent || 0) + (f.cuotaCent || 0)),
+    huellaAnterior: anterior ? anterior.huella : '', primerRegistro: !anterior, fechaHora: fechaHoraHuso(),
+    sistema: { nombre: SISTEMA_INFORMATICO.nombre, id: SISTEMA_INFORMATICO.id, version: VERSION_APP },
+    envio: 'pendiente',
+  };
+  r.huella = sha256(cadenaHuella(r));
+  db.registros.push(r);
+  return r;
+}
+/** Comprueba la cadena de registros de cada empresa: que ninguno se haya cambiado, quitado o reordenado. */
+function verificarRegistros() {
+  const porNif = new Map();
+  const errores = [];
+  db.registros.forEach((r) => {
+    const anterior = porNif.get(r.nif);
+    if ((anterior ? anterior.huella : '') !== r.huellaAnterior) errores.push(`El registro de ${r.numSerie} no sigue al anterior.`);
+    if (sha256(cadenaHuella(r)) !== r.huella) errores.push(`El registro de ${r.numSerie} se ha alterado.`);
+    const f = db.facturas.find((x) => x.id === r.facturaId);
+    if (!f) errores.push(`Falta la factura ${r.numSerie}.`);
+    else if (f.codigo !== r.numSerie || fechaAEAT(f.fecha) !== r.fecha || importeAEAT((f.baseCent || 0) + (f.cuotaCent || 0)) !== r.importeTotal) errores.push(`La factura ${r.numSerie} no coincide con su registro.`);
+    porNif.set(r.nif, r);
+  });
+  return { total: db.registros.length, errores };
+}
+/** URL del QR tributario y la imagen del QR (nivel M), para facturas emitidas. */
+function urlQR(f) {
+  const r = db.registros.find((x) => x.id === f.registroId);
+  if (!r) return '';
+  const q = (x) => encodeURIComponent(x);
+  return `${URL_QR_AEAT}?nif=${q(r.nif)}&numserie=${q(r.numSerie)}&fecha=${q(r.fecha)}&importe=${q(r.importeTotal)}`;
+}
+function htmlQR(f) {
+  const url = emitida(f) && typeof qrcode === 'function' ? urlQR(f) : '';
+  if (!url) return '';
+  const q = qrcode(0, 'M');
+  q.addData(url);
+  q.make();
+  return `<div class="h-qr">QR tributario:<img src="${q.createDataURL(4, 0)}" alt="Código QR tributario"></div>`;
+}
+const htmlRectifica = (f) => (f.rectificativa
+  ? `<div class="h-rect">Factura rectificativa de la factura nº <b>${esc(f.rectificativa.codigo)}</b>, de fecha ${esc(fechaCorta(f.rectificativa.fecha))}.</div>` : '');
+/** Siguiente número de la serie de rectificativas (R 1/26, R 2/26…) de la empresa en ese año. */
+function siguienteRectificativa(empId, fecha) {
+  const clave = `${empId}|rect|${(fecha || hoyISO()).slice(0, 4)}`;
+  return 1 + db.facturas.filter((x) => x.serieClave === clave).reduce((m, x) => Math.max(m, x.numero || 0), 0);
+}
+const codigoRectificativa = (n, fecha) => `R ${n}/${(fecha || hoyISO()).slice(2, 4)}`;
+
+/* =========================================================
    Plantilla de factura (HTML de la hoja A4)
    ========================================================= */
 function htmlFactura(f, opciones) {
@@ -1710,12 +1836,13 @@ function htmlFactura(f, opciones) {
       ${e.web ? `<div>${esc(e.web)}</div>` : ''}
     </div>
     <div class="h-doc">
-      <h1>FACTURA</h1>
+      <h1${f.rectificativa ? ' style="font-size:15pt"' : ''}>${f.rectificativa ? 'FACTURA RECTIFICATIVA' : 'FACTURA'}</h1>
       <table>
         <tr><td>Nº factura</td><td>${hueco(f.codigo, '—')}</td></tr>
         <tr><td>Fecha</td><td>${hueco(fechaCorta(f.fecha), '—')}</td></tr>
         ${f.vencimiento ? `<tr><td>Vencimiento</td><td>${fechaCorta(f.vencimiento)}</td></tr>` : ''}
       </table>
+      ${htmlQR(f)}
     </div>
   </div>
 
@@ -1728,6 +1855,7 @@ function htmlFactura(f, opciones) {
       ${c.cp || c.poblacion || c.provincia ? `<div>${poblacionLinea(c)}</div>` : ''}
     </div>
   </div>
+  ${htmlRectifica(f)}
 
   <div class="h-lineas">
     <div class="h-lineas-cab"><span>Concepto</span><span>Importe</span></div>
@@ -1789,9 +1917,10 @@ function htmlFacturaClasica(f, emp, vistaPrevia) {
       ${e.cif ? `<div>N.I.F. nº ${esc(e.cif)}</div>` : ''}
       ${contacto ? `<div class="hc-contacto">${contacto}</div>` : ''}
     </div>
+    ${htmlQR(f)}
   </div>
   <div class="hc-datos">
-    <div class="hc-casilla">Factura: ${hueco(f.codigo, '—')}</div>
+    <div class="hc-casilla">${f.rectificativa ? 'Factura rectificativa' : 'Factura'}: ${hueco(f.codigo, '—')}</div>
     <div class="hc-casilla">Fecha: ${hueco(fechaLarga(f.fecha), '—')}</div>
   </div>
   <div class="hc-cliente">
@@ -1800,6 +1929,7 @@ function htmlFacturaClasica(f, emp, vistaPrevia) {
     <div>C.I.F. nº ${hueco(c.cif, '—')}</div>
     ${pobCliente ? `<div>${esc(pobCliente)}</div>` : ''}
   </div>
+  ${htmlRectifica(f)}
   <div class="hc-concepto">CONCEPTO: ${concepto}</div>
   <div class="hc-totales">
     <div class="hc-fila"><span>Base imponible</span><b>${eur(f.baseCent)}</b></div>
@@ -2067,7 +2197,7 @@ function htmlItemFactura(f, compacto) {
       ${est !== 'cobrada' ? `<button type="button" class="btn-icono" data-recordar title="Recordar el cobro" aria-label="Recordar el cobro de ${esc(f.codigo)}">${ico('msg')}</button>` : '<span class="hueco-icono"></span>'}
       <button type="button" class="btn-icono solo-escritorio" data-imprimir title="Imprimir" aria-label="Imprimir ${esc(f.codigo)}">${ico('printer')}</button>
       <button type="button" class="btn-icono" data-duplicar title="Duplicar" aria-label="Duplicar ${esc(f.codigo)}">${ico('copy')}</button>
-      <button type="button" class="btn-icono peligro" data-borrar title="Borrar" aria-label="Borrar ${esc(f.codigo)}">${ico('trash')}</button>
+      ${emitida(f) ? '<span class="hueco-icono"></span>' : `<button type="button" class="btn-icono peligro" data-borrar title="Borrar" aria-label="Borrar ${esc(f.codigo)}">${ico('trash')}</button>`}
     </span>`;
   return `<article class="item-factura estado-${est}" data-id="${esc(f.id)}">
     <button type="button" class="if-principal" data-abrir><span class="if-cliente">${esc(f.cliente.nombre)}</span><span class="if-meta">${meta}</span></button>
@@ -2569,6 +2699,7 @@ let numeroManual = false;  // el usuario ha escrito el número a mano
 let codigoManual = false;  // el usuario ha escrito el código del cliente a mano
 let vencManual = false;    // el usuario ha cambiado el vencimiento a mano
 let cambiosSinGuardar = false;
+let rectificando = null;   // { facturaId, codigo, fecha } si la factura del editor es una rectificativa
 const formF = id('form-factura');
 
 function mostrarEditorOBienvenida() {
@@ -2645,6 +2776,7 @@ function ponerImpuestosPorDefecto(emp) {
 /** Prepara el formulario para una factura nueva (opcionalmente copiando otra). */
 function nuevaFactura(copiaDe, clienteId) {
   edicion = null;
+  rectificando = null;
   numeroManual = false;
   vencManual = false;
   formF.reset();
@@ -2689,6 +2821,7 @@ function nuevaFactura(copiaDe, clienteId) {
 /** Carga una factura guardada en el formulario para verla o modificarla. */
 function abrirFactura(f) {
   edicion = f;
+  rectificando = f.rectificativa || null;
   numeroManual = false;
   vencManual = true;
   formF.reset();
@@ -2772,6 +2905,12 @@ function calcularNumero() {
   const emp = empresaSeleccionada();
   if (!emp) return;
   id('lbl-codigo').hidden = !porCliente(emp);
+  if (rectificando) {   // serie propia de rectificativas: R 1/26, R 2/26…
+    if (!edicion) id('f-numero').value = siguienteRectificativa(emp.id, id('f-fecha').value);
+    id('f-serie').textContent = 'R';
+    id('f-numero-ayuda').textContent = `Saldrá como: ${codigoRectificativa(parseInt(id('f-numero').value, 10) || 1, id('f-fecha').value)}`;
+    return;
+  }
   if (!numeroManual) {
     id('f-numero').value = mantieneSerieDeEdicion() ? edicion.numero : siguienteNumero(emp, clienteDelFormulario(), id('f-fecha').value);
   }
@@ -2808,8 +2947,10 @@ function facturaDelFormulario() {
       telefono: id('f-cli-tel').value.trim(), email: id('f-cli-email').value.trim(),
       codigo: limpiarCodigo(id('f-cli-codigo').value),
     },
-    serie, numero,
-    codigo: numero ? codigoFactura(emp, serie, numero, id('f-fecha').value) : '',
+    serie: rectificando ? 'R' : serie, numero,
+    codigo: numero ? (rectificando ? codigoRectificativa(numero, id('f-fecha').value) : codigoFactura(emp, serie, numero, id('f-fecha').value)) : '',
+    rectificativa: rectificando || undefined,
+    registroId: edicion ? edicion.registroId : undefined,   // para que la vista previa de una emitida lleve su QR
     fecha: id('f-fecha').value,
     vencimiento: id('f-vencimiento').value,
     concepto: id('f-concepto').value.replace(/\s+$/, ''),
@@ -2834,10 +2975,20 @@ function refrescarEditor() {
   id('lbl-exencion').hidden = conIva;
   id('lbl-irpf').style.visibility = id('f-aplica-irpf').checked ? 'visible' : 'hidden';
   id('f-fecha-cobro').disabled = !id('f-cobrada').checked;
+  const bloqueada = emitida(edicion);
+  // Una factura emitida no se puede tocar: solo el cobro
+  formF.querySelectorAll('input, select, textarea, button').forEach((el) => {
+    if (['f-cobrada', 'f-fecha-cobro', 'btn-rectificar'].includes(el.id) || el.type === 'submit') return;
+    el.disabled = bloqueada;
+  });
+  id('aviso-emitida').hidden = !bloqueada;
+  id('btn-rectificar').hidden = !bloqueada || !!edicion.rectificativa;
+  id('aviso-rectificativa').hidden = !rectificando;
+  if (rectificando) id('aviso-rectificativa-texto').textContent = `Factura rectificativa de la ${rectificando.codigo} (${fechaCorta(rectificando.fecha)}). Por defecto abona (anula) la factura entera; si solo hay que corregir una parte, cambia la base imponible.`;
   id('titulo-editor').innerHTML = edicion
-    ? `Factura ${esc(edicion.codigo)}<span class="etiqueta">${ico('check')}Guardada</span>`
-    : 'Nueva factura';
-  id('btn-borrar-factura').hidden = !edicion;
+    ? `${edicion.rectificativa ? 'Rectificativa' : 'Factura'} ${esc(edicion.codigo)}<span class="etiqueta">${ico('check')}${bloqueada ? 'Emitida' : 'Guardada'}</span>`
+    : rectificando ? 'Factura rectificativa' : 'Nueva factura';
+  id('btn-borrar-factura').hidden = !edicion || bloqueada;
   const v = id('f-vencimiento').value;
   const f = id('f-fecha').value;
   id('f-venc-ayuda').textContent = v && f ? (diasEntre(f, v) === 0 ? 'Al contado' : `${diasEntre(f, v)} días desde la fecha`) : 'Sin vencimiento';
@@ -2951,7 +3102,18 @@ function guardarFactura() {
     if (campo) { modoEditor('datos'); id(campo).focus(); }
     return null;
   };
+  if (edicion && emitida(edicion)) {   // emitida: solo se guarda el cobro
+    edicion.cobrada = id('f-cobrada').checked;
+    edicion.fechaCobro = edicion.cobrada ? id('f-fecha-cobro').value || hoyISO() : '';
+    edicion.modificada = new Date().toISOString();
+    if (!guardarDatos()) return null;
+    cambiosSinGuardar = false;
+    refrescarEditor();
+    aviso('Cobro guardado');
+    return edicion;
+  }
   if (!emp) return fallo('Elige la empresa que hace la factura.', 'f-empresa');
+  if (!nifLimpio(emp.cif)) return fallo(`La empresa ${emp.nombre} no tiene CIF/NIF: es obligatorio para emitir facturas (Ajustes → Mis empresas).`);
   const f = facturaDelFormulario();
   if (!f.cliente.nombre) return fallo('Escribe el nombre del cliente.', 'f-cli-nombre');
   if (!(f.numero >= 1)) return fallo('El número de factura no es válido.', 'f-numero');
@@ -2962,14 +3124,20 @@ function guardarFactura() {
   if (f.aplicaIva && (f.ivaPct < 0 || f.ivaPct > 100)) return fallo('El % de IVA no es válido.', 'f-iva');
   if (f.aplicaIrpf && (f.irpfPct < 0 || f.irpfPct > 100)) return fallo('El % de IRPF no es válido.', 'f-irpf');
 
+  if (!rectificando && f.baseCent < 0) return fallo('La base imponible no puede ser negativa (para abonar, haz una factura rectificativa).', 'f-base');
   const modoCliente = porCliente(emp);
   const elegido = clientePorId(f.clienteId);
   const cli = buscarCliente(f.clienteId, f.cliente);
-  let mantiene = mantieneSerieDeEdicion();
+  let mantiene = mantieneSerieDeEdicion() && !rectificando;
   if (mantiene && claveDeFactura(edicion).includes('|cliente|') && (!cli || cli.id !== edicion.clienteId)) mantiene = false;
 
   let clave;
-  if (mantiene) {
+  if (rectificando) {
+    f.serie = 'R';
+    clave = `${emp.id}|rect|${f.fecha.slice(0, 4)}`;
+    if (!edicion) f.numero = siguienteRectificativa(emp.id, f.fecha);
+    if (!f.cliente.codigo) f.cliente.codigo = (cli && cli.codigo) || '';
+  } else if (mantiene) {
     clave = claveDeFactura(edicion);
     f.serie = edicion.serie || '';
   } else if (modoCliente) {
@@ -2987,7 +3155,7 @@ function guardarFactura() {
     if (!numeroManual) f.numero = siguienteNumero(emp, null, f.fecha);
     clave = claveDe(emp, null, f.fecha);
   }
-  f.codigo = codigoFactura(emp, f.serie, f.numero, f.fecha);
+  f.codigo = rectificando ? codigoRectificativa(f.numero, f.fecha) : codigoFactura(emp, f.serie, f.numero, f.fecha);
 
   const mismaSerie = facturasDeSerie(clave, f.id);
   const repetida = mismaSerie.find((x) => x.numero === f.numero)
@@ -3000,7 +3168,7 @@ function guardarFactura() {
   const posteriorAnterior = mismaSerie.find((x) => x.numero > f.numero && x.fecha < f.fecha);
   if (anteriorPosterior) avisos.push(`• La factura ${anteriorPosterior.codigo} tiene un número menor pero una fecha posterior (${fechaCorta(anteriorPosterior.fecha)}). Las facturas deben ir en orden.`);
   if (posteriorAnterior) avisos.push(`• La factura ${posteriorAnterior.codigo} tiene un número mayor pero una fecha anterior (${fechaCorta(posteriorAnterior.fecha)}). Las facturas deben ir en orden.`);
-  if (!mantiene && mismaSerie.length) {
+  if (!mantiene && !rectificando && mismaSerie.length) {
     const toca = siguienteNumero(emp, modoCliente ? cli : null, f.fecha);
     if (f.numero > toca) avisos.push(`• El número que toca es el ${codigoFactura(emp, f.serie, toca, f.fecha)} y vas a usar el ${f.codigo}: quedará un hueco en la numeración.`);
   }
@@ -3012,9 +3180,16 @@ function guardarFactura() {
   f.creada = f.creada || ahora;
   f.modificada = ahora;
   f.clienteId = guardarClienteDeFactura(cli, f.cliente);
-  f.serieClave = mantiene ? clave : claveDe(emp, modoCliente ? f.clienteId : null, f.fecha);
+  f.serieClave = rectificando ? clave : mantiene ? clave : claveDe(emp, modoCliente ? f.clienteId : null, f.fecha);
+  if (!f.rectificativa) delete f.rectificativa;
   const i = db.facturas.findIndex((x) => x.id === f.id);
   if (i >= 0) db.facturas[i] = f; else db.facturas.push(f);
+  // Emitir: registro de facturación encadenado (Veri*factu). Desde aquí, la factura ya no se puede cambiar.
+  f.registroId = registrarAlta(f).id;
+  if (f.rectificativa) {
+    const original = facturaPorId(f.rectificativa.facturaId);
+    if (original) original.rectificadaPor = [...(original.rectificadaPor || []), f.id];
+  }
   db.ajustes.ultimaEmpresa = f.empresaId;
   if (!guardarDatos()) return null;
 
@@ -3029,7 +3204,7 @@ function guardarFactura() {
   calcularNumero();
   refrescarEditor();
   revisarAvisoCopia();
-  aviso(`Factura ${f.codigo} guardada`);
+  aviso(`Factura ${f.codigo} emitida ✔ Queda registrada y ya no se puede modificar.`);
   return f;
 }
 formF.addEventListener('submit', (ev) => { ev.preventDefault(); guardarFactura(); });
@@ -3043,10 +3218,23 @@ id('btn-imprimir').addEventListener('click', () => {
   const f = cambiosSinGuardar || !edicion ? guardarFactura() : edicion;
   if (f) imprimir(f);
 });
+/** Prepara una factura rectificativa de f: por defecto, abona la factura entera (importe en negativo). */
+function rectificarFactura(f) {
+  nuevaFactura(f);
+  rectificando = { facturaId: f.id, codigo: f.codigo, fecha: f.fecha };
+  id('f-base').value = fmtDec.format(-(f.baseCent || 0) / 100);
+  id('f-concepto').value = `Rectificación de la factura ${f.codigo} de ${fechaCorta(f.fecha)}: ${f.concepto || ''}`.trim();
+  cambiosSinGuardar = true;
+  calcularNumero();
+  refrescarEditor();
+  irA('factura');
+}
+id('btn-rectificar').addEventListener('click', () => { if (edicion) rectificarFactura(edicion); });
 id('btn-borrar-factura').addEventListener('click', () => {
   if (edicion && borrarFactura(edicion)) nuevaFactura();
 });
 function borrarFactura(f) {
+  if (emitida(f)) { aviso('Una factura emitida no se puede borrar: haz una factura rectificativa.', 'error'); return false; }
   const msg = `¿Borrar la factura ${f.codigo} de ${f.cliente.nombre}?\n\nOjo: borrar facturas ya enviadas deja un hueco en la numeración. Si la factura era errónea, lo correcto suele ser hacer una factura rectificativa.`;
   if (!confirm(msg)) return false;
   const pos = db.facturas.findIndex((x) => x.id === f.id);
@@ -3258,6 +3446,7 @@ function elegirColorGastos(c) {
 id('aj-color-gastos').addEventListener('click', (ev) => { const b = ev.target.closest('[data-color]'); if (b) elegirColorGastos(b.dataset.color); });
 id('aj-color-gastos').addEventListener('change', (ev) => { if (ev.target.id === 'aj-color-propio') elegirColorGastos(ev.target.value); });
 id('aj-ver-gastos').addEventListener('click', () => irA('gastos'));
+id('reg-descargar').addEventListener('click', () => descargar(`registros-facturacion-${hoyISO()}.json`, JSON.stringify({ app: 'facturacion', sistema: SISTEMA_INFORMATICO, generado: fechaHoraHuso(), registros: db.registros }, null, 1), 'application/json'));
 
 /* ---------- Lista de gastos ---------- */
 function rellenarFiltrosGastos() {
@@ -3673,6 +3862,11 @@ id('cl-facturar').addEventListener('click', () => {
    ========================================================= */
 function renderAjustes() {
   pintarColoresGastos();
+  const v = verificarRegistros();
+  id('reg-estado').textContent = !v.total ? 'Aún no hay facturas registradas'
+    : v.errores.length ? `⚠ ${v.errores[0]}${v.errores.length > 1 ? ` (y ${v.errores.length - 1} más)` : ''}`
+    : `Cadena correcta ✔ · ${v.total} registro${v.total === 1 ? '' : 's'}`;
+  id('reg-estado').style.color = v.errores.length ? 'var(--danger)' : '';
   const lista = db.empresas.slice().sort(ordenarPorNombre);
   id('aj-empresas').innerHTML = lista.length ? lista.map((e) => {
     const n = db.facturas.filter((f) => f.empresaId === e.id).length;
@@ -4507,7 +4701,7 @@ window.addEventListener('storage', (ev) => {
    Firestore guarda una copia en el dispositivo: se puede trabajar sin internet y se sincroniza solo.
    ========================================================= */
 const DOMINIO_USUARIOS = 'usuarios.facturacion.app';   // «fran» → fran@usuarios.facturacion.app (no se envía ningún correo)
-const COLECCIONES = ['empresas', 'clientes', 'facturas', 'gastos'];
+const COLECCIONES = ['empresas', 'clientes', 'facturas', 'gastos', 'registros'];
 let FB = null, fbAuth = null, fbDb = null;
 let modoAcceso = 'entrar';
 let desuscribir = [];
@@ -4643,7 +4837,7 @@ function entrarConUsuario(u) {
   usuarioNube = u;
   claveDatos = 'facturacion.datos.u.' + u.uid;
   db = cargarDatos();   // la copia de este usuario en el dispositivo: la app se ve al momento
-  sincronizado = { empresas: new Map(), clientes: new Map(), facturas: new Map(), gastos: new Map(), ajustes: null };
+  sincronizado = { empresas: new Map(), clientes: new Map(), facturas: new Map(), gastos: new Map(), registros: new Map(), ajustes: null };
   primerasLecturas = { pendientes: new Set([...COLECCIONES, 'perfil']), servidor: new Set([...COLECCIONES, 'perfil']), revisada: false };
   id('panel-cuenta').hidden = false;
   id('cuenta-usuario').textContent = nombreUsuario();
@@ -4695,10 +4889,12 @@ function escucharNube() {
   estadoSync();
 }
 /** Si la cuenta aún tiene las reglas antiguas de Firebase, los gastos no se pueden leer ni guardar: se avisa en Gastos. */
+const sinPermiso = new Set();   // colecciones que las reglas antiguas de Firebase no dejan usar
 function errorColeccion(col, e) {
-  if (col === 'gastos' && e && e.code === 'permission-denied') {
-    gastosSinPermiso = true;
-    lecturaHecha('gastos', false);
+  if ((col === 'gastos' || col === 'registros') && e && e.code === 'permission-denied') {
+    sinPermiso.add(col);
+    if (col === 'gastos') gastosSinPermiso = true;
+    lecturaHecha(col, false);
     if (vistaActual === 'gastos') renderGastos();
     return;
   }
@@ -4746,7 +4942,7 @@ function subirCambios() {
   const base = FB.doc(fbDb, 'usuarios', usuarioNube.uid);
   const ops = [];
   COLECCIONES.forEach((col) => {
-    if (col === 'gastos' && gastosSinPermiso) return;
+    if (sinPermiso.has(col)) return;
     const vistos = new Set();
     db[col].forEach((rec) => {
       if (!rec || !rec.id) return;

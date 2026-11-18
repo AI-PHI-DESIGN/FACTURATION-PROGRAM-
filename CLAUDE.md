@@ -51,6 +51,10 @@ App de facturación para Fran. Es una **app web instalable (PWA)** que se usa so
 - Comprueba el despliegue en la ejecución «pages build and deployment» de GitHub Actions.
 - Para transcribir notas de voz nuevas: `herramientas/transcribir-audios.sh <audios>`.
 - Para rehacer las capturas y el PDF de `docs/` con datos inventados: `node herramientas/generar-capturas.cjs`.
+- **Veri\*factu (fase 1):** al guardar, la factura se **emite**: `registrarAlta()` crea su registro encadenado
+  (huella SHA-256 con la cadena de la AEAT, por NIF), la factura lleva el QR tributario (`htmlQR()`,
+  `vendor/qrcode-generator-2.0.4.js`) y queda **bloqueada** (`emitida(f)`): no se edita ni se borra, se rectifica
+  (serie R). Nunca cambies registros ya hechos ni el formato de la cadena. Fase 2 (envío a la AEAT) pendiente.
 - **Leer PDF sin IA (por defecto):** `lineasDelPDF()` con pdf.js en `vendor/pdfjs-<versión>/` (si se actualiza,
   carpeta nueva) y `extraerCliente(lineas, 'cliente' | 'empresa')` (el CIF que no es nuestro y los datos de alrededor;
   para una empresa nueva, la que emite el documento, con IBAN, web, firmante, cargo y nota legal). Sin clave, nunca se llama a la

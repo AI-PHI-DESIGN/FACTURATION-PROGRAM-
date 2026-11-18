@@ -980,6 +980,75 @@ function vigilarErrores(page, errores, nube = false) {
       await lc.close();
     }
 
+    console.log('21. Veri*factu (fase 1): registro encadenado, QR tributario, facturas bloqueadas y rectificativas');
+    {
+      const crypto = require('crypto');
+      const qrcodeLib = require(path.join(RAIZ, 'vendor', 'qrcode-generator-2.0.4.js'));
+      const vc = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES' });
+      await vc.addInitScript(() => { try { localStorage.setItem('facturacion.instalar.cerrado', '1'); } catch (e) { /* nada */ } });
+      await sinNube(vc);
+      await vc.clock.setFixedTime(HOY);
+      const v = await vc.newPage();
+      vigilarErrores(v, errores);
+      const datos = () => v.evaluate(() => JSON.parse(localStorage.getItem('facturacion.datos.v1')));
+      const huella = (r) => crypto.createHash('sha256').update(`IDEmisorFactura=${r.nif}&NumSerieFactura=${r.numSerie}&FechaExpedicionFactura=${r.fecha}&TipoFactura=${r.tipoFactura}&CuotaTotal=${r.cuotaTotal}&ImporteTotal=${r.importeTotal}&Huella=${r.huellaAnterior}&FechaHoraHusoGenRegistro=${r.fechaHora}`).digest('hex').toUpperCase();
+      await v.goto(URL_APP);
+      await v.click('#btn-ejemplo');
+      const emitir = async (concepto, base) => {
+        await v.click('.nav-nueva');
+        await v.selectOption('#f-cliente', 'ej-cli-a');
+        await v.fill('#f-concepto', concepto);
+        await v.fill('#f-base', base);
+        await v.click('#form-factura button[type=submit]');
+        await v.waitForTimeout(150);
+      };
+      await emitir('Dirección de obra de noviembre', '1.000,00');
+      let d = await datos();
+      const r1 = d.registros[0];
+      comprobar(d.registros.length === 1 && r1.nif === 'B12345678' && r1.numSerie === 'A 16/26' && r1.fecha === '02-11-2026' && r1.tipoFactura === 'F1' && r1.cuotaTotal === '210.00' && r1.importeTotal === '1210.00' && r1.primerRegistro,
+        'al emitir, se crea el registro de facturación (NIF, número, fecha dd-mm-aaaa, tipo F1, cuota e importe total)');
+      comprobar(/^[0-9A-F]{64}$/.test(r1.huella) && r1.huella === huella(r1) && /^2026-11-02T10:00:00[+-]\d\d:\d\d$/.test(r1.fechaHora), 'su huella SHA-256 es la de la especificación de la AEAT (comprobada aparte con Node)');
+      const urlEsperada = `https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ValidarQR?nif=B12345678&numserie=${encodeURIComponent('A 16/26')}&fecha=02-11-2026&importe=1210.00`;
+      const qr = qrcodeLib(0, 'M'); qr.addData(urlEsperada); qr.make();
+      comprobar(await v.getAttribute('#previa-factura .h-qr img', 'src') === qr.createDataURL(4, 0) && (await v.textContent('#previa-factura .h-qr')).includes('QR tributario'),
+        'la factura lleva el QR tributario con la URL de cotejo de la AEAT (nif, numserie, fecha, importe)');
+      comprobar(await v.isDisabled('#f-concepto') && await v.isDisabled('#f-base') && !(await v.isDisabled('#f-cobrada')) && await v.isVisible('#aviso-emitida') && !(await v.isVisible('#btn-borrar-factura')),
+        'una factura emitida queda bloqueada (solo se puede apuntar el cobro) y no se puede borrar');
+      await emitir('Informe técnico', '500,00');
+      d = await datos();
+      comprobar(d.registros.length === 2 && d.registros[1].huellaAnterior === r1.huella && !d.registros[1].primerRegistro && d.registros[1].huella === huella(d.registros[1]),
+        'el segundo registro se encadena con la huella del primero');
+      await v.click('.nav-nueva');
+      await v.selectOption('#f-cliente', 'ej-cli-a');
+      await v.fill('#f-concepto', 'Prueba');
+      await v.fill('#f-base', '-50');
+      await v.click('#form-factura button[type=submit]');
+      comprobar((await v.textContent('#toast')).includes('no puede ser negativa'), 'una factura normal no puede ir en negativo');
+      // Rectificativa: abona la A 16/26
+      await v.click('.nav-item[data-ir=facturas]');
+      comprobar(await v.locator('#c-lista .item-factura:has-text("A 16/26") [data-borrar]').count() === 0, 'en la lista, una factura emitida no tiene botón de borrar');
+      await v.click('#c-lista .item-factura:has-text("A 16/26") [data-abrir]');
+      await v.click('#btn-rectificar');
+      comprobar((await v.textContent('#titulo-editor')).includes('rectificativa') && await v.inputValue('#f-base') === '-1.000,00' && (await v.textContent('#f-numero-ayuda')).includes('R 1/26'),
+        '«Rectificar» prepara una rectificativa que abona la factura (−1.000,00) en la serie R');
+      await v.click('#form-factura button[type=submit]');
+      await v.waitForTimeout(150);
+      d = await datos();
+      const r3 = d.registros[2];
+      const original = d.facturas.find((f) => f.codigo === 'A 16/26');
+      comprobar(r3 && r3.numSerie === 'R 1/26' && r3.tipoFactura === 'R1' && r3.importeTotal === '-1210.00' && r3.huellaAnterior === d.registros[1].huella && (original.rectificadaPor || []).length === 1,
+        'la rectificativa se registra (R 1/26, tipo R1, −1.210,00) y queda enlazada con la original');
+      comprobar((await v.textContent('#previa-factura')).includes('Factura rectificativa de la factura nº A 16/26'), 'en la factura sale qué factura rectifica');
+      await v.click('.nav-item[data-ir=ajustes]');
+      comprobar((await v.textContent('#reg-estado')).includes('Cadena correcta') && (await v.textContent('#reg-estado')).includes('3 registros'), 'Ajustes comprueba la cadena de registros: correcta');
+      // Si alguien cambia un importe a mano, se nota
+      await v.evaluate(() => { const x = JSON.parse(localStorage.getItem('facturacion.datos.v1')); x.registros[0].importeTotal = '10.00'; localStorage.setItem('facturacion.datos.v1', JSON.stringify(x)); });
+      await v.reload();
+      await v.click('.nav-item[data-ir=ajustes]');
+      comprobar((await v.textContent('#reg-estado')).includes('alterado'), 'si se cambia un registro a mano, Ajustes avisa de que se ha alterado');
+      await vc.close();
+    }
+
     console.log('19. Gastos: apartado propio, con su color, gráficas y CSV');
     {
       const gCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES', acceptDownloads: true });
